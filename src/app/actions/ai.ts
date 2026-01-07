@@ -2,10 +2,17 @@
 
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENROUTER_API_KEY,
-});
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+    if (!openaiInstance) {
+        openaiInstance = new OpenAI({
+            baseURL: "https://openrouter.ai/api/v1",
+            apiKey: process.env.OPENROUTER_API_KEY || '',
+        });
+    }
+    return openaiInstance;
+}
 
 const SYSTEM_PROMPT = `
 Rôle
@@ -35,7 +42,7 @@ export async function rewriteContent(currentContent: string, fieldLabel: string,
     }
 
     try {
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
                 { role: "system", content: SYSTEM_PROMPT },
@@ -73,7 +80,7 @@ export async function rewriteSection(sectionName: string, fields: { id: string, 
     try {
         const fieldsContext = fields.map(f => `${f.id} (${f.label}): "${f.content}"`).join("\n");
 
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
                 { role: "system", content: SYSTEM_PROMPT },
@@ -121,7 +128,7 @@ export async function generateDishImage(dishName: string) {
     // 1. Generate with GPT-5 Image (Multimodal)
     try {
         console.log("Attempting generation with openai/gpt-5-image for:", dishName);
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
             model: "openai/gpt-5-image",
             messages: [
                 {
