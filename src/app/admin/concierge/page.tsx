@@ -14,8 +14,16 @@ const quickRequests = [
     { id: "help", label: "Aide", icon: "❓", message: "J'ai besoin d'assistance" },
 ];
 
+interface Message {
+    id: string;
+    type: "user" | "assistant" | "system";
+    content: string;
+    timestamp: Date;
+    status?: "sent" | "delivered" | "read";
+}
+
 // Mock chat messages
-const initialMessages = [
+const initialMessages: Message[] = [
     {
         id: "1",
         type: "system",
@@ -36,14 +44,6 @@ const initialMessages = [
         timestamp: new Date(Date.now() - 3400000),
     },
 ];
-
-interface Message {
-    id: string;
-    type: "user" | "assistant" | "system";
-    content: string;
-    timestamp: Date;
-    status?: "sent" | "delivered" | "read";
-}
 
 export default function ConciergePage() {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
