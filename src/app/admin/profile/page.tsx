@@ -323,6 +323,8 @@ export default function ProfilePage() {
                     </div>
                     {section.items.map((item, index) => {
                         const Icon = item.icon;
+                        const hasArrow = 'hasArrow' in item ? item.hasArrow : false;
+                        const itemValue = 'value' in item ? item.value : undefined;
                         return (
                             <div
                                 key={item.id}
@@ -332,7 +334,7 @@ export default function ProfilePage() {
                                     justifyContent: "space-between",
                                     padding: "14px 1rem",
                                     borderTop: index > 0 ? "1px solid #E5E7EB" : "none",
-                                    cursor: item.hasArrow ? "pointer" : "default",
+                                    cursor: hasArrow ? "pointer" : "default",
                                 }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -340,10 +342,10 @@ export default function ProfilePage() {
                                     <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#222" }}>{item.label}</span>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                    {item.value && (
-                                        <span style={{ fontSize: "0.875rem", color: "#6B7280" }}>{item.value}</span>
+                                    {itemValue && (
+                                        <span style={{ fontSize: "0.875rem", color: "#6B7280" }}>{itemValue}</span>
                                     )}
-                                    {item.hasArrow && <ChevronRight style={{ width: 16, height: 16, color: "#9CA3AF" }} />}
+                                    {hasArrow && <ChevronRight style={{ width: 16, height: 16, color: "#9CA3AF" }} />}
                                 </div>
                             </div>
                         );
