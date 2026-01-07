@@ -241,7 +241,7 @@ export default function GalleryManagerPage() {
                                 <button
                                     onClick={handleCreateAlbum}
                                     disabled={creating}
-                                    const style={{
+                                    style={{
                                         flex: 1,
                                         padding: "8px",
                                         backgroundColor: "#8B5CF6",
