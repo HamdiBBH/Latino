@@ -19,7 +19,6 @@ const generateSchedule = () => {
 
             const departureTime = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
             const isPast = hour < currentHour || (hour === currentHour && minute <= currentMinute);
-            const isNext = !isPast && schedule.filter(s => !s.isPast).length === 0;
 
             schedule.push({
                 id: `${hour}-${minute}`,
@@ -28,10 +27,16 @@ const generateSchedule = () => {
                 capacity: 12,
                 booked: Math.floor(Math.random() * 10) + 2,
                 isPast,
-                isNext,
+                isNext: false,
                 status: isPast ? "departed" : "scheduled",
             });
         }
+    }
+
+    // Mark the first non-past departure as "next"
+    const firstUpcoming = schedule.find(s => !s.isPast);
+    if (firstUpcoming) {
+        firstUpcoming.isNext = true;
     }
 
     return schedule;
