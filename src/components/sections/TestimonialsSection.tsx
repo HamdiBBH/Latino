@@ -86,10 +86,7 @@ export function TestimonialsSection() {
         >
             <div className="container">
                 {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6 }}
+                <div
                     style={{ textAlign: "center", marginBottom: "4rem" }}
                 >
                     <span
@@ -115,7 +112,7 @@ export function TestimonialsSection() {
                         <span style={{ display: "block", fontWeight: 200, color: "#E8A87C" }}>Ce que disent</span>
                         <span style={{ display: "block", fontWeight: 500, color: "#43B0A8" }}>Nos Clients</span>
                     </h2>
-                </motion.div>
+                </div>
 
                 {/* Testimonial Card */}
                 <div style={{ maxWidth: "800px", margin: "0 auto" }}>
