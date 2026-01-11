@@ -83,7 +83,7 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
                             }}
                         >
                             Niché sur les plus belles plages de la Méditerranée, Latino Coucou Beach vous offre
-                            une expérience unique alliant gastronomie raffinée, cocktails signature et ambiance
+                            une expérience unique alliant gastronomie raffinée, mocktails signature et ambiance
                             festive. Depuis notre ouverture, nous avons créé un lieu où chaque instant devient
                             un souvenir inoubliable.
                         </p>
@@ -98,53 +98,6 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
                             Notre équipe passionnée vous accueille dans un cadre exceptionnel, entre sable fin
                             et eaux cristallines, pour des journées ensoleillées et des soirées magiques.
                         </p>
-
-                        {/* Stats */}
-                        <div
-                            style={{
-                                display: "grid",
-                                gridTemplateColumns: "repeat(3, 1fr)",
-                                gap: "2rem",
-                                marginBottom: "2.5rem",
-                            }}
-                        >
-                            {stats.map((stat) => (
-                                <div key={stat.label} style={{ textAlign: "center" }}>
-                                    <span
-                                        style={{
-                                            display: "block",
-                                            fontSize: "2.5rem",
-                                            fontWeight: 700,
-                                            color: "#222222",
-                                        }}
-                                    >
-                                        {stat.value}
-                                    </span>
-                                    <span style={{ fontSize: "0.9rem", color: "#7A7A7A" }}>{stat.label}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-                            style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "10px",
-                                padding: "20px 35px",
-                                fontSize: "1rem",
-                                fontWeight: 600,
-                                borderRadius: "100px",
-                                backgroundColor: "#222222",
-                                color: "#FFFFFF",
-                                border: "none",
-                                cursor: "pointer",
-                                transition: "all 0.3s ease",
-                            }}
-                        >
-                            Nos Services
-                            <ArrowRight style={{ width: 20, height: 20 }} />
-                        </button>
                     </motion.div>
 
                     {/* Image Stack */}

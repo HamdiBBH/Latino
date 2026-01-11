@@ -25,7 +25,7 @@ export async function createReservation(data: BookingFormData) {
 
         if (error) throw error;
 
-        revalidatePath("/admin/reservations");
+        revalidatePath("/dashboard/reservations");
         return { success: true, message: "Réservation créée avec succès !" };
     } catch (error) {
         console.error("Error creating reservation:", error);
@@ -50,7 +50,7 @@ export async function updateReservationStatus(
 
         if (error) throw error;
 
-        revalidatePath("/admin/reservations");
+        revalidatePath("/dashboard/reservations");
         return { success: true };
     } catch (error) {
         console.error("Error updating reservation status:", error);

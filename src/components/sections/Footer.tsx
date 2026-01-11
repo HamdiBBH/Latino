@@ -14,7 +14,7 @@ const navLinks = [
 
 const services = [
     "Restaurant",
-    "Bar & Cocktails",
+    "Bar & Mocktails",
     "Plage Privée",
     "Événements",
     "DJ Sets",
@@ -162,15 +162,20 @@ export function Footer() {
                                 }}
                             >
                                 <MapPin style={{ width: 20, height: 20, color: "#E8A87C", flexShrink: 0, marginTop: "2px" }} />
-                                <span style={{ color: "rgba(255, 255, 255, 0.6)" }}>
-                                    123 Boulevard de la Plage
+                                <a
+                                    href="https://www.google.com/maps?q=37.14232000325309,10.21041432304559"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: "rgba(255, 255, 255, 0.6)", textDecoration: "none" }}
+                                >
+                                    Coucou Beach, Ghar El Melh
                                     <br />
-                                    06400 Cannes, France
-                                </span>
+                                    Tunisie
+                                </a>
                             </li>
                             <li style={{ marginBottom: "1rem" }}>
                                 <a
-                                    href="tel:+33600000000"
+                                    href="tel:+21650607072"
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
@@ -180,7 +185,7 @@ export function Footer() {
                                     }}
                                 >
                                     <Phone style={{ width: 20, height: 20, color: "#E8A87C" }} />
-                                    +33 6 00 00 00 00
+                                    +216 50 607 072
                                 </a>
                             </li>
                             <li>

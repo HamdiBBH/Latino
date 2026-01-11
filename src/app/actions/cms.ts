@@ -58,7 +58,7 @@ export async function generateAndSaveMenuImage(dishName: string) {
         return { success: false, error: dbError.message };
     }
 
-    revalidatePath("/admin/cms/menu");
+    revalidatePath("/dashboard/cms/menu");
     return { success: true, data: mediaData };
 }
 
@@ -97,7 +97,7 @@ export async function updateSectionOrder(sections: { id: string; display_order: 
         }
     }
 
-    revalidatePath("/admin/cms/sections");
+    revalidatePath("/dashboard/cms/sections");
     return { success: true };
 }
 
@@ -114,7 +114,7 @@ export async function toggleSectionActive(id: string, isActive: boolean) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/sections");
+    revalidatePath("/dashboard/cms/sections");
     return { success: true };
 }
 
@@ -158,7 +158,7 @@ export async function updateContent(id: string, content: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/content");
+    revalidatePath("/dashboard/cms/content");
     return { success: true };
 }
 
@@ -174,7 +174,7 @@ export async function createContent(sectionId: string, fieldName: string, fieldT
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/content");
+    revalidatePath("/dashboard/cms/content");
     return { success: true };
 }
 
@@ -256,7 +256,7 @@ export async function uploadMedia(formData: FormData) {
         return { success: false, error: dbError.message };
     }
 
-    revalidatePath("/admin/cms/media");
+    revalidatePath("/dashboard/cms/media");
     return { success: true, data: mediaData };
 }
 
@@ -287,7 +287,7 @@ export async function deleteMedia(id: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/media");
+    revalidatePath("/dashboard/cms/media");
     return { success: true };
 }
 
@@ -331,7 +331,7 @@ export async function createAlbum(name: string, slug: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/gallery");
+    revalidatePath("/dashboard/cms/gallery");
     return { success: true, data };
 }
 
@@ -347,7 +347,7 @@ export async function toggleAlbumActive(id: string, isActive: boolean) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/gallery");
+    revalidatePath("/dashboard/cms/gallery");
     return { success: true };
 }
 
@@ -421,7 +421,7 @@ export async function addImagesToAlbum(albumId: string, mediaIds: string[]) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/gallery");
+    revalidatePath("/dashboard/cms/gallery");
     return { success: true };
 }
 
@@ -437,7 +437,7 @@ export async function toggleImageFeatured(id: string, isFeatured: boolean) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/gallery");
+    revalidatePath("/dashboard/cms/gallery");
     return { success: true };
 }
 
@@ -453,7 +453,7 @@ export async function deleteGalleryImage(id: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/gallery");
+    revalidatePath("/dashboard/cms/gallery");
     return { success: true };
 }
 
@@ -499,7 +499,7 @@ export async function createMenuItem(item: {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/menu");
+    revalidatePath("/dashboard/cms/menu");
     return { success: true };
 }
 
@@ -515,7 +515,7 @@ export async function updateMenuItem(id: string, updates: Record<string, unknown
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/menu");
+    revalidatePath("/dashboard/cms/menu");
     return { success: true };
 }
 
@@ -531,7 +531,7 @@ export async function deleteMenuItem(id: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/menu");
+    revalidatePath("/dashboard/cms/menu");
     return { success: true };
 }
 
@@ -571,7 +571,7 @@ export async function createEvent(event: {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/events");
+    revalidatePath("/dashboard/cms/events");
     return { success: true };
 }
 
@@ -587,7 +587,7 @@ export async function updateEvent(id: string, updates: Record<string, unknown>) 
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/events");
+    revalidatePath("/dashboard/cms/events");
     return { success: true };
 }
 
@@ -603,7 +603,7 @@ export async function deleteEvent(id: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/events");
+    revalidatePath("/dashboard/cms/events");
     return { success: true };
 }
 
@@ -641,7 +641,7 @@ export async function createTestimonial(testimonial: {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/testimonials");
+    revalidatePath("/dashboard/cms/testimonials");
     return { success: true };
 }
 
@@ -657,7 +657,7 @@ export async function updateTestimonial(id: string, updates: Record<string, unkn
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/testimonials");
+    revalidatePath("/dashboard/cms/testimonials");
     return { success: true };
 }
 
@@ -673,7 +673,7 @@ export async function deleteTestimonial(id: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/testimonials");
+    revalidatePath("/dashboard/cms/testimonials");
     return { success: true };
 }
 
@@ -706,7 +706,7 @@ export async function updateBranding(assetType: string, mediaId: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/branding");
+    revalidatePath("/dashboard/cms/branding");
     return { success: true };
 }
 
@@ -753,7 +753,7 @@ export async function createReel(data: any) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/reels");
+    revalidatePath("/dashboard/cms/reels");
     revalidatePath("/");
     return { success: true };
 }
@@ -769,7 +769,7 @@ export async function updateReel(id: string, data: any) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/reels");
+    revalidatePath("/dashboard/cms/reels");
     revalidatePath("/");
     return { success: true };
 }
@@ -785,7 +785,7 @@ export async function deleteReel(id: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/reels");
+    revalidatePath("/dashboard/cms/reels");
     revalidatePath("/");
     return { success: true };
 }
@@ -819,7 +819,7 @@ export async function createService(data: any) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/services");
+    revalidatePath("/dashboard/cms/services");
     revalidatePath("/");
     return { success: true };
 }
@@ -835,7 +835,7 @@ export async function updateService(id: string, data: any) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/services");
+    revalidatePath("/dashboard/cms/services");
     revalidatePath("/");
     return { success: true };
 }
@@ -851,7 +851,7 @@ export async function deleteService(id: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/services");
+    revalidatePath("/dashboard/cms/services");
     revalidatePath("/");
     return { success: true };
 }
@@ -884,7 +884,7 @@ export async function createPackage(data: any) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/packages");
+    revalidatePath("/dashboard/cms/packages");
     revalidatePath("/");
     return { success: true };
 }
@@ -900,7 +900,7 @@ export async function updatePackage(id: string, data: any) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/packages");
+    revalidatePath("/dashboard/cms/packages");
     revalidatePath("/");
     return { success: true };
 }
@@ -916,7 +916,7 @@ export async function deletePackage(id: string) {
         return { success: false, error: error.message };
     }
 
-    revalidatePath("/admin/cms/packages");
+    revalidatePath("/dashboard/cms/packages");
     revalidatePath("/");
     return { success: true };
 }

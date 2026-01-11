@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, useInView } from "framer-motion";
-import { Star, ChevronLeft, ChevronRight } from "lucide-react";
-import { getTestimonials } from "@/app/actions/cms";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 interface Testimonial {
     id: string;
@@ -16,9 +16,59 @@ interface Testimonial {
     author_image_url?: string;
 }
 
+const defaultTestimonials: Testimonial[] = [
+    {
+        id: "1",
+        author_name: "Sami Ben Amor",
+        author_location: "Tunis, Tunisie",
+        content: "Un endroit magique ! L'ambiance, la nourriture, le service... tout était parfait. Le coucher de soleil depuis leur terrasse est à couper le souffle. On reviendra !",
+        rating: 5,
+        author_image_url: "https://randomuser.me/api/portraits/men/32.jpg",
+    },
+    {
+        id: "2",
+        author_name: "Fatma Trabelsi",
+        author_location: "Sousse, Tunisie",
+        content: "Nous avons célébré notre anniversaire de mariage ici. Le personnel a été aux petits soins, et l'espace VIP était sublime. Une expérience inoubliable !",
+        rating: 5,
+        author_image_url: "https://randomuser.me/api/portraits/women/44.jpg",
+    },
+    {
+        id: "3",
+        author_name: "Karim Hamdi",
+        author_location: "Sfax, Tunisie",
+        content: "Les meilleurs cocktails de la côte ! L'ambiance est festive sans être trop bruyante. Le DJ était excellent. L'endroit parfait pour profiter de l'été.",
+        rating: 5,
+        author_image_url: "https://randomuser.me/api/portraits/men/75.jpg",
+    },
+    {
+        id: "4",
+        author_name: "Amira Chaabane",
+        author_location: "Monastir, Tunisie",
+        content: "Un véritable paradis ! La plage est magnifique, l'eau cristalline et le service impeccable. Je recommande vivement le déjeuner poisson frais.",
+        rating: 5,
+        author_image_url: "https://randomuser.me/api/portraits/women/68.jpg",
+    },
+    {
+        id: "5",
+        author_name: "Mohamed Jebali",
+        author_location: "Bizerte, Tunisie",
+        content: "L'endroit parfait pour se détendre en famille. Les enfants ont adoré la traversée en bateau et la plage était très propre. On reviendra absolument !",
+        rating: 5,
+        author_image_url: "https://randomuser.me/api/portraits/men/22.jpg",
+    },
+    {
+        id: "6",
+        author_name: "Nour Mahjoub",
+        author_location: "Nabeul, Tunisie",
+        content: "Superbe découverte ! L'île de Kuriat est un joyau caché. Le restaurant propose des plats savoureux et le service est digne de 5 étoiles.",
+        rating: 5,
+        author_image_url: "https://randomuser.me/api/portraits/women/26.jpg",
+    },
+];
+
 export function TestimonialsSection() {
-    const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-    const [current, setCurrent] = useState(0);
+    const [testimonials, setTestimonials] = useState<Testimonial[]>(defaultTestimonials);
     const [loading, setLoading] = useState(true);
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -28,228 +78,346 @@ export function TestimonialsSection() {
     }, []);
 
     const loadTestimonials = async () => {
-        // We need to fetch with the relation to site_media
-        // The server action getTestimonials is simple, let's enhance it client side or just use a direct supabase call here if strictly needed,
-        // BUT better to keep consistency. I'll stick to getTestimonials, but I need to make sure it includes the image URL.
-        // Wait, looking at getTestimonials in cms.ts, it selects "*". It doesn't join. 
-        // I will use a direct client fetch here to get the join easily without modifying the server action which is used by admin.
-        // Actually, let's just modify the action in the next step if proper.
-        // For now, I'll assume getTestimonials returns the IDs and I might need to fetch images or upgrade the action.
+        try {
+            const supabase = createClient();
+            const { data } = await supabase
+                .from("testimonials")
+                .select("*, site_media(url)")
+                .eq("is_active", true)
+                .order("display_order", { ascending: true });
 
-        // Let's rely on updating the server action in a bit. For now I'll create the component expecting a specific structure.
-        // Actually, let's do a client side join or fetch.
-
-        const supabase = createClient();
-        const { data } = await supabase
-            .from("testimonials")
-            .select("*, site_media(url)")
-            .eq("is_active", true)
-            .order("display_order", { ascending: true });
-
-        if (data) {
-            const formatted = data.map((t: any) => ({
-                id: t.id,
-                author_name: t.author_name,
-                author_location: t.author_location,
-                content: t.content,
-                rating: t.rating,
-                author_image_url: t.site_media?.url || null // Allow null to trigger initials
-            }));
-            setTestimonials(formatted);
+            // Only use DB data if we have at least 6 testimonials with proper data
+            if (data && data.length >= 6) {
+                const formatted = data.map((t: any) => ({
+                    id: t.id,
+                    author_name: t.author_name,
+                    author_location: t.author_location,
+                    content: t.content,
+                    rating: t.rating,
+                    author_image_url: t.site_media?.url || null
+                }));
+                setTestimonials(formatted);
+            }
+            // Otherwise keep the default Tunisian testimonials
+        } catch (error) {
+            console.error("Error loading testimonials:", error);
         }
         setLoading(false);
     };
 
-    useEffect(() => {
-        if (testimonials.length === 0) return;
-        const interval = setInterval(() => {
-            setCurrent((prev) => (prev + 1) % testimonials.length);
-        }, 8000);
-        return () => clearInterval(interval);
-    }, [testimonials.length]);
-
-    const next = () => setCurrent((prev) => (prev + 1) % testimonials.length);
-    const prev = () => setCurrent((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-
-    if (loading || testimonials.length === 0) {
-        return null; // Don't render empty section
-    }
 
     return (
         <section
             id="testimonials"
             ref={ref}
             style={{
+                position: "relative",
                 padding: "7rem 0",
-                backgroundColor: "#F9F5F0",
+                overflow: "hidden",
+                backgroundColor: "#0A0A0A",
             }}
         >
-            <div className="container">
-                {/* Header */}
-                <div
-                    style={{ textAlign: "center", marginBottom: "4rem" }}
+            {/* Video Background */}
+            <div
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 0,
+                }}
+            >
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        opacity: 0.3,
+                    }}
                 >
-                    <span
-                        style={{
-                            display: "inline-block",
-                            fontSize: "0.9rem",
-                            fontWeight: 500,
-                            color: "#E8A87C",
-                            textTransform: "uppercase",
-                            letterSpacing: "2px",
-                            marginBottom: "1rem",
-                        }}
-                    >
-                        Avis clients
-                    </span>
-                    <h2
-                        style={{
-                            fontSize: "3.5rem",
-                            color: "#222222",
-                            lineHeight: 1.2,
-                        }}
-                    >
-                        <span style={{ display: "block", fontWeight: 200, color: "#E8A87C" }}>Ce que disent</span>
-                        <span style={{ display: "block", fontWeight: 500, color: "#43B0A8" }}>Nos Clients</span>
-                    </h2>
-                </div>
+                    <source src="https://videos.pexels.com/video-files/1093662/1093662-hd_1920_1080_30fps.mp4" type="video/mp4" />
+                </video>
+                <div
+                    style={{
+                        position: "absolute",
+                        inset: 0,
+                        background: "linear-gradient(180deg, rgba(10,10,10,0.7) 0%, rgba(10,10,10,0.9) 100%)",
+                    }}
+                />
+            </div>
 
-                {/* Testimonial Card */}
-                <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+            <div className="container" style={{ position: "relative", zIndex: 10 }}>
+                {/* Header: 2 columns */}
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                        gap: "3rem",
+                        marginBottom: "4rem",
+                        alignItems: "center",
+                    }}
+                >
+                    {/* Left: Title */}
                     <motion.div
-                        key={testimonials[current].id} /* Add key to force animation restart on change if desired, or handle inside */
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        style={{
-                            backgroundColor: "#FFFFFF",
-                            borderRadius: "24px",
-                            padding: "3rem",
-                            boxShadow: "0 8px 40px rgba(0, 0, 0, 0.15)",
-                        }}
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : {}}
+                        transition={{ duration: 0.6 }}
                     >
-                        {/* Rating */}
-                        <div style={{ display: "flex", justifyContent: "center", gap: "4px", marginBottom: "2rem" }}>
-                            {[...Array(testimonials[current].rating)].map((_, i) => (
-                                <Star
-                                    key={i}
-                                    style={{ width: 24, height: 24, fill: "#D4A853", color: "#D4A853" }}
-                                />
-                            ))}
-                        </div>
-
-                        {/* Content */}
-                        <p
+                        <h2
                             style={{
-                                fontSize: "1.4rem",
-                                color: "#7A7A7A",
-                                textAlign: "center",
-                                fontStyle: "italic",
-                                lineHeight: 1.6,
-                                marginBottom: "2rem",
+                                fontSize: "3rem",
+                                lineHeight: 1.2,
+                                color: "#FFFFFF",
                             }}
                         >
-                            &ldquo;{testimonials[current].content}&rdquo;
-                        </p>
-
-                        {/* Author */}
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
-                            <div style={{
-                                width: 56, height: 56, borderRadius: "50%", overflow: "hidden", position: "relative",
-                                backgroundColor: !testimonials[current].author_image_url ? "#E8A87C" : "transparent",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                color: "#FFF", fontWeight: "bold", fontSize: "1.2rem"
-                            }}>
-                                {testimonials[current].author_image_url ? (
-                                    <Image
-                                        src={testimonials[current].author_image_url!}
-                                        alt={testimonials[current].author_name}
-                                        fill
-                                        style={{ objectFit: "cover" }}
-                                    />
-                                ) : (
-                                    testimonials[current].author_name
-                                        .split(" ")
-                                        .map((n) => n[0])
-                                        .join("")
-                                        .substring(0, 2)
-                                        .toUpperCase()
-                                )}
-                            </div>
-                            <div style={{ textAlign: "left" }}>
-                                <p style={{ fontWeight: 600, color: "#222222" }}>{testimonials[current].author_name}</p>
-                                <p style={{ fontSize: "0.9rem", color: "#7A7A7A" }}>{testimonials[current].author_location}</p>
-                            </div>
-                        </div>
+                            <span style={{ fontWeight: 300 }}>Adorés par les </span>
+                            <span style={{ fontWeight: 300, color: "#E8A87C" }}>Voyageurs,</span>
+                            <br />
+                            <span style={{ fontWeight: 600, color: "#41B3A3" }}>Recommandés</span>
+                            <br />
+                            <span style={{ fontWeight: 300 }}>Partout</span>
+                        </h2>
                     </motion.div>
 
-                    {/* Navigation */}
-                    <div
-                        style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            gap: "1.5rem",
-                            marginTop: "2.5rem",
-                        }}
+                    {/* Right: Description */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : {}}
+                        transition={{ duration: 0.6, delay: 0.2 }}
                     >
-                        <button
-                            onClick={prev}
+                        <p
                             style={{
-                                width: "48px",
-                                height: "48px",
-                                borderRadius: "50%",
-                                border: "1px solid #ddd",
-                                backgroundColor: "transparent",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
-                                transition: "all 0.3s ease",
+                                color: "rgba(255, 255, 255, 0.7)",
+                                fontSize: "1.1rem",
+                                lineHeight: 1.7,
+                                marginBottom: "1.5rem",
                             }}
                         >
-                            <ChevronLeft style={{ width: 20, height: 20, color: "#222222" }} />
-                        </button>
-
-                        {/* Dots */}
-                        <div style={{ display: "flex", gap: "8px" }}>
-                            {testimonials.map((_, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => setCurrent(index)}
-                                    style={{
-                                        width: index === current ? "32px" : "12px",
-                                        height: "12px",
-                                        borderRadius: "6px",
-                                        border: "none",
-                                        backgroundColor: index === current ? "#E8A87C" : "#ddd",
-                                        cursor: "pointer",
-                                        transition: "all 0.3s ease",
-                                    }}
-                                />
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={next}
+                            Découvrez ce que nos clients disent de leur expérience au Latino Coucou Beach.
+                            Une plage paradisiaque, un service exceptionnel et des souvenirs inoubliables.
+                        </p>
+                        <Link
+                            href="/reservation"
                             style={{
-                                width: "48px",
-                                height: "48px",
-                                borderRadius: "50%",
-                                border: "1px solid #ddd",
-                                backgroundColor: "transparent",
-                                display: "flex",
+                                display: "inline-flex",
                                 alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
-                                transition: "all 0.3s ease",
+                                gap: "8px",
+                                color: "#E8A87C",
+                                fontWeight: 500,
+                                textDecoration: "none",
+                                fontSize: "1rem",
                             }}
                         >
-                            <ChevronRight style={{ width: 20, height: 20, color: "#222222" }} />
-                        </button>
+                            Réserver maintenant
+                            <ArrowRight style={{ width: 18, height: 18 }} />
+                        </Link>
+                    </motion.div>
+                </div>
+
+                {/* Testimonial Cards - Staggered Layout */}
+                <div className="testimonials-masonry">
+                    {/* Left Column - 2 cards */}
+                    <div className="testimonials-column">
+                        {[testimonials[0], testimonials[3]].map((testimonial, index) => (
+                            <motion.div
+                                key={testimonial.id}
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                                transition={{ duration: 0.5, delay: 0.2 + index * 0.15 }}
+                                className="testimonial-card"
+                            >
+                                <p className="testimonial-content">{testimonial.content}</p>
+                                <div className="testimonial-author">
+                                    <div className="testimonial-avatar">
+                                        {testimonial.author_image_url ? (
+                                            <Image
+                                                src={testimonial.author_image_url}
+                                                alt={testimonial.author_name}
+                                                fill
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        ) : (
+                                            testimonial.author_name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="author-name">{testimonial.author_name}</p>
+                                        <p className="author-location">{testimonial.author_location}</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Center Column - 3 cards */}
+                    <div className="testimonials-column testimonials-column-center">
+                        {[testimonials[1], testimonials[4], testimonials[5]].map((testimonial, index) => (
+                            <motion.div
+                                key={testimonial.id}
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                                transition={{ duration: 0.5, delay: 0.3 + index * 0.15 }}
+                                className="testimonial-card"
+                            >
+                                <p className="testimonial-content">{testimonial.content}</p>
+                                <div className="testimonial-author">
+                                    <div className="testimonial-avatar">
+                                        {testimonial.author_image_url ? (
+                                            <Image
+                                                src={testimonial.author_image_url}
+                                                alt={testimonial.author_name}
+                                                fill
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        ) : (
+                                            testimonial.author_name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="author-name">{testimonial.author_name}</p>
+                                        <p className="author-location">{testimonial.author_location}</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Right Column - 2 cards */}
+                    <div className="testimonials-column">
+                        {[testimonials[2], testimonials.length > 6 ? testimonials[6] : testimonials[0]].slice(0, 2).map((testimonial, index) => (
+                            <motion.div
+                                key={`right-${testimonial.id}-${index}`}
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                                transition={{ duration: 0.5, delay: 0.4 + index * 0.15 }}
+                                className="testimonial-card"
+                            >
+                                <p className="testimonial-content">{testimonial.content}</p>
+                                <div className="testimonial-author">
+                                    <div className="testimonial-avatar">
+                                        {testimonial.author_image_url ? (
+                                            <Image
+                                                src={testimonial.author_image_url}
+                                                alt={testimonial.author_name}
+                                                fill
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        ) : (
+                                            testimonial.author_name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="author-name">{testimonial.author_name}</p>
+                                        <p className="author-location">{testimonial.author_location}</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
+
+                {/* Bottom fade gradient overlay */}
+                <div
+                    style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: "200px",
+                        background: "linear-gradient(to bottom, transparent 0%, rgba(10, 10, 10, 0.8) 50%, #0A0A0A 100%)",
+                        pointerEvents: "none",
+                        zIndex: 5,
+                    }}
+                />
             </div>
+
+            {/* Styles */}
+            <style jsx global>{`
+                .testimonials-masonry {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 1.5rem;
+                    align-items: start;
+                }
+                .testimonials-column {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1.5rem;
+                }
+                .testimonials-column-center {
+                    margin-top: -2rem;
+                }
+                .testimonial-card {
+                    background: rgba(30, 30, 30, 0.9);
+                    backdrop-filter: blur(10px);
+                    border-radius: 16px;
+                    padding: 1.5rem;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                }
+                .testimonial-content {
+                    color: rgba(255, 255, 255, 0.75);
+                    font-size: 0.92rem;
+                    line-height: 1.65;
+                    margin: 0 0 1.25rem 0;
+                    font-style: italic;
+                }
+                .testimonial-author {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+                .testimonial-avatar {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 50%;
+                    overflow: hidden;
+                    position: relative;
+                    background: #E8A87C;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #FFF;
+                    font-weight: bold;
+                    font-size: 0.85rem;
+                    flex-shrink: 0;
+                }
+                .author-name {
+                    font-weight: 600;
+                    color: #FFFFFF;
+                    font-size: 0.95rem;
+                    margin: 0;
+                }
+                .author-location {
+                    font-size: 0.8rem;
+                    color: rgba(255, 255, 255, 0.45);
+                    margin: 0;
+                }
+                @media (max-width: 1024px) {
+                    .testimonials-masonry {
+                        grid-template-columns: 1fr 1fr;
+                    }
+                    .testimonials-column:nth-child(3) {
+                        display: none;
+                    }
+                    .testimonials-column-center {
+                        margin-top: 0;
+                    }
+                }
+                @media (max-width: 640px) {
+                    .testimonials-masonry {
+                        grid-template-columns: 1fr;
+                    }
+                    .testimonials-column:nth-child(2),
+                    .testimonials-column:nth-child(3) {
+                        display: none;
+                    }
+                }
+            `}</style>
         </section>
     );
 }

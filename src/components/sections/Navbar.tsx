@@ -125,6 +125,7 @@ export function Navbar() {
                             {/* Auth Icon */}
                             <Link
                                 href="/login"
+                                aria-label="Se connecter"
                                 style={{
                                     display: "inline-flex",
                                     alignItems: "center",
@@ -142,8 +143,8 @@ export function Navbar() {
                             </Link>
 
                             {/* Reserve Button */}
-                            <button
-                                onClick={() => handleNavClick("#reservation")}
+                            <Link
+                                href="/reservation"
                                 style={{
                                     display: "inline-flex",
                                     alignItems: "center",
@@ -157,10 +158,11 @@ export function Navbar() {
                                     border: "none",
                                     cursor: "pointer",
                                     transition: "all 0.3s ease",
+                                    textDecoration: "none",
                                 }}
                             >
                                 Réserver
-                            </button>
+                            </Link>
                         </div>
                     )}
 
@@ -168,6 +170,8 @@ export function Navbar() {
                     {isMobile && (
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            aria-label={isMobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                            aria-expanded={isMobileMenuOpen}
                             style={{
                                 display: "flex",
                                 flexDirection: "column",
@@ -219,8 +223,9 @@ export function Navbar() {
                                     {link.label}
                                 </button>
                             ))}
-                            <button
-                                onClick={() => handleNavClick("#reservation")}
+                            <Link
+                                href="/reservation"
+                                onClick={() => setIsMobileMenuOpen(false)}
                                 style={{
                                     display: "inline-flex",
                                     alignItems: "center",
@@ -234,10 +239,11 @@ export function Navbar() {
                                     border: "none",
                                     cursor: "pointer",
                                     marginTop: "1rem",
+                                    textDecoration: "none",
                                 }}
                             >
                                 Réserver
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 )}

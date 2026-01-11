@@ -1,5 +1,5 @@
-/* Google Fonts - Outfit */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;500;600;700&display=swap');
+/* Font Outfit is self-hosted via next/font in layout.tsx */
+
 
 /* Tailwind CSS v4 with config file */
 @import "tailwindcss";

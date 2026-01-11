@@ -2,17 +2,41 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Phone, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Calendar, Users, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 const features = [
-    "Réponse sous 24h",
-    "Annulation gratuite",
-    "Service personnalisé",
+    { icon: Calendar, text: "Réponse sous 24h" },
+    { icon: CheckCircle2, text: "Annulation gratuite" },
+    { icon: Users, text: "Service personnalisé" },
 ];
 
-export function CTASection() {
+const defaultInstallations = [
+    { name: "Parasol", price: "35 DT" },
+    { name: "Paillote", price: "75 DT" },
+    { name: "Cabane VIP", price: "150 DT" },
+    { name: "Espace Lounge", price: "250 DT" },
+];
+
+interface Package {
+    id: string;
+    name: string;
+    price: string;
+}
+
+interface CTASectionProps {
+    packages?: Package[];
+}
+
+export function CTASection({ packages = [] }: CTASectionProps) {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+    // Use database packages if available, otherwise fallback to defaults
+    const installations = packages.length > 0
+        ? packages.map(pkg => ({ name: pkg.name, price: pkg.price || "Sur demande" }))
+        : defaultInstallations;
+
 
     return (
         <section
@@ -20,7 +44,7 @@ export function CTASection() {
             ref={ref}
             style={{
                 position: "relative",
-                padding: "10rem 0",
+                padding: "8rem 0",
                 overflow: "hidden",
             }}
         >
@@ -39,130 +63,171 @@ export function CTASection() {
                 style={{
                     position: "absolute",
                     inset: 0,
-                    background: "linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.7) 100%)",
+                    background: "linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.75) 100%)",
                 }}
             />
 
             {/* Content */}
             <div className="container" style={{ position: "relative", zIndex: 10 }}>
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.8 }}
-                    style={{ maxWidth: "600px" }}
-                >
-                    <span
-                        style={{
-                            display: "inline-block",
-                            fontSize: "0.9rem",
-                            fontWeight: 500,
-                            color: "#E8A87C",
-                            textTransform: "uppercase",
-                            letterSpacing: "2px",
-                            marginBottom: "1rem",
-                        }}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}>
+                    {/* Left: Text Content */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : {}}
+                        transition={{ duration: 0.8 }}
                     >
-                        Réservation
-                    </span>
-                    <h2
-                        style={{
-                            fontSize: "3.5rem",
-                            color: "#FFFFFF",
-                            marginBottom: "1.5rem",
-                            lineHeight: 1.2,
-                        }}
-                    >
-                        <span style={{ display: "block", fontWeight: 200, color: "#E8A87C" }}>Réservez votre</span>
-                        <span style={{ display: "block", fontWeight: 500, color: "#43B0A8" }}>Moment de Paradis</span>
-                    </h2>
-                    <p
-                        style={{
-                            fontSize: "1.2rem",
-                            color: "rgba(255, 255, 255, 0.8)",
-                            marginBottom: "2.5rem",
-                            lineHeight: 1.6,
-                        }}
-                    >
-                        Que ce soit pour un déjeuner en famille, une soirée entre amis ou
-                        un événement privé, notre équipe est là pour vous offrir une
-                        expérience sur-mesure.
-                    </p>
-
-                    {/* CTA Buttons */}
-                    <div
-                        style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "1rem",
-                            marginBottom: "2.5rem",
-                        }}
-                    >
-                        <button
-                            onClick={() => (window.location.href = "tel:+33600000000")}
+                        <span
                             style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "10px",
-                                padding: "22px 40px",
-                                fontSize: "1.1rem",
-                                fontWeight: 600,
-                                borderRadius: "100px",
-                                backgroundColor: "#222222",
+                                display: "inline-block",
+                                fontSize: "0.9rem",
+                                fontWeight: 500,
+                                color: "#E8A87C",
+                                textTransform: "uppercase",
+                                letterSpacing: "2px",
+                                marginBottom: "1rem",
+                            }}
+                        >
+                            Réservation
+                        </span>
+                        <h2
+                            style={{
+                                fontSize: "3rem",
                                 color: "#FFFFFF",
-                                border: "none",
-                                cursor: "pointer",
-                                transition: "all 0.3s ease",
+                                marginBottom: "1.5rem",
+                                lineHeight: 1.2,
                             }}
                         >
-                            <Phone style={{ width: 20, height: 20 }} />
-                            +33 6 00 00 00 00
-                        </button>
-                        <button
-                            onClick={() => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })}
+                            <span style={{ display: "block", fontWeight: 200, color: "#E8A87C" }}>Réservez votre</span>
+                            <span style={{ display: "block", fontWeight: 500, color: "#43B0A8" }}>Moment de Paradis</span>
+                        </h2>
+                        <p
+                            style={{
+                                fontSize: "1.1rem",
+                                color: "rgba(255, 255, 255, 0.85)",
+                                marginBottom: "2rem",
+                                lineHeight: 1.7,
+                            }}
+                        >
+                            Que ce soit pour un déjeuner en famille, une soirée entre amis ou
+                            un événement privé, notre équipe est là pour vous offrir une
+                            expérience sur-mesure.
+                        </p>
+
+                        {/* CTA Button */}
+                        <Link
+                            href="/reservation"
                             style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: "10px",
-                                padding: "22px 40px",
+                                gap: "12px",
+                                padding: "20px 40px",
                                 fontSize: "1.1rem",
                                 fontWeight: 600,
                                 borderRadius: "100px",
-                                backgroundColor: "transparent",
-                                color: "#43B0A8",
-                                border: "2px solid #43B0A8",
-                                cursor: "pointer",
+                                backgroundColor: "#E8A87C",
+                                color: "#FFFFFF",
+                                textDecoration: "none",
                                 transition: "all 0.3s ease",
+                                boxShadow: "0 8px 30px rgba(232, 168, 124, 0.4)",
                             }}
                         >
-                            Formulaire de contact
-                        </button>
-                    </div>
+                            Réserver maintenant
+                            <ArrowRight style={{ width: 20, height: 20 }} />
+                        </Link>
 
-                    {/* Features */}
-                    <div
-                        style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "2rem",
-                        }}
+                        {/* Features */}
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "2rem",
+                                marginTop: "2.5rem",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            {features.map((feature) => {
+                                const Icon = feature.icon;
+                                return (
+                                    <div
+                                        key={feature.text}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                            color: "rgba(255, 255, 255, 0.9)",
+                                        }}
+                                    >
+                                        <Icon style={{ width: 18, height: 18, color: "#E8A87C" }} />
+                                        <span style={{ fontSize: "0.9rem" }}>{feature.text}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </motion.div>
+
+                    {/* Right: Installations Preview */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : {}}
+                        transition={{ duration: 0.8, delay: 0.2 }}
                     >
-                        {features.map((feature) => (
-                            <div
-                                key={feature}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "8px",
-                                    color: "rgba(255, 255, 255, 0.9)",
-                                }}
-                            >
-                                <CheckCircle2 style={{ width: 20, height: 20, color: "#E8A87C" }} />
-                                <span>{feature}</span>
+                        <div
+                            style={{
+                                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                                backdropFilter: "blur(20px)",
+                                borderRadius: "24px",
+                                padding: "2rem",
+                                border: "1px solid rgba(255, 255, 255, 0.2)",
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem" }}>
+                                <Sparkles style={{ width: 24, height: 24, color: "#E8A87C" }} />
+                                <h3 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#FFFFFF" }}>
+                                    Nos installations
+                                </h3>
                             </div>
-                        ))}
-                    </div>
-                </motion.div>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                                {installations.map((inst) => (
+                                    <div
+                                        key={inst.name}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: "1rem 1.25rem",
+                                            backgroundColor: "rgba(255, 255, 255, 0.1)",
+                                            borderRadius: "12px",
+                                            border: "1px solid rgba(255, 255, 255, 0.1)",
+                                        }}
+                                    >
+                                        <span style={{ color: "#FFFFFF", fontWeight: 500 }}>{inst.name}</span>
+                                        <span style={{ color: "#E8A87C", fontWeight: 600 }}>à partir de {inst.price}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <p style={{
+                                fontSize: "0.85rem",
+                                color: "rgba(255, 255, 255, 0.6)",
+                                marginTop: "1.5rem",
+                                textAlign: "center"
+                            }}>
+                                Tarifs journée complète · Parking sécurisé · Traversée en bateau (Zodiac) · Déjeuner complet poisson
+                            </p>
+                        </div>
+                    </motion.div>
+                </div>
             </div>
+
+            {/* Responsive Styles */}
+            <style jsx>{`
+                @media (max-width: 900px) {
+                    section > div > div {
+                        grid-template-columns: 1fr !important;
+                        text-align: center;
+                    }
+                }
+            `}</style>
         </section>
     );
 }

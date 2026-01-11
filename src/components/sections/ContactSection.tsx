@@ -1,67 +1,43 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { MapPin, Phone, Mail, Clock, Send, Instagram, Facebook } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Navigation } from "lucide-react";
+import { RESTAURANT_INFO } from "@/lib/config";
 
 const contactInfo = [
     {
         icon: MapPin,
         label: "Adresse",
-        value: "123 Boulevard de la Plage",
-        subValue: "06400 Cannes, France",
+        value: RESTAURANT_INFO.location,
+        subValue: RESTAURANT_INFO.country,
+        href: RESTAURANT_INFO.googleMapsUrl,
     },
     {
         icon: Clock,
         label: "Horaires",
-        value: "Lun - Dim: 10h00 - 02h00",
-        subValue: "Brunch Dimanche: 11h00 - 16h00",
+        value: RESTAURANT_INFO.hours,
+        subValue: `Saison: ${RESTAURANT_INFO.season}`,
     },
     {
         icon: Phone,
         label: "Téléphone",
-        value: "+33 6 00 00 00 00",
-        href: "tel:+33600000000",
+        value: RESTAURANT_INFO.phone,
+        href: `tel:${RESTAURANT_INFO.phone.replace(/\s/g, "")}`,
     },
     {
         icon: Mail,
         label: "Email",
-        value: "contact@latinocoucoubeach.com",
-        href: "mailto:contact@latinocoucoubeach.com",
+        value: RESTAURANT_INFO.email,
+        href: `mailto:${RESTAURANT_INFO.email}`,
     },
 ];
 
 export function ContactSection() {
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: "",
-    });
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        alert("Message envoyé avec succès !");
-        setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-        setIsSubmitting(false);
-    };
-
-    const inputStyle = {
-        width: "100%",
-        padding: "1rem",
-        fontSize: "1rem",
-        border: "1px solid #ddd",
-        borderRadius: "12px",
-        backgroundColor: "#FFFFFF",
-        outline: "none",
-        transition: "border-color 0.3s ease",
-    };
+    const { coordinates, googleMapsUrl } = RESTAURANT_INFO;
 
     return (
         <section
@@ -73,18 +49,13 @@ export function ContactSection() {
             }}
         >
             <div className="container">
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-                        gap: "5rem",
-                    }}
-                >
+                <div className="contact-grid">
                     {/* Contact Info */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         animate={isInView ? { opacity: 1, x: 0 } : {}}
                         transition={{ duration: 0.6 }}
+                        className="contact-info-wrapper"
                     >
                         <span
                             style={{
@@ -101,18 +72,18 @@ export function ContactSection() {
                         </span>
                         <h2
                             style={{
-                                fontSize: "3.5rem",
+                                fontSize: "3rem",
                                 color: "#222222",
                                 marginBottom: "1.5rem",
                                 lineHeight: 1.2,
                             }}
                         >
                             <span style={{ display: "block", fontWeight: 200, color: "#E8A87C" }}>Venez nous</span>
-                            <span style={{ display: "block", fontWeight: 500, color: "#43B0A8" }}>Rendre Visite</span>
+                            <span style={{ display: "block", fontWeight: 500, color: "#41B3A3" }}>Rendre Visite</span>
                         </h2>
 
                         {/* Info Cards */}
-                        <div style={{ marginBottom: "2.5rem" }}>
+                        <div style={{ marginBottom: "2rem" }}>
                             {contactInfo.map((item) => {
                                 const Icon = item.icon;
                                 const content = (
@@ -124,14 +95,14 @@ export function ContactSection() {
                                             padding: "1rem",
                                             backgroundColor: "#F9F5F0",
                                             borderRadius: "16px",
-                                            marginBottom: "1rem",
+                                            marginBottom: "0.75rem",
                                             transition: "background-color 0.3s ease",
                                         }}
                                     >
                                         <div
                                             style={{
-                                                width: "48px",
-                                                height: "48px",
+                                                width: "44px",
+                                                height: "44px",
                                                 borderRadius: "50%",
                                                 backgroundColor: "rgba(232, 168, 124, 0.2)",
                                                 display: "flex",
@@ -143,17 +114,17 @@ export function ContactSection() {
                                             <Icon style={{ width: 20, height: 20, color: "#E8A87C" }} />
                                         </div>
                                         <div>
-                                            <p style={{ fontSize: "0.9rem", color: "#7A7A7A", marginBottom: "4px" }}>
+                                            <p style={{ fontSize: "0.85rem", color: "#7A7A7A", marginBottom: "2px" }}>
                                                 {item.label}
                                             </p>
-                                            <p style={{ fontWeight: 500, color: "#222222" }}>{item.value}</p>
-                                            {item.subValue && <p style={{ color: "#7A7A7A" }}>{item.subValue}</p>}
+                                            <p style={{ fontWeight: 500, color: "#222222", margin: 0 }}>{item.value}</p>
+                                            {item.subValue && <p style={{ color: "#7A7A7A", margin: 0, fontSize: "0.9rem" }}>{item.subValue}</p>}
                                         </div>
                                     </div>
                                 );
 
                                 return item.href ? (
-                                    <a key={item.label} href={item.href} style={{ textDecoration: "none" }}>
+                                    <a key={item.label} href={item.href} target={item.href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" style={{ textDecoration: "none" }}>
                                         {content}
                                     </a>
                                 ) : (
@@ -163,11 +134,12 @@ export function ContactSection() {
                         </div>
 
                         {/* Social Links */}
-                        <div style={{ display: "flex", gap: "1rem" }}>
+                        <div className="contact-socials" style={{ display: "flex", gap: "1rem" }}>
                             <a
                                 href="https://facebook.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                aria-label="Facebook"
                                 style={{
                                     width: "48px",
                                     height: "48px",
@@ -177,7 +149,6 @@ export function ContactSection() {
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    transition: "background-color 0.3s ease",
                                 }}
                             >
                                 <Facebook style={{ width: 20, height: 20 }} />
@@ -186,6 +157,7 @@ export function ContactSection() {
                                 href="https://instagram.com/latinocoucoubeach"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                aria-label="Instagram"
                                 style={{
                                     width: "48px",
                                     height: "48px",
@@ -195,7 +167,6 @@ export function ContactSection() {
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    transition: "background-color 0.3s ease",
                                 }}
                             >
                                 <Instagram style={{ width: 20, height: 20 }} />
@@ -203,103 +174,104 @@ export function ContactSection() {
                         </div>
                     </motion.div>
 
-                    {/* Contact Form */}
+                    {/* Google Maps Widget */}
                     <motion.div
                         initial={{ opacity: 0, x: 30 }}
                         animate={isInView ? { opacity: 1, x: 0 } : {}}
                         transition={{ duration: 0.6, delay: 0.2 }}
+                        className="contact-map-wrapper"
                     >
-                        <form
-                            onSubmit={handleSubmit}
+                        <div
+                            className="contact-map-container"
                             style={{
-                                backgroundColor: "#F9F5F0",
                                 borderRadius: "24px",
-                                padding: "2.5rem",
+                                overflow: "hidden",
+                                boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
                             }}
                         >
-                            <div style={{ marginBottom: "1.5rem" }}>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="Votre nom"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    style={inputStyle}
-                                />
-                            </div>
+                            <iframe
+                                src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d${coordinates.lng}!3d${coordinates.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzfCsDA4JzMyLjQiTiAxMMKwMTInMzcuNSJF!5e0!3m2!1sfr!2stn!4v1704800000000!5m2!1sfr!2stn`}
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0 }}
+                                allowFullScreen
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                                title="Localisation Latino Coucou Beach"
+                            />
+                        </div>
 
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
-                                <input
-                                    type="email"
-                                    required
-                                    placeholder="Email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    style={inputStyle}
-                                />
-                                <input
-                                    type="tel"
-                                    placeholder="Téléphone"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    style={inputStyle}
-                                />
-                            </div>
-
-                            <div style={{ marginBottom: "1.5rem" }}>
-                                <select
-                                    required
-                                    value={formData.subject}
-                                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                    style={{ ...inputStyle, cursor: "pointer" }}
-                                >
-                                    <option value="">Sujet de votre message</option>
-                                    <option value="reservation">Réservation</option>
-                                    <option value="evenement">Événement privé</option>
-                                    <option value="information">Information</option>
-                                    <option value="autre">Autre</option>
-                                </select>
-                            </div>
-
-                            <div style={{ marginBottom: "1.5rem" }}>
-                                <textarea
-                                    required
-                                    rows={5}
-                                    placeholder="Votre message"
-                                    value={formData.message}
-                                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                                    style={{ ...inputStyle, resize: "none" }}
-                                />
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                style={{
-                                    width: "100%",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: "10px",
-                                    padding: "20px 35px",
-                                    fontSize: "1rem",
-                                    fontWeight: 600,
-                                    borderRadius: "100px",
-                                    backgroundColor: "#222222",
-                                    color: "#FFFFFF",
-                                    border: "none",
-                                    cursor: isSubmitting ? "not-allowed" : "pointer",
-                                    opacity: isSubmitting ? 0.7 : 1,
-                                    transition: "all 0.3s ease",
-                                }}
-                            >
-                                <Send style={{ width: 20, height: 20 }} />
-                                {isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
-                            </button>
-                        </form>
+                        {/* Open in Maps Button */}
+                        <a
+                            href={googleMapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="contact-maps-button"
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "10px",
+                                padding: "15px 25px",
+                                backgroundColor: "#222222",
+                                color: "#FFFFFF",
+                                borderRadius: "100px",
+                                textDecoration: "none",
+                                fontWeight: 600,
+                                fontSize: "0.95rem",
+                            }}
+                        >
+                            <Navigation style={{ width: 18, height: 18 }} />
+                            Ouvrir dans Google Maps
+                        </a>
                     </motion.div>
                 </div>
             </div>
+
+            {/* Responsive Styles */}
+            <style jsx global>{`
+                .contact-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                    gap: 4rem;
+                    align-items: start;
+                }
+                .contact-map-container {
+                    height: 400px;
+                }
+                .contact-maps-button {
+                    margin-top: 1rem;
+                }
+                @media (min-width: 900px) {
+                    .contact-grid {
+                        align-items: stretch;
+                    }
+                    .contact-info-wrapper {
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .contact-socials {
+                        margin-top: auto;
+                    }
+                    .contact-map-wrapper {
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .contact-map-container {
+                        flex: 1;
+                        height: auto;
+                        min-height: 300px;
+                    }
+                    .contact-maps-button {
+                        margin-top: 1rem;
+                    }
+                }
+                @media (max-width: 850px) {
+                    .contact-grid {
+                        grid-template-columns: 1fr !important;
+                    }
+                }
+            `}</style>
         </section>
     );
 }

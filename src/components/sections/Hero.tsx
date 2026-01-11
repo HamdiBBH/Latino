@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
-const heroSlides = [
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80",
-    "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1920&q=80",
-    "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920&q=80",
+// Fallback images if CMS has none
+const FALLBACK_SLIDES = [
+    { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80", alt: "Plage paradisiaque au coucher du soleil" },
+    { url: "https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1920&q=80", alt: "Beach club avec palmiers" },
+    { url: "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1920&q=80", alt: "Transats sur une plage privée" },
 ];
 
 const heroTags = [
@@ -19,29 +20,42 @@ const heroTags = [
     "Plage Privée",
 ];
 
+interface MediaImage {
+    url: string;
+    alt_text?: string;
+}
+
 interface HeroProps {
+    images?: MediaImage[];
     titleLight?: string;
     titleBold?: string;
     subtitle?: string;
 }
 
 export function Hero({
+    images = [],
     titleLight = "Bienvenue au",
     titleBold = "Latino Coucou Beach.",
-    subtitle = "L'expérience beach club ultime sous le soleil méditerranéen",
+    subtitle = "L'expérience beach club ultime sur l'île de Kuriat",
 }: HeroProps) {
     const [currentSlide, setCurrentSlide] = useState(0);
 
+    // Use CMS images if available, otherwise fallback
+    const slides = images.length > 0
+        ? images.map(img => ({ url: img.url, alt: img.alt_text || "Latino Coucou Beach" }))
+        : FALLBACK_SLIDES;
+
     useEffect(() => {
         const interval = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+            setCurrentSlide((prev) => (prev + 1) % slides.length);
         }, 6000);
         return () => clearInterval(interval);
-    }, []);
+    }, [slides.length]);
 
     return (
         <section
             id="home"
+            aria-label="Bienvenue au Latino Coucou Beach"
             style={{
                 position: "relative",
                 minHeight: "100vh",
@@ -52,23 +66,28 @@ export function Hero({
             }}
         >
             {/* Background Slider */}
-            <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
-                {heroSlides.map((slide, index) => (
+            <div
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                role="img"
+                aria-label={slides[currentSlide]?.alt || "Photo du beach club"}
+            >
+                {slides.map((slide, index) => (
                     <div
-                        key={slide}
+                        key={slide.url}
                         style={{
                             position: "absolute",
                             top: 0,
                             left: 0,
                             width: "100%",
                             height: "100%",
-                            backgroundImage: `url(${slide})`,
+                            backgroundImage: `url(${slide.url})`,
                             backgroundSize: "cover",
                             backgroundPosition: "center",
                             opacity: index === currentSlide ? 1 : 0,
                             transform: index === currentSlide ? "scale(1)" : "scale(1.1)",
                             transition: "opacity 1s ease, transform 8s ease",
                         }}
+                        aria-hidden={index !== currentSlide}
                     />
                 ))}
             </div>
@@ -84,6 +103,7 @@ export function Hero({
                     background: "linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.6) 100%)",
                     zIndex: 1,
                 }}
+                aria-hidden="true"
             />
 
             {/* Content */}
@@ -143,10 +163,13 @@ export function Hero({
                             flexWrap: "wrap",
                             gap: "10px",
                         }}
+                        role="list"
+                        aria-label="Nos services"
                     >
                         {heroTags.map((tag) => (
                             <span
                                 key={tag}
+                                role="listitem"
                                 style={{
                                     padding: "10px 20px",
                                     fontSize: "0.9rem",
@@ -155,8 +178,6 @@ export function Hero({
                                     backgroundColor: "transparent",
                                     border: "1px solid rgba(255, 255, 255, 0.5)",
                                     borderRadius: "100px",
-                                    cursor: "pointer",
-                                    transition: "all 0.3s ease",
                                 }}
                             >
                                 {tag}
@@ -169,6 +190,7 @@ export function Hero({
             {/* Scroll Indicator */}
             <motion.a
                 href="#about"
+                aria-label="Défiler vers la section À propos"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1, y: [0, 10, 0] }}
                 transition={{
@@ -191,8 +213,9 @@ export function Hero({
                 }}
             >
                 <span>Scroll</span>
-                <ChevronDown style={{ width: 20, height: 20 }} />
+                <ChevronDown style={{ width: 20, height: 20 }} aria-hidden="true" />
             </motion.a>
         </section>
     );
 }
+

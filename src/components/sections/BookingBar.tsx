@@ -1,49 +1,78 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar, Clock, Users, Utensils, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Calendar, Users, UserRound, Umbrella, ArrowRight } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { DatePickerDropdown } from "@/components/reservation/DatePickerDropdown";
 
-const reservationTypes = [
-    { value: "dejeuner", label: "Déjeuner" },
-    { value: "diner", label: "Dîner" },
-    { value: "brunch", label: "Brunch" },
-    { value: "evenement", label: "Événement privé" },
-];
-
-const timeSlots = [
-    "12:00",
-    "12:30",
-    "13:00",
-    "13:30",
-    "14:00",
-    "19:00",
-    "19:30",
-    "20:00",
-    "20:30",
-    "21:00",
-];
-
-const guestOptions = Array.from({ length: 20 }, (_, i) => i + 1);
+interface Package {
+    id: string;
+    name: string;
+    capacity_min: number;
+    capacity_max: number;
+}
 
 export function BookingBar() {
+    const router = useRouter();
+    const [packages, setPackages] = useState<Package[]>([]);
     const [formData, setFormData] = useState({
         type: "",
         date: "",
-        time: "",
-        guests: "",
+        adults: "",
+        children: "0",
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
-    const handleSubmit = async () => {
-        if (!formData.type || !formData.date || !formData.time || !formData.guests) {
-            alert("Veuillez remplir tous les champs");
+    useEffect(() => {
+        loadPackages();
+    }, []);
+
+    const loadPackages = async () => {
+        const supabase = createClient();
+        const { data } = await supabase
+            .from("packages")
+            .select("id, name, capacity_min, capacity_max")
+            .eq("is_active", true)
+            .order("display_order");
+        if (data) setPackages(data);
+    };
+
+    const selectedPackage = packages.find(p => p.id === formData.type);
+    const maxCapacity = selectedPackage?.capacity_max || 10;
+    const minCapacity = selectedPackage?.capacity_min || 1;
+
+    // Generate person options based on selected package capacity
+    const adultOptions = [];
+    for (let i = minCapacity; i <= maxCapacity; i++) {
+        adultOptions.push(i);
+    }
+
+    const childrenOptions = [0, 1, 2, 3, 4, 5];
+
+    const handleSubmit = () => {
+        if (!formData.type || !formData.date || !formData.adults) {
+            // Redirect to reservation page with whatever data we have
+            const params = new URLSearchParams();
+            if (formData.type) params.set("type", formData.type);
+            if (formData.date) params.set("date", formData.date);
+            if (formData.adults) params.set("adults", formData.adults);
+            if (formData.children && formData.children !== "0") params.set("children", formData.children);
+            router.push(`/reservation?${params.toString()}`);
             return;
         }
+
         setIsLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        alert("Réservation envoyée !");
-        setIsLoading(false);
+        const params = new URLSearchParams();
+        params.set("type", formData.type);
+        params.set("date", formData.date);
+        params.set("adults", formData.adults);
+        if (formData.children && formData.children !== "0") params.set("children", formData.children);
+        router.push(`/reservation?${params.toString()}`);
     };
+
+    const isComplete = formData.type && formData.date && formData.adults;
 
     return (
         <div
@@ -69,7 +98,7 @@ export function BookingBar() {
                     flexWrap: "wrap",
                 }}
             >
-                {/* Type de réservation */}
+                {/* Forfait (Package) */}
                 <div
                     style={{
                         flex: "1 1 200px",
@@ -93,7 +122,7 @@ export function BookingBar() {
                             flexShrink: 0,
                         }}
                     >
-                        <Utensils style={{ width: 18, height: 18 }} />
+                        <Umbrella style={{ width: 18, height: 18 }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <label
@@ -105,25 +134,25 @@ export function BookingBar() {
                                 marginBottom: "4px",
                             }}
                         >
-                            Type de réservation
+                            Forfait
                         </label>
                         <select
                             value={formData.type}
-                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, type: e.target.value, adults: "" })}
                             style={{
                                 width: "100%",
                                 padding: 0,
                                 fontSize: "0.9rem",
-                                color: "#7A7A7A",
+                                color: formData.type ? "#222" : "#7A7A7A",
                                 border: "none",
                                 background: "transparent",
                                 cursor: "pointer",
                             }}
                         >
                             <option value="">Sélectionner</option>
-                            {reservationTypes.map((type) => (
-                                <option key={type.value} value={type.value}>
-                                    {type.label}
+                            {packages.map((pkg) => (
+                                <option key={pkg.id} value={pkg.id}>
+                                    {pkg.name}
                                 </option>
                             ))}
                         </select>
@@ -139,6 +168,7 @@ export function BookingBar() {
                         gap: "1rem",
                         padding: "2rem",
                         borderRight: "1px solid #eee",
+                        position: "relative",
                     }}
                 >
                     <div
@@ -168,93 +198,40 @@ export function BookingBar() {
                         >
                             Date
                         </label>
-                        <input
-                            type="date"
-                            value={formData.date}
-                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                            min={new Date().toISOString().split("T")[0]}
+                        <div
+                            onClick={() => setShowDatePicker(!showDatePicker)}
                             style={{
                                 width: "100%",
                                 padding: 0,
                                 fontSize: "0.9rem",
-                                color: "#7A7A7A",
-                                border: "none",
-                                background: "transparent",
+                                color: formData.date ? "#222" : "#7A7A7A",
                                 cursor: "pointer",
                             }}
-                        />
+                        >
+                            {formData.date
+                                ? new Date(formData.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                                : "Sélectionner"}
+                        </div>
                     </div>
+                    {showDatePicker && (
+                        <DatePickerDropdown
+                            selectedDate={formData.date}
+                            onDateSelect={(date) => setFormData({ ...formData, date })}
+                            onClose={() => setShowDatePicker(false)}
+                            packageId={formData.type}
+                        />
+                    )}
                 </div>
 
-                {/* Heure */}
+                {/* Adultes */}
                 <div
                     style={{
-                        flex: "1 1 200px",
+                        flex: "1 1 180px",
                         display: "flex",
                         alignItems: "center",
                         gap: "1rem",
                         padding: "2rem",
                         borderRight: "1px solid #eee",
-                    }}
-                >
-                    <div
-                        style={{
-                            width: "45px",
-                            height: "45px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: "#F9F5F0",
-                            borderRadius: "50%",
-                            color: "#222222",
-                            flexShrink: 0,
-                        }}
-                    >
-                        <Clock style={{ width: 18, height: 18 }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <label
-                            style={{
-                                display: "block",
-                                fontSize: "0.9rem",
-                                fontWeight: 600,
-                                color: "#222222",
-                                marginBottom: "4px",
-                            }}
-                        >
-                            Heure
-                        </label>
-                        <select
-                            value={formData.time}
-                            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                            style={{
-                                width: "100%",
-                                padding: 0,
-                                fontSize: "0.9rem",
-                                color: "#7A7A7A",
-                                border: "none",
-                                background: "transparent",
-                                cursor: "pointer",
-                            }}
-                        >
-                            <option value="">Sélectionner</option>
-                            {timeSlots.map((time) => (
-                                <option key={time} value={time}>
-                                    {time}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Personnes */}
-                <div
-                    style={{
-                        flex: "1 1 200px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "1rem",
-                        padding: "2rem",
                     }}
                 >
                     <div
@@ -282,25 +259,86 @@ export function BookingBar() {
                                 marginBottom: "4px",
                             }}
                         >
-                            Personnes
+                            Adultes
                         </label>
                         <select
-                            value={formData.guests}
-                            onChange={(e) => setFormData({ ...formData, guests: e.target.value })}
+                            value={formData.adults}
+                            onChange={(e) => setFormData({ ...formData, adults: e.target.value })}
+                            disabled={!formData.type}
                             style={{
                                 width: "100%",
                                 padding: 0,
                                 fontSize: "0.9rem",
-                                color: "#7A7A7A",
+                                color: formData.adults ? "#222" : "#7A7A7A",
+                                border: "none",
+                                background: "transparent",
+                                cursor: formData.type ? "pointer" : "not-allowed",
+                                opacity: formData.type ? 1 : 0.5,
+                            }}
+                        >
+                            <option value="">{formData.type ? "Choisir" : "—"}</option>
+                            {adultOptions.map((num) => (
+                                <option key={num} value={num}>
+                                    {num}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Enfants */}
+                <div
+                    style={{
+                        flex: "1 1 180px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "1rem",
+                        padding: "2rem",
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "45px",
+                            height: "45px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: "#F9F5F0",
+                            borderRadius: "50%",
+                            color: "#222222",
+                            flexShrink: 0,
+                        }}
+                    >
+                        <UserRound style={{ width: 18, height: 18 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                color: "#222222",
+                                marginBottom: "4px",
+                            }}
+                        >
+                            Enfants <span style={{ fontWeight: 400, fontSize: "0.75rem", color: "#7A7A7A" }}>(4-12 ans)</span>
+                        </label>
+                        <select
+                            value={formData.children}
+                            onChange={(e) => setFormData({ ...formData, children: e.target.value })}
+                            style={{
+                                width: "100%",
+                                padding: 0,
+                                fontSize: "0.9rem",
+                                color: "#222",
                                 border: "none",
                                 background: "transparent",
                                 cursor: "pointer",
                             }}
                         >
-                            <option value="">Sélectionner</option>
-                            {guestOptions.map((num) => (
+                            {childrenOptions.map((num) => (
                                 <option key={num} value={num}>
-                                    {num} {num === 1 ? "personne" : "personnes"}
+                                    {num}
                                 </option>
                             ))}
                         </select>
@@ -317,7 +355,7 @@ export function BookingBar() {
                         justifyContent: "center",
                         gap: "10px",
                         padding: "2rem 3rem",
-                        backgroundColor: "#222222",
+                        backgroundColor: isComplete ? "#E8A87C" : "#222222",
                         color: "#FFFFFF",
                         fontSize: "1rem",
                         fontWeight: 600,
@@ -334,3 +372,4 @@ export function BookingBar() {
         </div>
     );
 }
+

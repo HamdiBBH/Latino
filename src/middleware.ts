@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
     // Skip auth if Supabase is not configured (development without database)
     if (!supabaseUrl || !supabaseKey || !supabaseUrl.startsWith("http")) {
         // In dev mode without Supabase, allow all pages except admin
-        if (pathname.startsWith("/admin")) {
+        if (pathname.startsWith("/dashboard")) {
             // Redirect to login page in dev mode
             const url = request.nextUrl.clone();
             url.pathname = "/login";
@@ -50,8 +50,8 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
-    // Protect /admin routes
-    if (pathname.startsWith("/admin")) {
+    // Protect /dashboard routes
+    if (pathname.startsWith("/dashboard")) {
         if (!user) {
             // Not logged in - redirect to login
             const url = request.nextUrl.clone();
@@ -71,13 +71,13 @@ export async function middleware(request: NextRequest) {
 
         // Role-based route protection
         const routeRoles: Record<string, string[]> = {
-            "/admin/site-editor": ["DEV", "ADMIN"],
-            "/admin/kitchen": ["RESTAURANT", "ADMIN"],
-            "/admin/orders": ["RESTAURANT", "MANAGER", "ADMIN"],
-            "/admin/reservations": ["MANAGER", "ADMIN"],
-            "/admin/users": ["ADMIN"],
-            "/admin/settings": ["ADMIN"],
-            "/admin": ["DEV", "CLIENT", "RESTAURANT", "MANAGER", "ADMIN"],
+            "/dashboard/site-editor": ["DEV", "ADMIN"],
+            "/dashboard/kitchen": ["RESTAURANT", "ADMIN"],
+            "/dashboard/orders": ["RESTAURANT", "MANAGER", "ADMIN"],
+            "/dashboard/reservations": ["MANAGER", "ADMIN"],
+            "/dashboard/users": ["ADMIN"],
+            "/dashboard/settings": ["ADMIN"],
+            "/dashboard": ["DEV", "CLIENT", "RESTAURANT", "MANAGER", "ADMIN"],
         };
 
         // Find the most specific matching route
@@ -89,7 +89,7 @@ export async function middleware(request: NextRequest) {
             const allowedRoles = routeRoles[matchingRoute];
             if (!allowedRoles.includes(userRole)) {
                 const url = request.nextUrl.clone();
-                url.pathname = "/admin";
+                url.pathname = "/dashboard";
                 return NextResponse.redirect(url);
             }
         }
@@ -97,7 +97,7 @@ export async function middleware(request: NextRequest) {
 
     // Redirect authenticated users away from login/register
     if ((pathname === "/login" || pathname === "/register") && user) {
-        return NextResponse.redirect(new URL("/admin", request.url));
+        return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     return supabaseResponse;

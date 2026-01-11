@@ -21,7 +21,7 @@ export async function updateSiteContent(
         if (error) throw error;
 
         revalidatePath("/");
-        revalidatePath("/admin/site-editor/texts");
+        revalidatePath("/dashboard/site-editor/texts");
         return { success: true };
     } catch (error) {
         console.error("Error updating site content:", error);
@@ -49,7 +49,7 @@ export async function batchUpdateSiteContent(
         }
 
         revalidatePath("/");
-        revalidatePath("/admin/site-editor/texts");
+        revalidatePath("/dashboard/site-editor/texts");
         return { success: true, count: updates.length };
     } catch (error) {
         console.error("Error batch updating site content:", error);
@@ -75,7 +75,7 @@ export async function updateSiteBranding(
         if (error) throw error;
 
         revalidatePath("/");
-        revalidatePath("/admin/site-editor/theme");
+        revalidatePath("/dashboard/site-editor/theme");
         return { success: true };
     } catch (error) {
         console.error("Error updating site branding:", error);

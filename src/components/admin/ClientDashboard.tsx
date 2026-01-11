@@ -56,12 +56,12 @@ const mockReservation = {
 
 // Quick actions for client
 const quickActions = [
-    { href: "/admin/menu-order", label: "Commander", icon: ShoppingBag, color: "#E8A87C", badge: null },
-    { href: "/admin/boat-tracker", label: "Bateau", icon: Ship, color: "#3B82F6", badge: "10 min" },
-    { href: "/admin/loyalty", label: "Fidélité", icon: Trophy, color: "#F59E0B", badge: "150 pts" },
-    { href: "/admin/memories", label: "Photos", icon: Camera, color: "#EC4899", badge: null },
-    { href: "/admin/concierge", label: "Aide", icon: MessageCircle, color: "#22C55E", badge: null },
-    { href: "/admin/profile", label: "Profil", icon: User, color: "#6366F1", badge: null },
+    { href: "/dashboard/menu-order", label: "Commander", icon: ShoppingBag, color: "#E8A87C", badge: null },
+    { href: "/dashboard/boat-tracker", label: "Bateau", icon: Ship, color: "#3B82F6", badge: "10 min" },
+    { href: "/dashboard/loyalty", label: "Fidélité", icon: Trophy, color: "#F59E0B", badge: "150 pts" },
+    { href: "/dashboard/memories", label: "Photos", icon: Camera, color: "#EC4899", badge: null },
+    { href: "/dashboard/concierge", label: "Aide", icon: MessageCircle, color: "#22C55E", badge: null },
+    { href: "/dashboard/profile", label: "Profil", icon: User, color: "#6366F1", badge: null },
 ];
 
 // Get current step based on time
@@ -411,7 +411,7 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                     </p>
                 </div>
                 <Link
-                    href="/admin/menu-order"
+                    href="/dashboard/menu-order"
                     style={{
                         padding: "8px 16px",
                         backgroundColor: "#FFF",
