@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getServices, createService, updateService, deleteService } from "@/app/actions/cms";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { getServices, createService, updateService, deleteService, uploadMedia } from "@/app/actions/cms";
 import { rewriteSection } from "@/app/actions/ai";
-import { Plus, Trash2, Edit2, ArrowLeft, Star, Sun, Umbrella, Music, Utensils, Waves, Palmtree, Wind, MapPin, Coffee, GlassWater, Sparkles, Loader2 } from "lucide-react";
+import { convertToWebP, analyzeImageWithAI, renameFile } from "@/lib/imageUtils";
+import { Plus, Trash2, Edit2, ArrowLeft, Star, Sun, Umbrella, Music, Utensils, Waves, Palmtree, Wind, MapPin, Coffee, GlassWater, Sparkles, Loader2, X, ImageIcon, Upload } from "lucide-react";
 import * as Icons from "lucide-react";
 
 interface Service {
@@ -11,6 +13,7 @@ interface Service {
     title: string;
     description: string;
     icon: string;
+    image_url?: string;
     is_active: boolean;
 }
 
@@ -52,9 +55,67 @@ export default function ServicesPage() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [icon, setIcon] = useState("Star");
+    const [imageUrl, setImageUrl] = useState("");
+
+    // Direct upload state
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadStatus, setUploadStatus] = useState<"converting" | "analyzing" | "uploading" | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // AI State
     const [isRewriting, setIsRewriting] = useState(false);
+
+    // Handle direct image upload with WebP conversion and AI naming
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert("Veuillez sélectionner une image");
+            return;
+        }
+
+        setIsUploading(true);
+        setUploadStatus("converting");
+
+        try {
+            // 1. Convert to WebP (max 1200x800 for service cards)
+            const webpFile = await convertToWebP(file, 0.85, 1200, 800);
+
+            // 2. AI Analysis for SEO-friendly naming
+            setUploadStatus("analyzing");
+            const analysis = await analyzeImageWithAI(webpFile, "services");
+
+            // 3. Rename with AI-generated filename
+            const renamedFile = renameFile(webpFile, analysis.filename);
+
+            // 4. Upload to storage
+            setUploadStatus("uploading");
+            const formData = new FormData();
+            formData.append("file", renamedFile);
+            formData.append("folder", "services");
+            formData.append("altText", analysis.altText || title || "Image service");
+
+            const result = await uploadMedia(formData);
+
+            if (result.success && result.data) {
+                setImageUrl(result.data.url);
+            } else {
+                alert("Erreur lors de l'upload: " + (result.error || "Erreur inconnue"));
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            alert("Erreur lors de l'upload ou de l'analyse IA");
+        } finally {
+            setIsUploading(false);
+            setUploadStatus(null);
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
+    };
 
     const handleAiRewrite = async () => {
         if (!title && !description) return;
@@ -96,11 +157,12 @@ export default function ServicesPage() {
         setTitle(service.title);
         setDescription(service.description || "");
         setIcon(service.icon || "Star");
+        setImageUrl(service.image_url || "");
         setIsAdding(true);
     };
 
     const handleSave = async () => {
-        const data = { title, description, icon };
+        const data = { title, description, icon, image_url: imageUrl || null };
 
         if (editingId) {
             await updateService(editingId, data);
@@ -125,6 +187,7 @@ export default function ServicesPage() {
         setTitle("");
         setDescription("");
         setIcon("Star");
+        setImageUrl("");
     };
 
     // Helper to render dynamic icon safely
@@ -168,8 +231,86 @@ export default function ServicesPage() {
                         </button>
                     </div>
                     <div style={{ display: "grid", gap: "1rem" }}>
+                        {/* Direct Image Upload */}
                         <div>
-                            <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Icône</label>
+                            <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Image du service</label>
+                            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                                {imageUrl ? (
+                                    <div style={{ position: "relative", width: "120px", height: "80px", borderRadius: "8px", overflow: "hidden", border: "1px solid #E5E7EB" }}>
+                                        <Image
+                                            src={imageUrl}
+                                            alt="Service"
+                                            fill
+                                            style={{ objectFit: "cover" }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setImageUrl("")}
+                                            style={{
+                                                position: "absolute", top: "4px", right: "4px",
+                                                padding: "2px", background: "#EF4444", color: "#FFF",
+                                                borderRadius: "50%", border: "none", cursor: "pointer"
+                                            }}
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div style={{
+                                        width: "120px", height: "80px", borderRadius: "8px",
+                                        border: "2px dashed #D1D5DB", display: "flex",
+                                        alignItems: "center", justifyContent: "center", color: "#9CA3AF"
+                                    }}>
+                                        <ImageIcon size={24} />
+                                    </div>
+                                )}
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        disabled={isUploading}
+                                        style={{ display: "none" }}
+                                        id="service-image-upload"
+                                    />
+                                    <label
+                                        htmlFor="service-image-upload"
+                                        style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                            padding: "8px 16px",
+                                            border: "1px solid #D1D5DB",
+                                            borderRadius: "6px",
+                                            background: isUploading ? "#F3F4F6" : "#FFF",
+                                            cursor: isUploading ? "wait" : "pointer",
+                                            fontSize: "0.875rem"
+                                        }}
+                                    >
+                                        {isUploading ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" />
+                                                {uploadStatus === "converting" && "Conversion WebP..."}
+                                                {uploadStatus === "analyzing" && "Analyse IA..."}
+                                                {uploadStatus === "uploading" && "Envoi..."}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload size={16} />
+                                                {imageUrl ? "Changer l'image" : "Uploader une image"}
+                                            </>
+                                        )}
+                                    </label>
+                                </div>
+                            </div>
+                            <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#9CA3AF" }}>
+                                L&apos;image sera automatiquement convertie en WebP et renommée pour le SEO.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.875rem", fontWeight: 500 }}>Icône (fallback)</label>
                             <button
                                 onClick={() => setShowIconPicker(true)}
                                 style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", border: "1px solid #D1D5DB", borderRadius: "6px", background: "#FFF", cursor: "pointer" }}
@@ -206,21 +347,53 @@ export default function ServicesPage() {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.5rem" }}>
                 {services.map(service => (
-                    <div key={service.id} style={{ backgroundColor: "#FFF", padding: "1.5rem", borderRadius: "12px", border: "1px solid #E5E7EB", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                            <div style={{ padding: "10px", backgroundColor: "#F9FAF8", borderRadius: "50%", color: "#10B981" }}>
-                                {renderIcon(service.icon)}
+                    <div
+                        key={service.id}
+                        style={{
+                            backgroundColor: "#FFF",
+                            borderRadius: "12px",
+                            border: "1px solid #E5E7EB",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                            overflow: "hidden"
+                        }}
+                    >
+                        {/* Image preview if available */}
+                        {service.image_url && (
+                            <div style={{ position: "relative", height: "140px", backgroundColor: "#F3F4F6" }}>
+                                <Image
+                                    src={service.image_url}
+                                    alt={service.title}
+                                    fill
+                                    style={{ objectFit: "cover" }}
+                                />
                             </div>
-                            <div style={{ display: "flex", gap: "0.5rem" }}>
-                                <button onClick={() => handleEdit(service)} style={{ padding: "6px", color: "#6B7280", border: "none", background: "transparent", cursor: "pointer" }}><Edit2 size={16} /></button>
-                                <button onClick={() => handleDelete(service.id)} style={{ padding: "6px", color: "#EF4444", border: "none", background: "transparent", cursor: "pointer" }}><Trash2 size={16} /></button>
+                        )}
+                        <div style={{ padding: "1.5rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                                <div style={{ padding: "10px", backgroundColor: "#F9FAF8", borderRadius: "50%", color: "#10B981" }}>
+                                    {renderIcon(service.icon)}
+                                </div>
+                                <div style={{ display: "flex", gap: "0.5rem" }}>
+                                    <button onClick={() => handleEdit(service)} style={{ padding: "6px", color: "#6B7280", border: "none", background: "transparent", cursor: "pointer" }}><Edit2 size={16} /></button>
+                                    <button onClick={() => handleDelete(service.id)} style={{ padding: "6px", color: "#EF4444", border: "none", background: "transparent", cursor: "pointer" }}><Trash2 size={16} /></button>
+                                </div>
                             </div>
+                            <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.5rem" }}>{service.title}</h3>
+                            <p style={{ color: "#6B7280", fontSize: "0.875rem", lineHeight: "1.5" }}>{service.description}</p>
                         </div>
-                        <h3 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.5rem" }}>{service.title}</h3>
-                        <p style={{ color: "#6B7280", fontSize: "0.875rem", lineHeight: "1.5" }}>{service.description}</p>
                     </div>
                 ))}
             </div>
+
+            <style jsx global>{`
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .animate-spin {
+                    animation: spin 1s linear infinite;
+                }
+            `}</style>
         </div>
     );
 }

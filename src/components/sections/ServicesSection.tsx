@@ -1,19 +1,28 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { motion, useInView } from "framer-motion";
-import { ArrowRight, Star, Car, Ship, Utensils, Umbrella } from "lucide-react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { ArrowRight, Star, Car, Ship, Utensils, Umbrella, X } from "lucide-react";
 import * as Icons from "lucide-react";
 import { getServices } from "@/app/actions/cms";
-import Link from "next/link";
+import { RestaurantMenuModal } from "@/components/modals/RestaurantMenuModal";
 
 interface Service {
     id: string;
     title: string;
     description: string;
     icon: string;
+    image_url?: string;
     link?: string;
 }
+
+// Default images for services without custom image
+const defaultServiceImages: Record<string, string> = {
+    "Restaurant": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80",
+    "Cocktails Exotiques": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600&q=80",
+    "Plage Privée": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",
+    "DJ & Événements": "https://images.unsplash.com/photo-1571266028243-d220c6a8b0e7?w=600&q=80",
+};
 
 const inclusions = [
     {
@@ -43,6 +52,8 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
     const isInView = useInView(ref, { once: true, margin: "-100px" });
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const [showRestaurantMenu, setShowRestaurantMenu] = useState(false);
 
     // Default images if CMS doesn't provide any
     const defaultImages = [
@@ -65,6 +76,11 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
         return <Icon style={{ width: 32, height: 32, color: "#FFFFFF" }} />;
     };
 
+    const getServiceImage = (service: Service) => {
+        if (service.image_url) return service.image_url;
+        return defaultServiceImages[service.title] || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80";
+    };
+
     return (
         <section
             id="services"
@@ -75,16 +91,15 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
             }}
         >
             <div className="container">
-                {/* Experience Section - New Layout */}
+                {/* Experience Section - Kept the same */}
                 <div className="experience-grid">
-                    {/* Left: Organic Images - 2 shapes like reference */}
+                    {/* Left: Organic Images */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         animate={isInView ? { opacity: 1, x: 0 } : {}}
                         transition={{ duration: 0.6 }}
                         className="experience-images"
                     >
-                        {/* Large shape - rounded top-right, curved bottom */}
                         <div
                             style={{
                                 position: "absolute",
@@ -103,7 +118,6 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                             />
                         </div>
-                        {/* Vertical oval shape - overlapping right */}
                         <div
                             style={{
                                 position: "absolute",
@@ -162,7 +176,6 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                             {inclusions.map((item, index) => {
                                 const Icon = item.icon;
-                                // Alternate between brand colors
                                 const iconColors = ["#E8A87C", "#43B0A8", "#E8A87C", "#43B0A8"];
                                 const bgColor = iconColors[index % iconColors.length];
                                 return (
@@ -259,12 +272,12 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                     </div>
                 )}
 
-                {/* Service Cards */}
+                {/* NEW: Image-based Service Cards with Hover Effects */}
                 <div
                     style={{
                         display: "grid",
                         gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                        gap: "2rem",
+                        gap: "1.5rem",
                     }}
                 >
                     {services.map((service, index) => (
@@ -273,78 +286,316 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                             initial={{ opacity: 0, y: 30 }}
                             animate={isInView ? { opacity: 1, y: 0 } : {}}
                             transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
+                            className="service-card"
+                            onClick={() => {
+                                // Check if it's the Restaurant service
+                                if (service.title.toLowerCase().includes("restaurant")) {
+                                    setShowRestaurantMenu(true);
+                                    setSelectedService(service);
+                                } else {
+                                    setSelectedService(service);
+                                }
+                            }}
                             style={{
-                                backgroundColor: "#FFFFFF",
+                                position: "relative",
                                 borderRadius: "24px",
-                                padding: "2.5rem",
-                                textAlign: "center",
-                                transition: "all 0.3s ease",
+                                overflow: "hidden",
                                 cursor: "pointer",
-                                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = "translateY(-8px)";
-                                e.currentTarget.style.boxShadow = "0 20px 40px rgba(0, 0, 0, 0.12)";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = "translateY(0)";
-                                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.05)";
+                                height: "380px",
                             }}
                         >
+                            {/* Background Image */}
                             <div
+                                className="service-card-image"
                                 style={{
-                                    width: "80px",
-                                    height: "80px",
-                                    margin: "0 auto 1.5rem",
-                                    borderRadius: "50%",
-                                    background: "linear-gradient(135deg, #E8A87C, #C68B5B)",
+                                    position: "absolute",
+                                    inset: 0,
+                                    backgroundImage: `url(${getServiceImage(service)})`,
+                                    backgroundSize: "cover",
+                                    backgroundPosition: "center",
+                                    transition: "transform 0.5s ease",
+                                }}
+                            />
+
+                            {/* Gradient Overlay - Hidden by default, appears on hover */}
+                            <div
+                                className="service-card-overlay"
+                                style={{
+                                    position: "absolute",
+                                    inset: 0,
+                                    background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 100%)",
+                                    transition: "background 0.4s ease",
+                                }}
+                            />
+
+                            {/* Top-left: Icon + Title in glass container */}
+                            <div
+                                className="service-card-header"
+                                style={{
+                                    position: "absolute",
+                                    top: "1.5rem",
+                                    left: "1.5rem",
                                     display: "flex",
                                     alignItems: "center",
-                                    justifyContent: "center",
+                                    gap: "12px",
+                                    padding: "12px 20px 12px 14px",
+                                    borderRadius: "16px",
+                                    background: "rgba(255,255,255,0.15)",
+                                    backdropFilter: "blur(12px)",
+                                    WebkitBackdropFilter: "blur(12px)",
+                                    border: "1px solid rgba(255,255,255,0.2)",
                                 }}
                             >
-                                {renderIcon(service.icon)}
+                                <div
+                                    style={{
+                                        width: "40px",
+                                        height: "40px",
+                                        borderRadius: "10px",
+                                        background: "rgba(255,255,255,0.2)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    {renderIcon(service.icon)}
+                                </div>
+                                <h3
+                                    style={{
+                                        fontSize: "1.1rem",
+                                        fontWeight: 600,
+                                        color: "#FFFFFF",
+                                        margin: 0,
+                                        textShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    {service.title}
+                                </h3>
                             </div>
-                            <h3
+
+                            {/* Bottom content - Appears on hover */}
+                            <div
+                                className="service-card-content"
                                 style={{
-                                    fontSize: "1.4rem",
-                                    fontWeight: 600,
-                                    marginBottom: "1rem",
-                                    color: "#222222",
+                                    position: "absolute",
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    padding: "2rem",
+                                    color: "#FFFFFF",
+                                    opacity: 0,
+                                    transform: "translateY(20px)",
+                                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                                 }}
                             >
-                                {service.title}
-                            </h3>
-                            <p
-                                style={{
-                                    fontSize: "1rem",
-                                    color: "#7A7A7A",
-                                    lineHeight: 1.6,
-                                    marginBottom: "1.5rem",
-                                }}
-                            >
-                                {service.description}
-                            </p>
-                            <a
-                                href="#"
-                                style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "8px",
-                                    color: "#E8A87C",
-                                    fontWeight: 500,
-                                    textDecoration: "none",
-                                }}
-                            >
-                                {service.link || "En savoir plus"}
-                                <ArrowRight style={{ width: 16, height: 16 }} />
-                            </a>
+                                {/* Description */}
+                                <p
+                                    style={{
+                                        fontSize: "0.95rem",
+                                        lineHeight: 1.6,
+                                        marginBottom: "1.25rem",
+                                        textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+                                    }}
+                                >
+                                    {service.description}
+                                </p>
+
+                                {/* Button */}
+                                <button
+                                    className="service-card-button"
+                                    style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        padding: "12px 24px",
+                                        backgroundColor: "#FFFFFF",
+                                        color: "#222222",
+                                        border: "none",
+                                        borderRadius: "100px",
+                                        fontWeight: 600,
+                                        fontSize: "0.9rem",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    En savoir plus
+                                    <ArrowRight style={{ width: 16, height: 16 }} />
+                                </button>
+                            </div>
                         </motion.div>
                     ))}
                 </div>
             </div>
 
-            {/* Responsive */}
+            {/* Service Detail Modal (for non-restaurant services) */}
+            <AnimatePresence>
+                {selectedService && !showRestaurantMenu && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSelectedService(null)}
+                        style={{
+                            position: "fixed",
+                            inset: 0,
+                            backgroundColor: "rgba(0,0,0,0.8)",
+                            zIndex: 9999,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "2rem",
+                        }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                backgroundColor: "#FFFFFF",
+                                borderRadius: "24px",
+                                overflow: "hidden",
+                                maxWidth: "600px",
+                                width: "100%",
+                                maxHeight: "90vh",
+                                display: "flex",
+                                flexDirection: "column",
+                            }}
+                        >
+                            {/* Modal Image */}
+                            <div
+                                style={{
+                                    position: "relative",
+                                    height: "280px",
+                                    backgroundImage: `url(${getServiceImage(selectedService)})`,
+                                    backgroundSize: "cover",
+                                    backgroundPosition: "center",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        inset: 0,
+                                        background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%)",
+                                    }}
+                                />
+                                <button
+                                    onClick={() => setSelectedService(null)}
+                                    style={{
+                                        position: "absolute",
+                                        top: "1rem",
+                                        right: "1rem",
+                                        width: "40px",
+                                        height: "40px",
+                                        borderRadius: "50%",
+                                        backgroundColor: "rgba(255,255,255,0.9)",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <X style={{ width: 20, height: 20, color: "#222222" }} />
+                                </button>
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        bottom: "1.5rem",
+                                        left: "1.5rem",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "1rem",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: "56px",
+                                            height: "56px",
+                                            borderRadius: "14px",
+                                            background: "linear-gradient(135deg, #E8A87C, #C68B5B)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        {renderIcon(selectedService.icon)}
+                                    </div>
+                                    <h2
+                                        style={{
+                                            fontSize: "1.75rem",
+                                            fontWeight: 700,
+                                            color: "#FFFFFF",
+                                            textShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                                        }}
+                                    >
+                                        {selectedService.title}
+                                    </h2>
+                                </div>
+                            </div>
+
+                            {/* Modal Content */}
+                            <div style={{ padding: "2rem" }}>
+                                <p
+                                    style={{
+                                        fontSize: "1.1rem",
+                                        lineHeight: 1.8,
+                                        color: "#555555",
+                                        marginBottom: "2rem",
+                                    }}
+                                >
+                                    {selectedService.description}
+                                </p>
+
+                                <div style={{ display: "flex", gap: "1rem" }}>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedService(null);
+                                            // Scroll to reservation section
+                                            document.getElementById("forfaits")?.scrollIntoView({ behavior: "smooth" });
+                                        }}
+                                        style={{
+                                            flex: 1,
+                                            padding: "14px 24px",
+                                            backgroundColor: "#E8A87C",
+                                            color: "#FFFFFF",
+                                            border: "none",
+                                            borderRadius: "12px",
+                                            fontWeight: 600,
+                                            fontSize: "1rem",
+                                            cursor: "pointer",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            gap: "8px",
+                                            transition: "all 0.3s ease",
+                                        }}
+                                    >
+                                        Réserver maintenant
+                                        <ArrowRight style={{ width: 18, height: 18 }} />
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Restaurant Menu Modal */}
+            {selectedService && (
+                <RestaurantMenuModal
+                    isOpen={showRestaurantMenu}
+                    onClose={() => {
+                        setShowRestaurantMenu(false);
+                        setSelectedService(null);
+                    }}
+                    serviceImage={getServiceImage(selectedService)}
+                    serviceDescription={selectedService.description}
+                />
+            )}
+
+            {/* Responsive & Hover Styles */}
             <style jsx global>{`
                 .experience-grid {
                     display: grid;
@@ -367,8 +618,33 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                         display: none;
                     }
                 }
+
+                /* Service Card Hover Effects */
+                .service-card:hover .service-card-image {
+                    transform: scale(1.05);
+                }
+                .service-card:hover .service-card-overlay {
+                    background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.85) 100%) !important;
+                }
+                .service-card:hover .service-card-content {
+                    opacity: 1 !important;
+                    transform: translateY(0) !important;
+                }
+
+                /* Mobile: Always show content */
+                @media (max-width: 768px) {
+                    .service-card {
+                        height: 320px !important;
+                    }
+                    .service-card .service-card-overlay {
+                        background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.85) 100%) !important;
+                    }
+                    .service-card .service-card-content {
+                        opacity: 1 !important;
+                        transform: translateY(0) !important;
+                    }
+                }
             `}</style>
         </section>
     );
 }
-
