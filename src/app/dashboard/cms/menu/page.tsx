@@ -104,14 +104,20 @@ export default function MenuEditorPage() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Supprimer ce plat ?")) return;
-        const result = await deleteMenuItem(id);
-        if (result.success) {
-            setItems(items.filter(i => i.id !== id));
-        } else {
-            alert("Erreur: " + result.error);
-        }
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Use setTimeout to ensure the event loop is clear before showing confirm
+        setTimeout(async () => {
+            if (!confirm("Supprimer ce plat ?")) return;
+            const result = await deleteMenuItem(id);
+            if (result.success) {
+                setItems(prev => prev.filter(i => i.id !== id));
+            } else {
+                alert("Erreur: " + result.error);
+            }
+        }, 0);
     };
 
     const handleEdit = (item: MenuItem) => {
@@ -471,7 +477,7 @@ export default function MenuEditorPage() {
                                         <Star style={{ width: 16, height: 16, color: item.is_featured ? "#E8A87C" : "#9CA3AF", fill: item.is_featured ? "#E8A87C" : "none" }} />
                                     </button>
                                     <button
-                                        onClick={() => handleDelete(item.id)}
+                                        onClick={(e) => handleDelete(e, item.id)}
                                         style={{
                                             width: "40px",
                                             height: "40px",

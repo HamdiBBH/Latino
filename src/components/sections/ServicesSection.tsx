@@ -6,6 +6,7 @@ import { ArrowRight, Star, Car, Ship, Utensils, Umbrella, X } from "lucide-react
 import * as Icons from "lucide-react";
 import { getServices } from "@/app/actions/cms";
 import { RestaurantMenuModal } from "@/components/modals/RestaurantMenuModal";
+import { DrinksMenuModal } from "@/components/modals/DrinksMenuModal";
 
 interface Service {
     id: string;
@@ -54,6 +55,7 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
     const [loading, setLoading] = useState(true);
     const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [showRestaurantMenu, setShowRestaurantMenu] = useState(false);
+    const [showDrinksMenu, setShowDrinksMenu] = useState(false);
 
     // Default images if CMS doesn't provide any
     const defaultImages = [
@@ -292,6 +294,9 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                                 if (service.title.toLowerCase().includes("restaurant")) {
                                     setShowRestaurantMenu(true);
                                     setSelectedService(service);
+                                } else if (service.title.toLowerCase().includes("cocktail") || service.title.toLowerCase().includes("bar")) {
+                                    setShowDrinksMenu(true);
+                                    setSelectedService(service);
                                 } else {
                                     setSelectedService(service);
                                 }
@@ -427,9 +432,9 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                 </div>
             </div>
 
-            {/* Service Detail Modal (for non-restaurant services) */}
+            {/* Service Detail Modal (for non-restaurant/drinks services) */}
             <AnimatePresence>
-                {selectedService && !showRestaurantMenu && (
+                {selectedService && !showRestaurantMenu && !showDrinksMenu && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -588,6 +593,19 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                     isOpen={showRestaurantMenu}
                     onClose={() => {
                         setShowRestaurantMenu(false);
+                        setSelectedService(null);
+                    }}
+                    serviceImage={getServiceImage(selectedService)}
+                    serviceDescription={selectedService.description}
+                />
+            )}
+
+            {/* Drinks Menu Modal */}
+            {selectedService && (
+                <DrinksMenuModal
+                    isOpen={showDrinksMenu}
+                    onClose={() => {
+                        setShowDrinksMenu(false);
                         setSelectedService(null);
                     }}
                     serviceImage={getServiceImage(selectedService)}
