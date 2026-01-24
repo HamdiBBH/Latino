@@ -478,7 +478,12 @@ export async function getMenuItems(category?: string) {
         console.error("Error fetching menu items:", error);
         return [];
     }
-    return data;
+
+    // Ensure image_url is populated (prefer direct url, fallback to linked media)
+    return data.map((item: any) => ({
+        ...item,
+        image_url: item.image_url || item.site_media?.url || null
+    }));
 }
 
 export async function createMenuItem(item: {
@@ -522,13 +527,17 @@ export async function updateMenuItem(id: string, updates: Record<string, unknown
 export async function deleteMenuItem(id: string) {
     const supabase = await createClient();
 
-    const { error } = await supabase
+    const { error, count } = await supabase
         .from("menu_items")
-        .delete()
+        .delete({ count: 'exact' })
         .eq("id", id);
 
     if (error) {
         return { success: false, error: error.message };
+    }
+
+    if (count === 0) {
+        return { success: false, error: "Impossible de supprimer : élément introuvable ou permissions insuffisantes." };
     }
 
     revalidatePath("/dashboard/cms/menu");

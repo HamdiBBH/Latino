@@ -346,12 +346,14 @@ export function DrinksMenuModal({ isOpen, onClose, serviceImage, serviceDescript
                                                     className="menu-cards-scroll"
                                                 >
                                                     {items.map((item) => {
-                                                        // Determine the image based on item tags
-                                                        let imageUrl = defaultImages['jus'];
-                                                        if (item.tags?.includes('cocktail')) imageUrl = defaultImages['cocktail'];
-                                                        else if (item.tags?.includes('duo-jus')) imageUrl = defaultImages['duo-jus'];
-                                                        else if (item.tags?.includes('café')) imageUrl = defaultImages['café'];
-                                                        else if (item.tags?.includes('chicha')) imageUrl = defaultImages['chicha'];
+                                                        // Determine the image based on item tags or use custom image
+                                                        let defaultImage = defaultImages['jus'];
+                                                        if (item.tags?.includes('cocktail')) defaultImage = defaultImages['cocktail'];
+                                                        else if (item.tags?.includes('duo-jus')) defaultImage = defaultImages['duo-jus'];
+                                                        else if (item.tags?.includes('café')) defaultImage = defaultImages['café'];
+                                                        else if (item.tags?.includes('chicha')) defaultImage = defaultImages['chicha'];
+
+                                                        const imageUrl = item.image_url || defaultImage;
 
                                                         // Check if this is a signature/special item
                                                         const isSignature = item.tags?.includes('signature') || item.tags?.includes('premium');
