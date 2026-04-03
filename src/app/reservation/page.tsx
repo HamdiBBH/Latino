@@ -132,7 +132,7 @@ function ReservationContent() {
             case 1: return selectedPackage !== null;
             case 2: return selectedDate !== "";
             case 3: return adults >= 1 && totalGuests <= (selectedPackage?.capacity_max || 10);
-            case 4: return guestName.trim() !== "" && guestEmail.trim() !== "" && guestPhone.trim() !== "";
+            case 4: return /^\+?\d{8,15}$/.test(guestPhone.replace(/[\s-]/g, ""));
             default: return true;
         }
     };
@@ -511,7 +511,7 @@ function ReservationContent() {
                             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                                 <div>
                                     <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.5rem", fontWeight: 500 }}>
-                                        <User style={{ width: 18, height: 18, color: "#7A7A7A" }} /> Nom complet *
+                                        <User style={{ width: 18, height: 18, color: "#7A7A7A" }} /> Nom complet
                                     </label>
                                     <input
                                         type="text"
@@ -523,7 +523,7 @@ function ReservationContent() {
                                 </div>
                                 <div>
                                     <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.5rem", fontWeight: 500 }}>
-                                        <Mail style={{ width: 18, height: 18, color: "#7A7A7A" }} /> Email *
+                                        <Mail style={{ width: 18, height: 18, color: "#7A7A7A" }} /> Email
                                     </label>
                                     <input
                                         type="email"
@@ -540,10 +540,20 @@ function ReservationContent() {
                                     <input
                                         type="tel"
                                         value={guestPhone}
-                                        onChange={(e) => setGuestPhone(e.target.value)}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (/^[\d\s+()-]*$/.test(val)) {
+                                                setGuestPhone(val);
+                                            }
+                                        }}
                                         placeholder="+216 XX XXX XXX"
                                         style={{ width: "100%", padding: "1rem", border: "2px solid #E5E7EB", borderRadius: "12px", fontSize: "1rem" }}
                                     />
+                                    {guestPhone.trim() !== "" && !/^\+?\d{8,15}$/.test(guestPhone.replace(/[\s-]/g, "")) && (
+                                        <p style={{ color: "#EF4444", fontSize: "0.875rem", marginTop: "4px" }}>
+                                            Numéro de téléphone invalide.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>

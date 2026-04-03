@@ -119,7 +119,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-primary antialiased">{children}</body>
+      <body className="font-primary antialiased" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

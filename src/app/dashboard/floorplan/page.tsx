@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { MapPin, Users, Clock, AlertCircle, Check, X, AlertTriangle, ShoppingBag, Sparkles, UserPlus, ChevronLeft, ChevronRight, Anchor, Ship } from "lucide-react";
 
 // Zone status for beach club (day-long stays)
-type ZoneStatus = "libre" | "attente" | "occupe" | "commande";
+type ZoneStatus = "libre" | "reserve" | "occupe";
 
 interface Zone {
     id: string;
@@ -33,16 +33,16 @@ const generateInitialZones = (): Zone[] => {
         // Cabanes Normales (9)
         { id: "C1", type: "cabane_normale", label: "Cabane 1", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 45 * 60000).toISOString(), order: { items: 4, total: 180, status: "preparing", createdAt: new Date(now.getTime() - 12 * 60000).toISOString() } },
         { id: "C2", type: "cabane_normale", label: "Cabane 2", capacity: 6, status: "libre" },
-        { id: "C3", type: "cabane_normale", label: "Cabane 3", capacity: 6, status: "attente", reservation: { name: "Martin", time: new Date(now.getTime() + 20 * 60000).toTimeString().slice(0, 5), guests: 4 } },
+        { id: "C3", type: "cabane_normale", label: "Cabane 3", capacity: 6, status: "reserve", reservation: { name: "Martin", time: new Date(now.getTime() + 20 * 60000).toTimeString().slice(0, 5), guests: 4 } },
         { id: "C4", type: "cabane_normale", label: "Cabane 4", capacity: 6, status: "libre" },
         { id: "C5", type: "cabane_normale", label: "Cabane 5", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 120 * 60000).toISOString() }, // 2h - LONG
         { id: "C6", type: "cabane_normale", label: "Cabane 6", capacity: 6, status: "libre" },
-        { id: "C7", type: "cabane_normale", label: "Cabane 7", capacity: 6, status: "commande", occupiedSince: new Date(now.getTime() - 30 * 60000).toISOString(), order: { items: 3, total: 95, status: "new", createdAt: new Date(now.getTime() - 18 * 60000).toISOString() } }, // ORDER DELAY
+        { id: "C7", type: "cabane_normale", label: "Cabane 7", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 30 * 60000).toISOString(), order: { items: 3, total: 95, status: "new", createdAt: new Date(now.getTime() - 18 * 60000).toISOString() } }, // ORDER DELAY
         { id: "C8", type: "cabane_normale", label: "Cabane 8", capacity: 6, status: "libre" },
         { id: "C9", type: "cabane_normale", label: "Cabane 9", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 55 * 60000).toISOString() },
 
         // Cabanes VIP (5)
-        { id: "VIP1", type: "cabane_vip", label: "VIP 1", capacity: 10, status: "attente", reservation: { name: "VIP Event", time: new Date(now.getTime() + 10 * 60000).toTimeString().slice(0, 5), guests: 8 } }, // IMMINENT
+        { id: "VIP1", type: "cabane_vip", label: "VIP 1", capacity: 10, status: "reserve", reservation: { name: "VIP Event", time: new Date(now.getTime() + 10 * 60000).toTimeString().slice(0, 5), guests: 8 } }, // IMMINENT
         { id: "VIP2", type: "cabane_vip", label: "VIP 2", capacity: 10, status: "libre" },
         { id: "VIP3", type: "cabane_vip", label: "VIP 3", capacity: 10, status: "occupe", occupiedSince: new Date(now.getTime() - 90 * 60000).toISOString(), order: { items: 8, total: 450, status: "preparing", createdAt: new Date(now.getTime() - 25 * 60000).toISOString() } },
         { id: "VIP4", type: "cabane_vip", label: "VIP 4", capacity: 10, status: "libre" },
@@ -52,7 +52,7 @@ const generateInitialZones = (): Zone[] => {
         { id: "P1", type: "parasole", label: "Parasole 1", capacity: 4, status: "occupe", occupiedSince: new Date(now.getTime() - 35 * 60000).toISOString() },
         { id: "P2", type: "parasole", label: "Parasole 2", capacity: 4, status: "libre" },
         { id: "P3", type: "parasole", label: "Parasole 3", capacity: 4, status: "occupe", occupiedSince: new Date(now.getTime() - 25 * 60000).toISOString() },
-        { id: "P4", type: "parasole", label: "Parasole 4", capacity: 4, status: "attente", reservation: { name: "Famille", time: new Date(now.getTime() - 5 * 60000).toTimeString().slice(0, 5), guests: 4 } }, // LATE
+        { id: "P4", type: "parasole", label: "Parasole 4", capacity: 4, status: "reserve", reservation: { name: "Famille", time: new Date(now.getTime() - 5 * 60000).toTimeString().slice(0, 5), guests: 4 } }, // LATE
         { id: "P5", type: "parasole", label: "Parasole 5", capacity: 4, status: "libre" },
         { id: "P6", type: "parasole", label: "Parasole 6", capacity: 4, status: "occupe", occupiedSince: new Date(now.getTime() - 40 * 60000).toISOString() },
 
@@ -62,7 +62,7 @@ const generateInitialZones = (): Zone[] => {
         { id: "M3", type: "paillote", label: "Paillote 3", capacity: 2, status: "occupe", occupiedSince: new Date(now.getTime() - 20 * 60000).toISOString() },
         { id: "M4", type: "paillote", label: "Paillote 4", capacity: 2, status: "libre" },
         { id: "M5", type: "paillote", label: "Paillote 5", capacity: 2, status: "libre" },
-        { id: "M6", type: "paillote", label: "Paillote 6", capacity: 2, status: "attente", reservation: { name: "Couple", time: new Date(now.getTime() + 45 * 60000).toTimeString().slice(0, 5), guests: 2 } },
+        { id: "M6", type: "paillote", label: "Paillote 6", capacity: 2, status: "reserve", reservation: { name: "Couple", time: new Date(now.getTime() + 45 * 60000).toTimeString().slice(0, 5), guests: 2 } },
         { id: "M7", type: "paillote", label: "Paillote 7", capacity: 2, status: "libre" },
         { id: "M8", type: "paillote", label: "Paillote 8", capacity: 2, status: "occupe", occupiedSince: new Date(now.getTime() - 50 * 60000).toISOString() },
         { id: "M9", type: "paillote", label: "Paillote 9", capacity: 2, status: "libre" },
@@ -78,9 +78,8 @@ const generateInitialZones = (): Zone[] => {
 
 const statusConfig: Record<ZoneStatus, { bg: string; border: string; text: string; label: string }> = {
     libre: { bg: "#DCFCE7", border: "#22C55E", text: "#166534", label: "Libre" },
-    attente: { bg: "#FEF3C7", border: "#F59E0B", text: "#92400E", label: "En attente bateau" },
-    occupe: { bg: "#DBEAFE", border: "#3B82F6", text: "#1E40AF", label: "Client arrivé" },
-    commande: { bg: "#FEE2E2", border: "#EF4444", text: "#B91C1C", label: "Commande en cours" },
+    reserve: { bg: "#FEF3C7", border: "#F59E0B", text: "#92400E", label: "Réservé" },
+    occupe: { bg: "#DBEAFE", border: "#3B82F6", text: "#1E40AF", label: "Occupé" },
 };
 
 const typeConfig = {
@@ -104,16 +103,6 @@ const formatDuration = (minutes: number) => {
         return m > 0 ? `${h}h${m}` : `${h}h`;
     }
     return `${minutes}m`;
-};
-
-// Helper: check if reservation is arriving soon (within 30 min)
-const isReservationImminent = (reservation?: Zone["reservation"]) => {
-    if (!reservation) return false;
-    const [hours, minutes] = reservation.time.split(":").map(Number);
-    const reservationTime = new Date();
-    reservationTime.setHours(hours, minutes, 0, 0);
-    const diffMinutes = (reservationTime.getTime() - Date.now()) / 60000;
-    return diffMinutes > 0 && diffMinutes <= 30;
 };
 
 // Helper: check if reservation is late
@@ -140,7 +129,53 @@ export default function FloorPlanPage() {
     const [, setTick] = useState(0);
     const [showAssignmentPanel, setShowAssignmentPanel] = useState(false);
     const [guestCount, setGuestCount] = useState(2);
-    const [timeOffset, setTimeOffset] = useState(0); // In hours from now
+    const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    });
+    const [selectedDate, setSelectedDate] = useState<Date>(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+    });
+
+    const handlePreviousWeek = () => {
+        const newDate = new Date(currentWeekStart);
+        newDate.setDate(newDate.getDate() - 7);
+        setCurrentWeekStart(newDate);
+    };
+
+    const handleNextWeek = () => {
+        const newDate = new Date(currentWeekStart);
+        newDate.setDate(newDate.getDate() + 7);
+        setCurrentWeekStart(newDate);
+    };
+
+    const handleToday = () => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        setSelectedDate(d);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        setCurrentWeekStart(new Date(d.setDate(diff)));
+    };
+
+    const daysOfWeek = useMemo(() => {
+        return Array.from({ length: 7 }).map((_, i) => {
+            const d = new Date(currentWeekStart);
+            d.setDate(d.getDate() + i);
+            return d;
+        });
+    }, [currentWeekStart]);
+
+    const isSameDay = (d1: Date, d2: Date) => {
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    };
 
     // Initialize zones
     useEffect(() => {
@@ -162,10 +197,9 @@ export default function FloorPlanPage() {
 
     // KPIs
     const kpis = useMemo(() => {
-        const occupied = zones.filter(z => z.status === "occupe" || z.status === "commande");
-        const reserved = zones.filter(z => z.status === "attente");
+        const occupied = zones.filter(z => z.status === "occupe");
+        const reserved = zones.filter(z => z.status === "reserve");
         const ordersDelayed = zones.filter(z => isOrderDelayed(z.order));
-        const arrivingImminently = zones.filter(z => isReservationImminent(z.reservation));
         const lateReservations = zones.filter(z => isReservationLate(z.reservation));
 
         return {
@@ -173,7 +207,6 @@ export default function FloorPlanPage() {
             libre: zones.filter(z => z.status === "libre").length,
             reserved: reserved.length,
             ordersDelayed: ordersDelayed.length,
-            arrivingImminently: arrivingImminently.length,
             lateReservations: lateReservations.length,
         };
     }, [zones]);
@@ -235,10 +268,8 @@ export default function FloorPlanPage() {
         const hasNewOrder = zone.order?.status === "new";
         const isReady = zone.order?.status === "ready";
         const orderDelayed = isOrderDelayed(zone.order);
-        const imminent = isReservationImminent(zone.reservation);
         const late = isReservationLate(zone.reservation);
         const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
-        const isLongOccupation = occupationMinutes >= 90; // 1.5h
 
         const baseStyle: React.CSSProperties = {
             display: "flex",
@@ -268,12 +299,12 @@ export default function FloorPlanPage() {
                 <span style={{ fontWeight: 700, fontSize: "0.75rem", color: status.text }}>{zone.id}</span>
 
                 {/* Duration for occupied zones */}
-                {(zone.status === "occupe" || zone.status === "commande") && zone.occupiedSince && (
+                {(zone.status === "occupe") && zone.occupiedSince && (
                     <span
                         style={{
                             fontSize: "0.5rem",
-                            color: isLongOccupation ? "#EF4444" : status.text,
-                            fontWeight: isLongOccupation ? 700 : 500,
+                            color: status.text,
+                            fontWeight: 500,
                         }}
                     >
                         {formatDuration(occupationMinutes)}
@@ -286,7 +317,7 @@ export default function FloorPlanPage() {
                 )}
 
                 {/* Reservation time for reserved zones */}
-                {zone.status === "attente" && zone.reservation && (
+                {zone.status === "reserve" && zone.reservation && (
                     <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>
                 )}
 
@@ -319,25 +350,6 @@ export default function FloorPlanPage() {
                         <Check style={{ width: 10, height: 10, color: "#FFF" }} />
                     </div>
                 )}
-                {imminent && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "-6px",
-                            right: "-6px",
-                            width: "16px",
-                            height: "16px",
-                            backgroundColor: "#F59E0B",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            animation: "pulse 2s infinite",
-                        }}
-                    >
-                        <Clock style={{ width: 10, height: 10, color: "#FFF" }} />
-                    </div>
-                )}
                 {late && (
                     <div
                         style={{
@@ -355,26 +367,6 @@ export default function FloorPlanPage() {
                         }}
                     >
                         <AlertTriangle style={{ width: 10, height: 10, color: "#FFF" }} />
-                    </div>
-                )}
-
-                {/* Long occupation warning */}
-                {isLongOccupation && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "-6px",
-                            left: "-6px",
-                            width: "16px",
-                            height: "16px",
-                            backgroundColor: "#9333EA",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                        }}
-                    >
-                        <Clock style={{ width: 10, height: 10, color: "#FFF" }} />
                     </div>
                 )}
             </button>
@@ -413,14 +405,14 @@ export default function FloorPlanPage() {
                 <p style={{ color: "#7A7A7A" }}>Vue en temps réel des réservations et commandes</p>
             </div>
 
-            {/* Time Navigation Bar */}
+            {/* Weekly Navigation Bar */}
             <div
                 style={{
                     marginBottom: "1rem",
                     padding: "0.75rem 1rem",
-                    backgroundColor: timeOffset !== 0 ? "#DBEAFE" : "#FFF",
+                    backgroundColor: "#FFF",
                     borderRadius: "12px",
-                    border: timeOffset !== 0 ? "2px solid #3B82F6" : "1px solid #E5E7EB",
+                    border: "1px solid #E5E7EB",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -428,66 +420,90 @@ export default function FloorPlanPage() {
                     flexWrap: "wrap",
                 }}
             >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Clock style={{ width: 18, height: 18, color: timeOffset !== 0 ? "#3B82F6" : "#6B7280" }} />
-                    <span style={{ fontWeight: 600, color: timeOffset !== 0 ? "#1E40AF" : "#222", fontSize: "0.875rem" }}>
-                        {timeOffset === 0
-                            ? `Maintenant (${new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })})`
-                            : `Prévision +${timeOffset}h (${new Date(Date.now() + timeOffset * 3600000).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })})`
-                        }
-                    </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {/* Date display & Today button */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <Clock style={{ width: 18, height: 18, color: "#3B82F6" }} />
+                        <span style={{ fontWeight: 600, color: "#1E40AF", fontSize: "0.875rem", textTransform: "capitalize" }}>
+                            {selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                        </span>
+                    </div>
                     <button
-                        onClick={() => setTimeOffset(Math.max(0, timeOffset - 1))}
-                        disabled={timeOffset === 0}
+                        onClick={handleToday}
+                        style={{
+                            padding: "4px 12px",
+                            backgroundColor: "#F3F4F6",
+                            color: "#4B5563",
+                            border: "1px solid #E5E7EB",
+                            borderRadius: "100px",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                        }}
+                    >
+                        Aujourd'hui
+                    </button>
+                </div>
+
+                {/* Days of week selector & Week navigation */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <button
+                        onClick={handlePreviousWeek}
                         style={{
                             width: "32px",
                             height: "32px",
-                            backgroundColor: timeOffset === 0 ? "#F3F4F6" : "#FFF",
+                            backgroundColor: "#FFF",
                             border: "1px solid #E5E7EB",
                             borderRadius: "8px",
-                            cursor: timeOffset === 0 ? "not-allowed" : "pointer",
+                            cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            opacity: timeOffset === 0 ? 0.5 : 1,
                         }}
                     >
                         <ChevronLeft style={{ width: 16, height: 16, color: "#6B7280" }} />
                     </button>
-                    {[0, 1, 2, 3, 4].map((h) => (
-                        <button
-                            key={h}
-                            onClick={() => setTimeOffset(h)}
-                            style={{
-                                padding: "4px 12px",
-                                backgroundColor: timeOffset === h ? "#3B82F6" : "#FFF",
-                                color: timeOffset === h ? "#FFF" : "#6B7280",
-                                border: "1px solid #E5E7EB",
-                                borderRadius: "100px",
-                                fontSize: "0.75rem",
-                                fontWeight: 500,
-                                cursor: "pointer",
-                            }}
-                        >
-                            {h === 0 ? "Maintenant" : `+${h}h`}
-                        </button>
-                    ))}
+                    
+                    <div style={{ display: "flex", gap: "4px", backgroundColor: "#F9FAFB", padding: "4px", borderRadius: "10px", border: "1px solid #F3F4F6" }}>
+                        {daysOfWeek.map((dayDate) => {
+                            const isSelected = isSameDay(dayDate, selectedDate);
+                            const dayName = dayDate.toLocaleDateString("fr-FR", { weekday: "short" }).substring(0, 3);
+                            return (
+                                <button
+                                    key={dayDate.toISOString()}
+                                    onClick={() => setSelectedDate(dayDate)}
+                                    style={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        padding: "4px 12px",
+                                        backgroundColor: isSelected ? "#3B82F6" : "transparent",
+                                        color: isSelected ? "#FFF" : "#6B7280",
+                                        border: "none",
+                                        borderRadius: "8px",
+                                        cursor: "pointer",
+                                        transition: "all 0.2s",
+                                    }}
+                                >
+                                    <span style={{ fontSize: "0.65rem", textTransform: "uppercase", fontWeight: 600 }}>{dayName}</span>
+                                    <span style={{ fontSize: "0.875rem", fontWeight: 700 }}>{dayDate.getDate()}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
                     <button
-                        onClick={() => setTimeOffset(timeOffset + 1)}
-                        disabled={timeOffset >= 4}
+                        onClick={handleNextWeek}
                         style={{
                             width: "32px",
                             height: "32px",
-                            backgroundColor: timeOffset >= 4 ? "#F3F4F6" : "#FFF",
+                            backgroundColor: "#FFF",
                             border: "1px solid #E5E7EB",
                             borderRadius: "8px",
-                            cursor: timeOffset >= 4 ? "not-allowed" : "pointer",
+                            cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            opacity: timeOffset >= 4 ? 0.5 : 1,
                         }}
                     >
                         <ChevronRight style={{ width: 16, height: 16, color: "#6B7280" }} />
@@ -628,16 +644,7 @@ export default function FloorPlanPage() {
                     <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>{kpis.reserved}</span>
                     <span style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>réservées</span>
                 </div>
-                {kpis.arrivingImminently > 0 && (
-                    <>
-                        <div style={{ width: "1px", height: "20px", backgroundColor: "#E5E7EB" }} />
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#F59E0B" }}>
-                            <Clock style={{ width: 14, height: 14 }} />
-                            <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>{kpis.arrivingImminently}</span>
-                            <span style={{ fontSize: "0.75rem" }}>arrivées</span>
-                        </div>
-                    </>
-                )}
+
                 {kpis.lateReservations > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#EF4444" }}>
                         <AlertTriangle style={{ width: 14, height: 14 }} />
@@ -677,15 +684,6 @@ export default function FloorPlanPage() {
                         <span style={{ fontSize: "0.75rem", color: "#6B7280" }}>{config.label}</span>
                     </div>
                 ))}
-                <div style={{ width: "1px", height: "16px", backgroundColor: "#E5E7EB" }} />
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <div style={{ width: 14, height: 14, backgroundColor: "#F59E0B", borderRadius: "50%" }} />
-                    <span style={{ fontSize: "0.75rem", color: "#6B7280" }}>Arrivée imminente</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <div style={{ width: 14, height: 14, backgroundColor: "#9333EA", borderRadius: "50%" }} />
-                    <span style={{ fontSize: "0.75rem", color: "#6B7280" }}>Occupation longue</span>
-                </div>
             </div>
 
             {/* Floor Plan */}
@@ -704,11 +702,9 @@ export default function FloorPlanPage() {
                     <div style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: "12px" }}>
                         {stats.vip.slice(0, 3).map(zone => {
                             const status = statusConfig[zone.status];
-                            const imminent = isReservationImminent(zone.reservation);
                             const late = isReservationLate(zone.reservation);
                             const orderDelayed = isOrderDelayed(zone.order);
                             const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
-                            const isLongOccupation = occupationMinutes >= 90;
 
                             return (
                                 <button
@@ -730,21 +726,16 @@ export default function FloorPlanPage() {
                                     }}
                                 >
                                     <span style={{ fontWeight: 700, fontSize: "0.7rem", color: status.text }}>{zone.id}</span>
-                                    {(zone.status === "occupe" || zone.status === "commande") && zone.occupiedSince && (
-                                        <span style={{ fontSize: "0.5rem", color: isLongOccupation ? "#EF4444" : status.text, fontWeight: isLongOccupation ? 700 : 500 }}>
+                                    {(zone.status === "occupe") && zone.occupiedSince && (
+                                        <span style={{ fontSize: "0.5rem", color: status.text, fontWeight: 500 }}>
                                             {formatDuration(occupationMinutes)}
                                         </span>
                                     )}
                                     {zone.status === "libre" && <span style={{ fontSize: "0.55rem", color: status.text }}>{zone.capacity}p</span>}
-                                    {zone.status === "attente" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>}
-                                    {(imminent || late || orderDelayed) && (
-                                        <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "14px", height: "14px", backgroundColor: late || orderDelayed ? "#EF4444" : "#F59E0B", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 1s infinite" }}>
-                                            {late || orderDelayed ? <AlertTriangle style={{ width: 8, height: 8, color: "#FFF" }} /> : <Clock style={{ width: 8, height: 8, color: "#FFF" }} />}
-                                        </div>
-                                    )}
-                                    {isLongOccupation && (
-                                        <div style={{ position: "absolute", top: "-6px", left: "-6px", width: "14px", height: "14px", backgroundColor: "#9333EA", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                            <Clock style={{ width: 8, height: 8, color: "#FFF" }} />
+                                    {zone.status === "reserve" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>}
+                                    {(late || orderDelayed) && (
+                                        <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "14px", height: "14px", backgroundColor: "#EF4444", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 1s infinite" }}>
+                                            <AlertTriangle style={{ width: 8, height: 8, color: "#FFF" }} />
                                         </div>
                                     )}
                                 </button>
@@ -756,11 +747,9 @@ export default function FloorPlanPage() {
                     <div style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: "12px" }}>
                         {stats.vip.slice(3).map(zone => {
                             const status = statusConfig[zone.status];
-                            const imminent = isReservationImminent(zone.reservation);
                             const late = isReservationLate(zone.reservation);
                             const orderDelayed = isOrderDelayed(zone.order);
                             const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
-                            const isLongOccupation = occupationMinutes >= 90;
 
                             return (
                                 <button
@@ -782,21 +771,16 @@ export default function FloorPlanPage() {
                                     }}
                                 >
                                     <span style={{ fontWeight: 700, fontSize: "0.7rem", color: status.text }}>{zone.id}</span>
-                                    {(zone.status === "occupe" || zone.status === "commande") && zone.occupiedSince && (
-                                        <span style={{ fontSize: "0.5rem", color: isLongOccupation ? "#EF4444" : status.text, fontWeight: isLongOccupation ? 700 : 500 }}>
+                                    {(zone.status === "occupe") && zone.occupiedSince && (
+                                        <span style={{ fontSize: "0.5rem", color: status.text, fontWeight: 500 }}>
                                             {formatDuration(occupationMinutes)}
                                         </span>
                                     )}
                                     {zone.status === "libre" && <span style={{ fontSize: "0.55rem", color: status.text }}>{zone.capacity}p</span>}
-                                    {zone.status === "attente" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>}
-                                    {(imminent || late || orderDelayed) && (
-                                        <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "14px", height: "14px", backgroundColor: late || orderDelayed ? "#EF4444" : "#F59E0B", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 1s infinite" }}>
-                                            {late || orderDelayed ? <AlertTriangle style={{ width: 8, height: 8, color: "#FFF" }} /> : <Clock style={{ width: 8, height: 8, color: "#FFF" }} />}
-                                        </div>
-                                    )}
-                                    {isLongOccupation && (
-                                        <div style={{ position: "absolute", top: "-6px", left: "-6px", width: "14px", height: "14px", backgroundColor: "#9333EA", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                            <Clock style={{ width: 8, height: 8, color: "#FFF" }} />
+                                    {zone.status === "reserve" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>}
+                                    {(late || orderDelayed) && (
+                                        <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "14px", height: "14px", backgroundColor: "#EF4444", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 1s infinite" }}>
+                                            <AlertTriangle style={{ width: 8, height: 8, color: "#FFF" }} />
                                         </div>
                                     )}
                                 </button>
@@ -863,7 +847,7 @@ export default function FloorPlanPage() {
                         </div>
 
                         {/* Occupation Duration */}
-                        {selectedZone.occupiedSince && (selectedZone.status === "occupe" || selectedZone.status === "commande") && (
+                        {selectedZone.occupiedSince && (selectedZone.status === "occupe") && (
                             <div style={{ backgroundColor: "#F3F4F6", padding: "0.75rem", borderRadius: "10px", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "8px" }}>
                                 <Clock style={{ width: 16, height: 16, color: "#6B7280" }} />
                                 <span style={{ fontSize: "0.875rem", color: "#374151" }}>
@@ -873,23 +857,20 @@ export default function FloorPlanPage() {
                         )}
 
                         {selectedZone.reservation && (
-                            <div style={{ backgroundColor: isReservationLate(selectedZone.reservation) ? "#FEE2E2" : isReservationImminent(selectedZone.reservation) ? "#FEF3C7" : "#DBEAFE", padding: "1rem", borderRadius: "10px", marginBottom: "1rem" }}>
+                            <div style={{ backgroundColor: isReservationLate(selectedZone.reservation) ? "#FEE2E2" : "#DBEAFE", padding: "1rem", borderRadius: "10px", marginBottom: "1rem" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                                    <p style={{ fontWeight: 600, color: isReservationLate(selectedZone.reservation) ? "#B91C1C" : isReservationImminent(selectedZone.reservation) ? "#92400E" : "#1E40AF", fontSize: "0.875rem" }}>
+                                    <p style={{ fontWeight: 600, color: isReservationLate(selectedZone.reservation) ? "#B91C1C" : "#1E40AF", fontSize: "0.875rem" }}>
                                         Réservation
                                     </p>
-                                    {isReservationImminent(selectedZone.reservation) && (
-                                        <span style={{ padding: "2px 6px", backgroundColor: "#F59E0B", color: "#FFF", borderRadius: "4px", fontSize: "0.625rem", fontWeight: 600 }}>IMMINENT</span>
-                                    )}
                                     {isReservationLate(selectedZone.reservation) && (
                                         <span style={{ padding: "2px 6px", backgroundColor: "#EF4444", color: "#FFF", borderRadius: "4px", fontSize: "0.625rem", fontWeight: 600 }}>EN RETARD</span>
                                     )}
                                 </div>
-                                <p style={{ color: isReservationLate(selectedZone.reservation) ? "#B91C1C" : isReservationImminent(selectedZone.reservation) ? "#92400E" : "#1E40AF", fontSize: "0.875rem" }}>
+                                <p style={{ color: isReservationLate(selectedZone.reservation) ? "#B91C1C" : "#1E40AF", fontSize: "0.875rem" }}>
                                     <Clock style={{ width: 12, height: 12, display: "inline", marginRight: "4px" }} />
                                     {selectedZone.reservation.time} - {selectedZone.reservation.name}
                                 </p>
-                                <p style={{ fontSize: "0.75rem", color: isReservationLate(selectedZone.reservation) ? "#DC2626" : isReservationImminent(selectedZone.reservation) ? "#B45309" : "#3B82F6" }}>
+                                <p style={{ fontSize: "0.75rem", color: isReservationLate(selectedZone.reservation) ? "#DC2626" : "#3B82F6" }}>
                                     {selectedZone.reservation.guests} personnes
                                 </p>
                             </div>
