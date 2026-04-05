@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { MapPin, Users, Clock, AlertCircle, Check, X, AlertTriangle, ShoppingBag, Sparkles, UserPlus, ChevronLeft, ChevronRight, Anchor, Ship } from "lucide-react";
+import { MapPin, Users, Clock, AlertCircle, Check, X, AlertTriangle, ShoppingBag, Sparkles, UserPlus, ChevronLeft, ChevronRight, Anchor, Ship, Calendar } from "lucide-react";
 
 // Zone status for beach club (day-long stays)
 type ZoneStatus = "libre" | "reserve" | "occupe";
@@ -422,11 +422,31 @@ export default function FloorPlanPage() {
             >
                 {/* Date display & Today button */}
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }}>
                         <Clock style={{ width: 18, height: 18, color: "#3B82F6" }} />
                         <span style={{ fontWeight: 600, color: "#1E40AF", fontSize: "0.875rem", textTransform: "capitalize" }}>
                             {selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                         </span>
+                        <div style={{ position: "relative", marginLeft: "4px", display: "flex", alignItems: "center", backgroundColor: "#F3F4F6", borderRadius: "8px" }}>
+                            <button style={{ background: "none", border: "1px solid #E5E7EB", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", padding: "6px" }}>
+                                <Calendar style={{ width: 16, height: 16 }} />
+                            </button>
+                            <input
+                                type="date"
+                                value={(() => { const d = new Date(selectedDate); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; })()}
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        const newDate = new Date(e.target.value);
+                                        newDate.setHours(0, 0, 0, 0);
+                                        setSelectedDate(newDate);
+                                        const day = newDate.getDay();
+                                        const diff = newDate.getDate() - day + (day === 0 ? -6 : 1);
+                                        setCurrentWeekStart(new Date(new Date(newDate).setDate(diff)));
+                                    }
+                                }}
+                                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
+                            />
+                        </div>
                     </div>
                     <button
                         onClick={handleToday}
