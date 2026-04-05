@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { MapPin, Users, Clock, AlertCircle, Check, X, AlertTriangle, ShoppingBag, Sparkles, UserPlus, ChevronLeft, ChevronRight, Anchor, Ship, Calendar } from "lucide-react";
+import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
 
 // Zone status for beach club (day-long stays)
 type ZoneStatus = "libre" | "reserve" | "occupe";
@@ -129,6 +130,7 @@ export default function FloorPlanPage() {
     const [, setTick] = useState(0);
     const [showAssignmentPanel, setShowAssignmentPanel] = useState(false);
     const [guestCount, setGuestCount] = useState(2);
+    const [showCalendarPopup, setShowCalendarPopup] = useState(false);
     const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
         const d = new Date();
         d.setHours(0, 0, 0, 0);
@@ -428,24 +430,47 @@ export default function FloorPlanPage() {
                             {selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                         </span>
                         <div style={{ position: "relative", marginLeft: "4px", display: "flex", alignItems: "center", backgroundColor: "#F3F4F6", borderRadius: "8px" }}>
-                            <button style={{ background: "none", border: "1px solid #E5E7EB", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", padding: "6px" }}>
+                            <button 
+                                onClick={() => setShowCalendarPopup(!showCalendarPopup)}
+                                style={{ background: "none", border: "1px solid #E5E7EB", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", padding: "6px" }}
+                            >
                                 <Calendar style={{ width: 16, height: 16 }} />
                             </button>
-                            <input
-                                type="date"
-                                value={(() => { const d = new Date(selectedDate); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; })()}
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        const newDate = new Date(e.target.value);
-                                        newDate.setHours(0, 0, 0, 0);
-                                        setSelectedDate(newDate);
-                                        const day = newDate.getDay();
-                                        const diff = newDate.getDate() - day + (day === 0 ? -6 : 1);
-                                        setCurrentWeekStart(new Date(new Date(newDate).setDate(diff)));
-                                    }
-                                }}
-                                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
-                            />
+                            
+                            {showCalendarPopup && (
+                                <>
+                                    <div 
+                                        style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 40 }}
+                                        onClick={() => setShowCalendarPopup(false)}
+                                    />
+                                    <div style={{ 
+                                        position: "absolute", 
+                                        top: "100%", 
+                                        left: 0, 
+                                        marginTop: "8px", 
+                                        backgroundColor: "#FFF", 
+                                        padding: "1.5rem", 
+                                        borderRadius: "16px", 
+                                        boxShadow: "0 10px 25px rgba(0,0,0,0.1)", 
+                                        border: "1px solid #E5E7EB",
+                                        zIndex: 50,
+                                        width: "350px"
+                                    }}>
+                                        <AvailabilityCalendar
+                                            selectedDate={(() => { const d = new Date(selectedDate); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; })()}
+                                            onDateSelect={(dateStr) => {
+                                                const newDate = new Date(dateStr);
+                                                newDate.setHours(0, 0, 0, 0);
+                                                setSelectedDate(newDate);
+                                                const day = newDate.getDay();
+                                                const diff = newDate.getDate() - day + (day === 0 ? -6 : 1);
+                                                setCurrentWeekStart(new Date(new Date(newDate).setDate(diff)));
+                                                setShowCalendarPopup(false);
+                                            }}
+                                        />
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                     <button
