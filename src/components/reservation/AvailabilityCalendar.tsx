@@ -100,7 +100,7 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId, co
             const dayOfWeek = date.getDay();
 
             // Check if within opening season
-            const isInSeason = month >= MIN_MONTH && month <= MAX_MONTH;
+            const isInSeason = currentMonth >= MIN_MONTH && currentMonth <= MAX_MONTH;
 
             const guestCount = dayReservations[dateStr] || 0;
             const fillRate = Math.min(100, Math.round((guestCount / MAX_DAILY_CAPACITY) * 100));
