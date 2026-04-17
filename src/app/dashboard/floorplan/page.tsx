@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { MapPin, Users, Clock, AlertCircle, Check, X, AlertTriangle, ShoppingBag, Sparkles, UserPlus, ChevronLeft, ChevronRight, Anchor, Ship, Calendar } from "lucide-react";
 import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
 import { getReservations } from "@/app/actions/reservations";
+import { getReservationConfig, type ReservationConfig } from "@/app/actions/settings";
 // Zone status for beach club (day-long stays)
 type ZoneStatus = "libre" | "reserve" | "occupe";
 
@@ -112,6 +113,7 @@ const isReservationLate = (reservation?: Zone["reservation"]) => {
 
 export default function FloorPlanPage() {
     const [zones, setZones] = useState<Zone[]>([]);
+    const [config, setConfig] = useState<ReservationConfig | null>(null);
     const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
     const [, setTick] = useState(0);
     const [showAssignmentPanel, setShowAssignmentPanel] = useState(false);
@@ -169,6 +171,7 @@ export default function FloorPlanPage() {
     // Initialize zones
     useEffect(() => {
         setZones(generateInitialZones());
+        getReservationConfig().then(setConfig);
         
         // Fetch pending reservations count
         const fetchPendingCount = async () => {
@@ -425,7 +428,8 @@ export default function FloorPlanPage() {
                                         zIndex: 50,
                                         width: "350px"
                                     }}>
-                                        <AvailabilityCalendar
+                                        {config && <AvailabilityCalendar
+                                            config={config}
                                             selectedDate={(() => { const d = new Date(selectedDate); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; })()}
                                             onDateSelect={(dateStr) => {
                                                 const newDate = new Date(dateStr);
@@ -436,7 +440,7 @@ export default function FloorPlanPage() {
                                                 setCurrentWeekStart(new Date(new Date(newDate).setDate(diff)));
                                                 setShowCalendarPopup(false);
                                             }}
-                                        />
+                                        />}
                                     </div>
                                 </>
                             )}
