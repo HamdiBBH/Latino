@@ -439,12 +439,18 @@ function ReservationContent() {
                                     <Calendar style={{ width: 20, height: 20, color: "#E8A87C" }} />
                                     Sélectionnez une date
                                 </label>
-                                <AvailabilityCalendar
-                                    selectedDate={selectedDate}
-                                    onDateSelect={setSelectedDate}
-                                    packageId={selectedPackage?.id}
-                                    config={config}
-                                />
+                                {config ? (
+                                    <AvailabilityCalendar
+                                        selectedDate={selectedDate}
+                                        onDateSelect={setSelectedDate}
+                                        packageId={selectedPackage?.id}
+                                        config={config}
+                                    />
+                                ) : (
+                                    <div style={{ padding: "2rem", textAlign: "center", color: "#7A7A7A" }}>
+                                        Chargement du calendrier...
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
