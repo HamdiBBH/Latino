@@ -885,27 +885,7 @@ export default function FloorPlanPage() {
                             </div>
                         )}
 
-                        {selectedZone.order && (
-                            <div style={{ backgroundColor: isOrderDelayed(selectedZone.order) ? "#FEE2E2" : "#FEF3C7", padding: "1rem", borderRadius: "10px", marginBottom: "1rem" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                                    <p style={{ fontWeight: 600, color: isOrderDelayed(selectedZone.order) ? "#B91C1C" : "#92400E", fontSize: "0.875rem" }}>Commande</p>
-                                    {isOrderDelayed(selectedZone.order) && (
-                                        <span style={{ padding: "2px 6px", backgroundColor: "#EF4444", color: "#FFF", borderRadius: "4px", fontSize: "0.625rem", fontWeight: 600 }}>EN RETARD</span>
-                                    )}
-                                </div>
-                                <p style={{ color: isOrderDelayed(selectedZone.order) ? "#B91C1C" : "#92400E", fontSize: "0.875rem" }}>
-                                    {selectedZone.order.items} articles • {selectedZone.order.total} DT
-                                </p>
-                                {selectedZone.order.createdAt && (
-                                    <p style={{ fontSize: "0.75rem", color: "#6B7280", marginTop: "4px" }}>
-                                        Passée il y a {Math.floor((Date.now() - new Date(selectedZone.order.createdAt).getTime()) / 60000)} min
-                                    </p>
-                                )}
-                                <span style={{ display: "inline-block", marginTop: "6px", padding: "3px 8px", backgroundColor: selectedZone.order.status === "new" ? "#EF4444" : selectedZone.order.status === "preparing" ? "#F59E0B" : "#22C55E", color: "#FFF", borderRadius: "4px", fontSize: "0.625rem", fontWeight: 500 }}>
-                                    {selectedZone.order.status === "new" ? "Nouvelle" : selectedZone.order.status === "preparing" ? "En préparation" : "Prête"}
-                                </span>
-                            </div>
-                        )}
+
 
                         <p style={{ fontWeight: 500, color: "#222", fontSize: "0.875rem", marginBottom: "0.5rem" }}>Changer le statut</p>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
