@@ -3,19 +3,14 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Tag, Users, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import {
-    WEEKLY_OFFERS,
-    isWithinOpeningSeason,
-    OPENING_MONTH_START,
-    OPENING_MONTH_END,
-    MAX_DAILY_CAPACITY,
-    getOpeningStatus
-} from "@/lib/config";
+import { ReservationConfig } from "@/app/actions/settings";
+import { MAX_DAILY_CAPACITY } from "@/lib/config";
 
 interface AvailabilityCalendarProps {
     selectedDate: string;
     onDateSelect: (date: string) => void;
     packageId?: string;
+    config: ReservationConfig;
 }
 
 interface DayInfo {
@@ -35,28 +30,28 @@ const MONTHS_FR = [
 
 const DAYS_FR = ["L", "M", "M", "J", "V", "S", "D"];
 
-export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId }: AvailabilityCalendarProps) {
+export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId, config }: AvailabilityCalendarProps) {
     const today = new Date();
 
-    // Determine initial month - should be within opening season (June-Sep)
+    const MIN_MONTH = parseInt(config.seasonStart.split("-")[0]) - 1;
+    const MAX_MONTH = parseInt(config.seasonEnd.split("-")[0]) - 1;
+
+    // Determine initial month - should be within opening season
     const getInitialMonth = () => {
         const month = today.getMonth();
-        const minMonth = OPENING_MONTH_START - 1; // 5 (June)
-        const maxMonth = OPENING_MONTH_END - 1;   // 8 (September)
 
-        if (month >= minMonth && month <= maxMonth) {
+        if (month >= MIN_MONTH && month <= MAX_MONTH) {
             return month; // Current month is within season
         }
         // If before June or after Sept, show June of this/next year
-        return minMonth;
+        return MIN_MONTH;
     };
 
     const getInitialYear = () => {
         const month = today.getMonth();
-        const maxMonth = OPENING_MONTH_END - 1; // 8 (September)
-
-        // After September, show next year
-        if (month > maxMonth) {
+        
+        // After end of season, show next year
+        if (month > MAX_MONTH) {
             return today.getFullYear() + 1;
         }
         return today.getFullYear();
@@ -104,8 +99,8 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId }: 
             const date = new Date(currentYear, currentMonth, d);
             const dayOfWeek = date.getDay();
 
-            // Check if within opening season (June 1 - Sep 30)
-            const isInSeason = isWithinOpeningSeason(date);
+            // Check if within opening season
+            const isInSeason = month >= MIN_MONTH && month <= MAX_MONTH;
 
             const guestCount = dayReservations[dateStr] || 0;
             const fillRate = Math.min(100, Math.round((guestCount / MAX_DAILY_CAPACITY) * 100));
@@ -115,7 +110,7 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId }: 
 
             availMap[dateStr] = {
                 fillRate: !isInSeason ? 100 : (d === 11 || d === 18 || d === 25 ? 100 : mockFillRate),
-                offer: isInSeason ? WEEKLY_OFFERS[dayOfWeek] : undefined,
+                offer: isInSeason && config.weeklyOffers[String(dayOfWeek)] ? config.weeklyOffers[String(dayOfWeek)]! : undefined,
                 isOutOfSeason: !isInSeason,
             };
         }
@@ -131,10 +126,6 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId }: 
         const day = new Date(year, month, 1).getDay();
         return day === 0 ? 6 : day - 1; // Convert to Monday = 0
     };
-
-    // Only allow navigation between opening months (June = 5 to September = 8)
-    const MIN_MONTH = OPENING_MONTH_START - 1; // 5 (June)
-    const MAX_MONTH = OPENING_MONTH_END - 1;   // 8 (September)
 
     const prevMonth = () => {
         if (currentMonth > MIN_MONTH) {

@@ -59,12 +59,6 @@ export default function ReservationsPage() {
     const [actionLoading, setActionLoading] = useState(false);
     const [declineReason, setDeclineReason] = useState("");
     const [showDeclineModal, setShowDeclineModal] = useState(false);
-    const [autoConfirmEnabled, setAutoConfirmEnabled] = useState(() => {
-        if (typeof window !== "undefined") {
-            return localStorage.getItem("autoConfirmEnabled") === "true";
-        }
-        return false;
-    });
 
     useEffect(() => {
         loadReservations();
@@ -104,22 +98,6 @@ export default function ReservationsPage() {
         setActionLoading(false);
     };
 
-    const handleConfirmAll = async () => {
-        const pendingReservations = reservations.filter(r => r.status === "pending");
-        if (pendingReservations.length === 0) return;
-
-        setActionLoading(true);
-        let successCount = 0;
-
-        for (const reservation of pendingReservations) {
-            const result = await confirmReservation(reservation.id);
-            if (result.success) successCount++;
-        }
-
-        await loadReservations();
-        setActionLoading(false);
-        alert(`${successCount} réservation(s) confirmée(s) sur ${pendingReservations.length}`);
-    };
 
     const pendingCount = reservations.filter(r => r.status === "pending").length;
 
@@ -176,44 +154,6 @@ export default function ReservationsPage() {
                 </div>
             </div>
 
-            {/* Auto-confirmation toggle + Actions rapides */}
-            <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "1rem", backgroundColor: "#F9F5F0", borderRadius: "12px",
-                marginBottom: "1.5rem", border: "1px solid #E5E7EB"
-            }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                        <input
-                            type="checkbox"
-                            checked={autoConfirmEnabled}
-                            onChange={(e) => {
-                                setAutoConfirmEnabled(e.target.checked);
-                                localStorage.setItem("autoConfirmEnabled", e.target.checked ? "true" : "false");
-                            }}
-                            style={{ width: 20, height: 20, accentColor: "#E8A87C" }}
-                        />
-                        <span style={{ fontWeight: 500, color: "#222" }}>🤖 Confirmation automatique</span>
-                    </label>
-                    <span style={{ fontSize: "0.75rem", color: "#7A7A7A" }}>
-                        (Si capacité &lt; 50%, confirmation auto)
-                    </span>
-                </div>
-                {pendingCount > 0 && (
-                    <button
-                        onClick={handleConfirmAll}
-                        disabled={actionLoading}
-                        style={{
-                            display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px",
-                            backgroundColor: "#22C55E", color: "#FFF", border: "none",
-                            borderRadius: "8px", fontWeight: 600, cursor: "pointer"
-                        }}
-                    >
-                        <Check style={{ width: 16, height: 16 }} />
-                        Confirmer tout ({pendingCount})
-                    </button>
-                )}
-            </div>
 
             {/* Today Dashboard Widget */}
             <TodayDashboard />

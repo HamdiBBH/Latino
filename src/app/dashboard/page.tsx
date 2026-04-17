@@ -57,7 +57,6 @@ const weeklyData = [
 // Manager/Admin operational stats
 const operationalStats = [
     { label: "Réservations aujourd'hui", value: "12", icon: CalendarDays, trend: "+20%" },
-    { label: "Commandes en cours", value: "8", icon: ShoppingBag, trend: "+5%" },
     { label: "Visiteurs (7j)", value: "1,234", icon: TrendingUp, trend: "+15%" },
     { label: "Clients inscrits", value: "456", icon: Users, trend: "+8%" },
 ];
@@ -97,60 +96,6 @@ export default async function AdminDashboard() {
                     userName={profile?.full_name || "cher client"}
                     hasReservation={true}
                 />
-            </div>
-        );
-    }
-
-    // ===== RESTAURANT STAFF DASHBOARD =====
-    if (userRole === "RESTAURANT") {
-        return (
-            <div>
-                <div style={{ marginBottom: "2rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "0.5rem" }}>
-                        <ShoppingBag style={{ width: 32, height: 32, color: "#EF4444" }} />
-                        <h1 style={{ fontSize: "1.875rem", fontWeight: 700, color: "#222222" }}>
-                            Cuisine & Commandes
-                        </h1>
-                    </div>
-                    <p style={{ color: "#7A7A7A" }}>
-                        Vue temps réel des commandes
-                    </p>
-                </div>
-
-                <div style={{
-                    backgroundColor: "#FEE2E2",
-                    borderRadius: "16px",
-                    padding: "1.5rem",
-                    marginBottom: "2rem",
-                }}>
-                    <h2 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#991B1B", marginBottom: "0.5rem" }}>
-                        🔥 8 commandes en attente
-                    </h2>
-                    <p style={{ color: "#B91C1C" }}>Priorisez les commandes urgentes</p>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
-                    <Link href="/dashboard/kitchen" style={{
-                        display: "flex", alignItems: "center", gap: "1rem", padding: "1.5rem",
-                        borderRadius: "16px", backgroundColor: "#FFF", border: "1px solid #E5E7EB",
-                        textDecoration: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                    }}>
-                        <div style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <ShoppingBag style={{ width: 24, height: 24, color: "#FFF" }} />
-                        </div>
-                        <span style={{ fontWeight: 600, color: "#222" }}>Voir Cuisine</span>
-                    </Link>
-                    <Link href="/dashboard/orders" style={{
-                        display: "flex", alignItems: "center", gap: "1rem", padding: "1.5rem",
-                        borderRadius: "16px", backgroundColor: "#FFF", border: "1px solid #E5E7EB",
-                        textDecoration: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                    }}>
-                        <div style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: "#F97316", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <CalendarDays style={{ width: 24, height: 24, color: "#FFF" }} />
-                        </div>
-                        <span style={{ fontWeight: 600, color: "#222" }}>Commandes</span>
-                    </Link>
-                </div>
             </div>
         );
     }
@@ -214,16 +159,6 @@ export default async function AdminDashboard() {
                             <LayoutDashboard style={{ width: 24, height: 24, color: "#FFF" }} />
                         </div>
                         <span style={{ fontWeight: 600, color: "#222" }}>Plan de Salle</span>
-                    </Link>
-                    <Link href="/dashboard/orders" style={{
-                        display: "flex", alignItems: "center", gap: "1rem", padding: "1.5rem",
-                        borderRadius: "16px", backgroundColor: "#FFF", border: "1px solid #E5E7EB",
-                        textDecoration: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
-                    }}>
-                        <div style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: "#EAB308", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <ShoppingBag style={{ width: 24, height: 24, color: "#FFF" }} />
-                        </div>
-                        <span style={{ fontWeight: 600, color: "#222" }}>Commandes</span>
                     </Link>
                 </div>
             </div>

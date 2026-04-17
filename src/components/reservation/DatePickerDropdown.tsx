@@ -3,19 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import {
-    WEEKLY_OFFERS,
-    isWithinOpeningSeason,
-    OPENING_MONTH_START,
-    OPENING_MONTH_END,
-    MAX_DAILY_CAPACITY,
-} from "@/lib/config";
+import { ReservationConfig } from "@/app/actions/settings";
+import { MAX_DAILY_CAPACITY } from "@/lib/config";
 
 interface DatePickerDropdownProps {
     selectedDate: string;
     onDateSelect: (date: string) => void;
     onClose: () => void;
     packageId?: string;
+    config: ReservationConfig;
 }
 
 interface DayInfo {
@@ -35,22 +31,22 @@ const MONTHS_FR = [
 
 const DAYS_FR = ["L", "M", "M", "J", "V", "S", "D"];
 
-export function DatePickerDropdown({ selectedDate, onDateSelect, onClose, packageId }: DatePickerDropdownProps) {
+export function DatePickerDropdown({ selectedDate, onDateSelect, onClose, packageId, config }: DatePickerDropdownProps) {
     const today = new Date();
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    const MIN_MONTH = parseInt(config.seasonStart.split("-")[0]) - 1;
+    const MAX_MONTH = parseInt(config.seasonEnd.split("-")[0]) - 1;
+
     const getInitialMonth = () => {
         const month = today.getMonth();
-        const minMonth = OPENING_MONTH_START - 1;
-        const maxMonth = OPENING_MONTH_END - 1;
-        if (month >= minMonth && month <= maxMonth) return month;
-        return minMonth;
+        if (month >= MIN_MONTH && month <= MAX_MONTH) return month;
+        return MIN_MONTH;
     };
 
     const getInitialYear = () => {
         const month = today.getMonth();
-        const maxMonth = OPENING_MONTH_END - 1;
-        if (month > maxMonth) return today.getFullYear() + 1;
+        if (month > MAX_MONTH) return today.getFullYear() + 1;
         return today.getFullYear();
     };
 
@@ -100,8 +96,9 @@ export function DatePickerDropdown({ selectedDate, onDateSelect, onClose, packag
             const fillRate = Math.round((guests / MAX_DAILY_CAPACITY) * 100);
 
             let offer: DayInfo["offer"];
-            const weeklyOffer = WEEKLY_OFFERS[dayOfWeek];
-            if (weeklyOffer && isWithinOpeningSeason(date)) {
+            const isInSeason = currentMonth >= MIN_MONTH && currentMonth <= MAX_MONTH;
+            const weeklyOffer = isInSeason ? config.weeklyOffers[String(dayOfWeek)] : undefined;
+            if (weeklyOffer) {
                 offer = {
                     type: weeklyOffer.type as "discount" | "free_children",
                     value: weeklyOffer.value,
@@ -109,7 +106,7 @@ export function DatePickerDropdown({ selectedDate, onDateSelect, onClose, packag
                 };
             }
 
-            const isOutOfSeason = !isWithinOpeningSeason(date);
+            const isOutOfSeason = !isInSeason;
 
             newAvailability[dateStr] = { fillRate, offer, isOutOfSeason };
         }
@@ -124,7 +121,7 @@ export function DatePickerDropdown({ selectedDate, onDateSelect, onClose, packag
     };
 
     const prevMonth = () => {
-        if (currentMonth === OPENING_MONTH_START - 1) return;
+        if (currentMonth === MIN_MONTH) return;
         if (currentMonth === 0) {
             setCurrentMonth(11);
             setCurrentYear(currentYear - 1);
@@ -134,7 +131,7 @@ export function DatePickerDropdown({ selectedDate, onDateSelect, onClose, packag
     };
 
     const nextMonth = () => {
-        if (currentMonth === OPENING_MONTH_END - 1) return;
+        if (currentMonth === MAX_MONTH) return;
         if (currentMonth === 11) {
             setCurrentMonth(0);
             setCurrentYear(currentYear + 1);
@@ -225,11 +222,11 @@ export function DatePickerDropdown({ selectedDate, onDateSelect, onClose, packag
             >
                 {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                    <button onClick={prevMonth} disabled={currentMonth === OPENING_MONTH_START - 1} style={{ background: "none", border: "none", cursor: "pointer", opacity: currentMonth === OPENING_MONTH_START - 1 ? 0.3 : 1 }}>
+                    <button onClick={prevMonth} disabled={currentMonth === MIN_MONTH} style={{ background: "none", border: "none", cursor: "pointer", opacity: currentMonth === MIN_MONTH ? 0.3 : 1 }}>
                         <ChevronLeft style={{ width: 20, height: 20, color: "#222" }} />
                     </button>
                     <span style={{ fontWeight: 600, color: "#222" }}>{MONTHS_FR[currentMonth]} {currentYear}</span>
-                    <button onClick={nextMonth} disabled={currentMonth === OPENING_MONTH_END - 1} style={{ background: "none", border: "none", cursor: "pointer", opacity: currentMonth === OPENING_MONTH_END - 1 ? 0.3 : 1 }}>
+                    <button onClick={nextMonth} disabled={currentMonth === MAX_MONTH} style={{ background: "none", border: "none", cursor: "pointer", opacity: currentMonth === MAX_MONTH ? 0.3 : 1 }}>
                         <ChevronRight style={{ width: 20, height: 20, color: "#222" }} />
                     </button>
                 </div>

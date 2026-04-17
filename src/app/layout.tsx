@@ -79,7 +79,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={outfit.variable}>
+    <html lang="fr" className={outfit.variable} suppressHydrationWarning>
       <head>
         {/* Structured Data - LocalBusiness */}
         <script

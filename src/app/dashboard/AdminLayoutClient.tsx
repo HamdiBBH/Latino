@@ -88,19 +88,7 @@ const navItems: NavItem[] = [
         icon: CalendarDays,
         roles: ["MANAGER", "ADMIN"],
     },
-    {
-        href: "/dashboard/orders",
-        label: "Commandes",
-        icon: ShoppingBag,
-        roles: ["RESTAURANT", "MANAGER"],
-    },
-    // RESTAURANT: Kitchen
-    {
-        href: "/dashboard/kitchen",
-        label: "Cuisine",
-        icon: ChefHat,
-        roles: ["RESTAURANT"],
-    },
+
     // CLIENT: Dashboard Features
     {
         href: "/dashboard",
@@ -114,12 +102,7 @@ const navItems: NavItem[] = [
         icon: Layers,
         roles: ["CLIENT"],
     },
-    {
-        href: "/dashboard/menu-order",
-        label: "Commander",
-        icon: ShoppingBag,
-        roles: ["CLIENT"],
-    },
+
     {
         href: "/dashboard/loyalty",
         label: "Fidélité",
@@ -237,6 +220,8 @@ export function AdminLayoutClient({
                     zIndex: 50,
                     transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",
                     transition: "transform 0.3s ease",
+                    display: "flex",
+                    flexDirection: "column",
                 }}
                 className="sidebar"
             >
@@ -318,7 +303,7 @@ export function AdminLayoutClient({
                 </div>
 
                 {/* Navigation */}
-                <nav style={{ padding: "1rem" }}>
+                <nav style={{ padding: "1rem", flex: 1, overflowY: "auto" }}>
                     {filteredNavItems.map((item) => {
                         const Icon = item.icon;
                         const isActive =
@@ -353,12 +338,10 @@ export function AdminLayoutClient({
                 {/* Footer */}
                 <div
                     style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
                         padding: "1rem",
                         borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                        flexShrink: 0,
+                        backgroundColor: "#111827",
                     }}
                 >
                     <div

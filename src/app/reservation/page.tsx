@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
+import { getReservationConfig, ReservationConfig } from "@/app/actions/settings";
 import {
     Umbrella,
     Calendar,
@@ -59,6 +60,7 @@ function ReservationContent() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [packages, setPackages] = useState<Package[]>([]);
+    const [config, setConfig] = useState<ReservationConfig | null>(null);
 
     // Form state
     const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
@@ -72,8 +74,13 @@ function ReservationContent() {
     const [specialRequest, setSpecialRequest] = useState("");
 
     useEffect(() => {
-        loadPackages();
+        Promise.all([loadPackages(), loadConfig()]);
     }, []);
+
+    const loadConfig = async () => {
+        const data = await getReservationConfig();
+        setConfig(data);
+    };
 
     const loadPackages = async () => {
         const supabase = createClient();
@@ -129,12 +136,52 @@ function ReservationContent() {
 
     const canProceed = () => {
         switch (step) {
-            case 1: return selectedPackage !== null;
+            case 1: return adults >= 1;
             case 2: return selectedDate !== "";
-            case 3: return adults >= 1 && totalGuests <= (selectedPackage?.capacity_max || 10);
+            case 3: 
+                return selectedPackage !== null 
+                    && totalGuests <= (selectedPackage?.capacity_max || 15)
+                    && getFilteredPackages().some(pkg => pkg.id === selectedPackage.id);
             case 4: return /^\+?\d{8,15}$/.test(guestPhone.replace(/[\s-]/g, ""));
             default: return true;
         }
+    };
+
+    const isRestrictedPeriod = () => {
+        if (!selectedDate || !config) return false;
+        
+        const date = new Date(selectedDate);
+        const y = date.getFullYear();
+        
+        const [rStartMonth, rStartDay] = config.restrictionStart.split("-").map(Number);
+        const [rEndMonth, rEndDay] = config.restrictionEnd.split("-").map(Number);
+        
+        const start = new Date(y, rStartMonth - 1, rStartDay);
+        const end = new Date(y, rEndMonth - 1, rEndDay);
+        
+        return date >= start && date <= end;
+    };
+
+    const getFilteredPackages = () => {
+        if (!config || packages.length === 0) return [];
+        
+        // Toujours filtrer par capacité maximale
+        let available = packages.filter(pkg => totalGuests <= (pkg.capacity_max || 15));
+
+        if (isRestrictedPeriod()) {
+            available = available.filter(pkg => {
+                const name = pkg.name.toLowerCase();
+                if (totalGuests <= config.rules.parasolMaxGuests) {
+                    return name.includes("parasol");
+                } else if (totalGuests <= config.rules.cabanePailloteMaxGuests) {
+                    return (name.includes("cabane") || name.includes("paillote")) && !name.includes("vip");
+                } else if (totalGuests >= config.rules.vipMinGuests) {
+                    return name.includes("cabane") || name.includes("paillote");
+                }
+                return true;
+            });
+        }
+        return available;
     };
 
     const buildSpecialRequest = () => {
@@ -250,9 +297,9 @@ function ReservationContent() {
                         ))}
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px" }}>
-                        <span style={{ fontSize: "0.75rem", color: step >= 1 ? "#E8A87C" : "#7A7A7A" }}>Forfait</span>
+                        <span style={{ fontSize: "0.75rem", color: step >= 1 ? "#E8A87C" : "#7A7A7A" }}>Personnes</span>
                         <span style={{ fontSize: "0.75rem", color: step >= 2 ? "#E8A87C" : "#7A7A7A" }}>Date</span>
-                        <span style={{ fontSize: "0.75rem", color: step >= 3 ? "#E8A87C" : "#7A7A7A" }}>Personnes</span>
+                        <span style={{ fontSize: "0.75rem", color: step >= 3 ? "#E8A87C" : "#7A7A7A" }}>Forfait</span>
                         <span style={{ fontSize: "0.75rem", color: step >= 4 ? "#E8A87C" : "#7A7A7A" }}>Contact</span>
                         <span style={{ fontSize: "0.75rem", color: step >= 5 ? "#E8A87C" : "#7A7A7A" }}>Récap</span>
                     </div>
@@ -261,8 +308,8 @@ function ReservationContent() {
 
             {/* Content */}
             <main style={{ maxWidth: "900px", margin: "0 auto", padding: "2rem" }}>
-                {/* Step 1: Package */}
-                {step === 1 && (
+                {/* Step 3: Package */}
+                {step === 3 && (
                     <div>
                         <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#222", marginBottom: "0.5rem" }}>
                             Choisissez votre forfait
@@ -270,8 +317,16 @@ function ReservationContent() {
                         <p style={{ color: "#7A7A7A", marginBottom: "2rem" }}>
                             Sélectionnez le forfait qui vous convient
                         </p>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
-                            {packages.map((pkg) => (
+                        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr)", gap: "2rem" }}>
+                            {/* Colonne gauche : liste déroulante ou grille des forfaits */}
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "1.5rem", height: "fit-content" }}>
+                            {getFilteredPackages().length === 0 ? (
+                                <div style={{ backgroundColor: "#FEE2E2", padding: "1.5rem", borderRadius: "12px", border: "1px solid #EF4444", color: "#B91C1C", gridColumn: "1 / -1" }}>
+                                    <p style={{ fontWeight: 600 }}>Oups !</p>
+                                    <p>Aucune installation n'est disponible pour la date sélectionnée et pour {totalGuests} personnes.</p>
+                                </div>
+                            ) : (
+                                getFilteredPackages().map((pkg) => (
                                 <div
                                     key={pkg.id}
                                     onClick={() => setSelectedPackage(pkg)}
@@ -316,39 +371,18 @@ function ReservationContent() {
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 2: Date & Time */}
-                {step === 2 && (
-                    <div>
-                        <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#222", marginBottom: "0.5rem" }}>
-                            Choisissez votre date
-                        </h1>
-                        <p style={{ color: "#7A7A7A", marginBottom: "2rem" }}>
-                            Sélectionnez la date et le créneau horaire
-                        </p>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "2rem" }}>
-                            <div style={{ backgroundColor: "#FFF", padding: "2rem", borderRadius: "16px", border: "1px solid #E5E7EB" }}>
-                                <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "1rem", fontWeight: 600 }}>
-                                    <Calendar style={{ width: 20, height: 20, color: "#E8A87C" }} />
-                                    Sélectionnez une date
-                                </label>
-                                <AvailabilityCalendar
-                                    selectedDate={selectedDate}
-                                    onDateSelect={setSelectedDate}
-                                    packageId={selectedPackage?.id}
-                                />
+                                ))
+                            )}
                             </div>
-                            <div style={{ backgroundColor: "#FFF", padding: "2rem", borderRadius: "16px", border: "1px solid #E5E7EB" }}>
+                            
+                            {/* Colonne droite : panel dynamic "Votre forfait" */}
+                            <div style={{ backgroundColor: "#FFF", padding: "2rem", borderRadius: "16px", border: "1px solid #E5E7EB", height: "fit-content" }}>
                                 <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "1rem", fontWeight: 600 }}>
-                                    <Sparkles style={{ width: 20, height: 20, color: "#E8A87C" }} />
+                                    <Umbrella style={{ width: 20, height: 20, color: "#E8A87C" }} />
                                     Votre forfait
                                 </label>
 
-                                {selectedPackage && (
+                                {selectedPackage ? (
                                     <div style={{ backgroundColor: "#F9F5F0", padding: "1.25rem", borderRadius: "12px", marginBottom: "1rem" }}>
                                         <h4 style={{ fontWeight: 600, color: "#222", marginBottom: "0.5rem" }}>
                                             {selectedPackage.name}
@@ -361,6 +395,10 @@ function ReservationContent() {
                                             <span style={{ fontSize: "0.75rem", fontWeight: 400, color: "#7A7A7A" }}> /adulte</span>
                                         </div>
                                     </div>
+                                ) : (
+                                    <p style={{ color: "#7A7A7A", fontSize: "0.875rem", marginBottom: "1rem" }}>
+                                        Sélectionnez une installation pour voir le détail de l'offre.
+                                    </p>
                                 )}
 
                                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "0.875rem" }}>
@@ -386,14 +424,40 @@ function ReservationContent() {
                     </div>
                 )}
 
-                {/* Step 3: Guests */}
-                {step === 3 && (
+                {/* Step 2: Date & Time */}
+                {step === 2 && (
+                    <div>
+                        <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#222", marginBottom: "0.5rem" }}>
+                            Choisissez votre date
+                        </h1>
+                        <p style={{ color: "#7A7A7A", marginBottom: "2rem" }}>
+                            Sélectionnez la date et le créneau horaire
+                        </p>
+                        <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+                            <div style={{ backgroundColor: "#FFF", padding: "2rem", borderRadius: "16px", border: "1px solid #E5E7EB" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "1rem", fontWeight: 600 }}>
+                                    <Calendar style={{ width: 20, height: 20, color: "#E8A87C" }} />
+                                    Sélectionnez une date
+                                </label>
+                                <AvailabilityCalendar
+                                    selectedDate={selectedDate}
+                                    onDateSelect={setSelectedDate}
+                                    packageId={selectedPackage?.id}
+                                    config={config}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 1: Guests */}
+                {step === 1 && (
                     <div>
                         <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "#222", marginBottom: "0.5rem" }}>
                             Nombre de personnes
                         </h1>
                         <p style={{ color: "#7A7A7A", marginBottom: "2rem" }}>
-                            Capacité max: {selectedPackage?.capacity_max || 10} personnes
+                            Les installations disponibles dépendront de la taille de votre groupe
                         </p>
                         <div style={{ backgroundColor: "#FFF", padding: "2rem", borderRadius: "16px", border: "1px solid #E5E7EB" }}>
                             {/* Adults */}
@@ -416,7 +480,7 @@ function ReservationContent() {
                                         {adults}
                                     </span>
                                     <button
-                                        onClick={() => setAdults(Math.min((selectedPackage?.capacity_max || 10) - children4to12 - childrenUnder4, adults + 1))}
+                                        onClick={() => setAdults(Math.min(15 - children4to12 - childrenUnder4, adults + 1))}
                                         style={{
                                             width: 44, height: 44, borderRadius: "50%", border: "2px solid #E8A87C",
                                             backgroundColor: "#E8A87C", color: "#FFF", fontSize: "1.25rem", cursor: "pointer"
@@ -447,7 +511,7 @@ function ReservationContent() {
                                         {children4to12}
                                     </span>
                                     <button
-                                        onClick={() => setChildren4to12(Math.min((selectedPackage?.capacity_max || 10) - adults - childrenUnder4, children4to12 + 1))}
+                                        onClick={() => setChildren4to12(Math.min(15 - adults - childrenUnder4, children4to12 + 1))}
                                         style={{
                                             width: 44, height: 44, borderRadius: "50%", border: "2px solid #E8A87C",
                                             backgroundColor: "#E8A87C", color: "#FFF", fontSize: "1.25rem", cursor: "pointer"
@@ -478,7 +542,7 @@ function ReservationContent() {
                                         {childrenUnder4}
                                     </span>
                                     <button
-                                        onClick={() => setChildrenUnder4(Math.min((selectedPackage?.capacity_max || 10) - adults - children4to12, childrenUnder4 + 1))}
+                                        onClick={() => setChildrenUnder4(Math.min(15 - adults - children4to12, childrenUnder4 + 1))}
                                         style={{
                                             width: 44, height: 44, borderRadius: "50%", border: "2px solid #E8A87C",
                                             backgroundColor: "#E8A87C", color: "#FFF", fontSize: "1.25rem", cursor: "pointer"

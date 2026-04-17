@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { MapPin, Users, Clock, AlertCircle, Check, X, AlertTriangle, ShoppingBag, Sparkles, UserPlus, ChevronLeft, ChevronRight, Anchor, Ship, Calendar } from "lucide-react";
 import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
-
+import { getReservations } from "@/app/actions/reservations";
 // Zone status for beach club (day-long stays)
 type ZoneStatus = "libre" | "reserve" | "occupe";
 
@@ -19,12 +19,6 @@ interface Zone {
         time: string;
         guests: number;
     };
-    order?: {
-        items: number;
-        total: number;
-        status: "new" | "preparing" | "ready";
-        createdAt?: string; // ISO timestamp
-    };
 }
 
 // Generate initial zones with timestamps
@@ -32,20 +26,21 @@ const generateInitialZones = (): Zone[] => {
     const now = new Date();
     return [
         // Cabanes Normales (9)
-        { id: "C1", type: "cabane_normale", label: "Cabane 1", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 45 * 60000).toISOString(), order: { items: 4, total: 180, status: "preparing", createdAt: new Date(now.getTime() - 12 * 60000).toISOString() } },
+        { id: "C1", type: "cabane_normale", label: "Cabane 1", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 45 * 60000).toISOString() },
         { id: "C2", type: "cabane_normale", label: "Cabane 2", capacity: 6, status: "libre" },
         { id: "C3", type: "cabane_normale", label: "Cabane 3", capacity: 6, status: "reserve", reservation: { name: "Martin", time: new Date(now.getTime() + 20 * 60000).toTimeString().slice(0, 5), guests: 4 } },
         { id: "C4", type: "cabane_normale", label: "Cabane 4", capacity: 6, status: "libre" },
         { id: "C5", type: "cabane_normale", label: "Cabane 5", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 120 * 60000).toISOString() }, // 2h - LONG
         { id: "C6", type: "cabane_normale", label: "Cabane 6", capacity: 6, status: "libre" },
-        { id: "C7", type: "cabane_normale", label: "Cabane 7", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 30 * 60000).toISOString(), order: { items: 3, total: 95, status: "new", createdAt: new Date(now.getTime() - 18 * 60000).toISOString() } }, // ORDER DELAY
+        { id: "C7", type: "cabane_normale", label: "Cabane 7", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 30 * 60000).toISOString() }, // ORDER DELAY
         { id: "C8", type: "cabane_normale", label: "Cabane 8", capacity: 6, status: "libre" },
         { id: "C9", type: "cabane_normale", label: "Cabane 9", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 55 * 60000).toISOString() },
+        { id: "C10", type: "cabane_normale", label: "Cabane 10", capacity: 6, status: "libre" },
 
         // Cabanes VIP (5)
         { id: "VIP1", type: "cabane_vip", label: "VIP 1", capacity: 10, status: "reserve", reservation: { name: "VIP Event", time: new Date(now.getTime() + 10 * 60000).toTimeString().slice(0, 5), guests: 8 } }, // IMMINENT
         { id: "VIP2", type: "cabane_vip", label: "VIP 2", capacity: 10, status: "libre" },
-        { id: "VIP3", type: "cabane_vip", label: "VIP 3", capacity: 10, status: "occupe", occupiedSince: new Date(now.getTime() - 90 * 60000).toISOString(), order: { items: 8, total: 450, status: "preparing", createdAt: new Date(now.getTime() - 25 * 60000).toISOString() } },
+        { id: "VIP3", type: "cabane_vip", label: "VIP 3", capacity: 10, status: "occupe", occupiedSince: new Date(now.getTime() - 90 * 60000).toISOString() },
         { id: "VIP4", type: "cabane_vip", label: "VIP 4", capacity: 10, status: "libre" },
         { id: "VIP5", type: "cabane_vip", label: "VIP 5", capacity: 10, status: "libre" },
 
@@ -115,21 +110,13 @@ const isReservationLate = (reservation?: Zone["reservation"]) => {
     return Date.now() > reservationTime.getTime();
 };
 
-// Helper: check if order is delayed (> 15 min for new, > 25 min for preparing)
-const isOrderDelayed = (order?: Zone["order"]) => {
-    if (!order || !order.createdAt) return false;
-    const minutes = Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 60000);
-    if (order.status === "new") return minutes >= 10;
-    if (order.status === "preparing") return minutes >= 20;
-    return false;
-};
-
 export default function FloorPlanPage() {
     const [zones, setZones] = useState<Zone[]>([]);
     const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
     const [, setTick] = useState(0);
     const [showAssignmentPanel, setShowAssignmentPanel] = useState(false);
     const [guestCount, setGuestCount] = useState(2);
+    const [pendingCount, setPendingCount] = useState(0);
     const [showCalendarPopup, setShowCalendarPopup] = useState(false);
     const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
         const d = new Date();
@@ -182,6 +169,15 @@ export default function FloorPlanPage() {
     // Initialize zones
     useEffect(() => {
         setZones(generateInitialZones());
+        
+        // Fetch pending reservations count
+        const fetchPendingCount = async () => {
+            const data = await getReservations({ status: "pending" });
+            if (data && Array.isArray(data)) {
+                setPendingCount(data.length);
+            }
+        };
+        fetchPendingCount();
     }, []);
 
     // Timer tick every 30 seconds
@@ -201,14 +197,12 @@ export default function FloorPlanPage() {
     const kpis = useMemo(() => {
         const occupied = zones.filter(z => z.status === "occupe");
         const reserved = zones.filter(z => z.status === "reserve");
-        const ordersDelayed = zones.filter(z => isOrderDelayed(z.order));
         const lateReservations = zones.filter(z => isReservationLate(z.reservation));
 
         return {
             occupied: occupied.length,
             libre: zones.filter(z => z.status === "libre").length,
             reserved: reserved.length,
-            ordersDelayed: ordersDelayed.length,
             lateReservations: lateReservations.length,
         };
     }, [zones]);
@@ -257,7 +251,6 @@ export default function FloorPlanPage() {
                 ...z,
                 status: newStatus,
                 reservation: undefined,
-                order: undefined,
                 occupiedSince: newStatus === "occupe" ? new Date().toISOString() : undefined,
             };
         }));
@@ -267,9 +260,6 @@ export default function FloorPlanPage() {
     const renderZone = (zone: Zone, shape: "rect" | "hex" | "square") => {
         const status = statusConfig[zone.status];
         const isSelected = selectedZone?.id === zone.id;
-        const hasNewOrder = zone.order?.status === "new";
-        const isReady = zone.order?.status === "ready";
-        const orderDelayed = isOrderDelayed(zone.order);
         const late = isReservationLate(zone.reservation);
         const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
 
@@ -323,35 +313,6 @@ export default function FloorPlanPage() {
                     <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>
                 )}
 
-                {/* Alert badges */}
-                {(hasNewOrder || orderDelayed) && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "-6px",
-                            right: "-6px",
-                            width: "16px",
-                            height: "16px",
-                            backgroundColor: orderDelayed ? "#EF4444" : "#F59E0B",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            animation: orderDelayed ? "pulse 1s infinite" : undefined,
-                        }}
-                    >
-                        {orderDelayed ? (
-                            <AlertTriangle style={{ width: 10, height: 10, color: "#FFF" }} />
-                        ) : (
-                            <AlertCircle style={{ width: 10, height: 10, color: "#FFF" }} />
-                        )}
-                    </div>
-                )}
-                {isReady && !orderDelayed && (
-                    <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "16px", height: "16px", backgroundColor: "#22C55E", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Check style={{ width: 10, height: 10, color: "#FFF" }} />
-                    </div>
-                )}
                 {late && (
                     <div
                         style={{
@@ -383,6 +344,14 @@ export default function FloorPlanPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                         <MapPin style={{ width: 32, height: 32, color: "#E8A87C" }} />
                         <h1 style={{ fontSize: "1.875rem", fontWeight: 700, color: "#222222" }}>Plan de Salle</h1>
+                        {pendingCount > 0 && (
+                            <span style={{
+                                backgroundColor: "#EF4444", color: "#FFF", padding: "4px 12px",
+                                borderRadius: "100px", fontSize: "0.875rem", fontWeight: 600
+                            }}>
+                                {pendingCount} en attente
+                            </span>
+                        )}
                     </div>
                     <button
                         onClick={() => setShowAssignmentPanel(!showAssignmentPanel)}
@@ -697,13 +666,6 @@ export default function FloorPlanPage() {
                         <span style={{ fontSize: "0.75rem" }}>en retard</span>
                     </div>
                 )}
-                {kpis.ordersDelayed > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#EF4444" }}>
-                        <ShoppingBag style={{ width: 14, height: 14 }} />
-                        <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>{kpis.ordersDelayed}</span>
-                        <span style={{ fontSize: "0.75rem" }}>commandes en retard</span>
-                    </div>
-                )}
             </div>
 
             {/* Stats */}
@@ -748,7 +710,6 @@ export default function FloorPlanPage() {
                         {stats.vip.slice(0, 3).map(zone => {
                             const status = statusConfig[zone.status];
                             const late = isReservationLate(zone.reservation);
-                            const orderDelayed = isOrderDelayed(zone.order);
                             const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
 
                             return (
@@ -778,7 +739,7 @@ export default function FloorPlanPage() {
                                     )}
                                     {zone.status === "libre" && <span style={{ fontSize: "0.55rem", color: status.text }}>{zone.capacity}p</span>}
                                     {zone.status === "reserve" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>}
-                                    {(late || orderDelayed) && (
+                                    {late && (
                                         <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "14px", height: "14px", backgroundColor: "#EF4444", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 1s infinite" }}>
                                             <AlertTriangle style={{ width: 8, height: 8, color: "#FFF" }} />
                                         </div>
@@ -793,7 +754,6 @@ export default function FloorPlanPage() {
                         {stats.vip.slice(3).map(zone => {
                             const status = statusConfig[zone.status];
                             const late = isReservationLate(zone.reservation);
-                            const orderDelayed = isOrderDelayed(zone.order);
                             const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
 
                             return (
@@ -823,7 +783,7 @@ export default function FloorPlanPage() {
                                     )}
                                     {zone.status === "libre" && <span style={{ fontSize: "0.55rem", color: status.text }}>{zone.capacity}p</span>}
                                     {zone.status === "reserve" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>}
-                                    {(late || orderDelayed) && (
+                                    {late && (
                                         <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "14px", height: "14px", backgroundColor: "#EF4444", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 1s infinite" }}>
                                             <AlertTriangle style={{ width: 8, height: 8, color: "#FFF" }} />
                                         </div>
@@ -837,7 +797,7 @@ export default function FloorPlanPage() {
                     <div style={{ marginLeft: "80px", marginRight: "80px", display: "flex", flexDirection: "column", gap: "2rem" }}>
                         {/* Row 1: Cabanes Normales */}
                         <div>
-                            <p style={{ fontSize: "0.625rem", color: "#6B7280", marginBottom: "0.5rem" }}>CABANES NORMALES (9)</p>
+                            <p style={{ fontSize: "0.625rem", color: "#6B7280", marginBottom: "0.5rem" }}>CABANES NORMALES (10)</p>
                             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
                                 {stats.cabanes.map(zone => renderZone(zone, "rect"))}
                             </div>

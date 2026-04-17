@@ -1,14 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, MapPin, Clock, Calendar, Plus, Trash2, Save } from "lucide-react";
-
-interface Table {
-    id: string;
-    number: string;
-    capacity: number;
-    zone: string;
-}
+import { Settings, Clock, Calendar, Plus, Trash2, Save } from "lucide-react";
+import ReservationConfigPanel from "@/components/admin/ReservationConfigPanel";
 
 interface ClosureDate {
     id: string;
@@ -16,48 +10,21 @@ interface ClosureDate {
     reason: string;
 }
 
-const initialTables: Table[] = [
-    { id: "1", number: "1", capacity: 2, zone: "Terrasse" },
-    { id: "2", number: "2", capacity: 4, zone: "Terrasse" },
-    { id: "3", number: "3", capacity: 4, zone: "Terrasse" },
-    { id: "4", number: "4", capacity: 6, zone: "Plage" },
-    { id: "5", number: "5", capacity: 6, zone: "Plage" },
-    { id: "6", number: "6", capacity: 8, zone: "Plage" },
-    { id: "7", number: "VIP1", capacity: 10, zone: "VIP" },
-    { id: "8", number: "VIP2", capacity: 12, zone: "VIP" },
-];
-
 const initialClosures: ClosureDate[] = [
     { id: "1", date: "2025-01-01", reason: "Jour de l'An" },
     { id: "2", date: "2025-03-20", reason: "Fête de l'Indépendance" },
 ];
 
-const zones = ["Terrasse", "Plage", "VIP", "Intérieur"];
 
 export default function ConfigPage() {
-    const [tables, setTables] = useState<Table[]>(initialTables);
     const [closures, setClosures] = useState<ClosureDate[]>(initialClosures);
     const [hours, setHours] = useState({
         openTime: "09:00",
         closeTime: "00:00",
         lastOrders: "23:00",
     });
-    const [showAddTable, setShowAddTable] = useState(false);
     const [showAddClosure, setShowAddClosure] = useState(false);
-    const [newTable, setNewTable] = useState({ number: "", capacity: 4, zone: "Terrasse" });
     const [newClosure, setNewClosure] = useState({ date: "", reason: "" });
-
-    const addTable = () => {
-        if (newTable.number) {
-            setTables([...tables, { id: Date.now().toString(), ...newTable }]);
-            setNewTable({ number: "", capacity: 4, zone: "Terrasse" });
-            setShowAddTable(false);
-        }
-    };
-
-    const deleteTable = (id: string) => {
-        setTables(tables.filter(t => t.id !== id));
-    };
 
     const addClosure = () => {
         if (newClosure.date && newClosure.reason) {
@@ -82,7 +49,7 @@ export default function ConfigPage() {
                     </h1>
                 </div>
                 <p style={{ color: "#7A7A7A" }}>
-                    Plan de salle, horaires et fermetures exceptionnelles
+                    Horaires et fermetures exceptionnelles
                 </p>
             </div>
 
@@ -256,137 +223,8 @@ export default function ConfigPage() {
                 </div>
             </div>
 
-            {/* Tables / Plan de salle */}
-            <div
-                style={{
-                    backgroundColor: "#FFFFFF",
-                    padding: "1.5rem",
-                    borderRadius: "16px",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-                    border: "1px solid #E5E7EB",
-                    marginTop: "1.5rem",
-                }}
-            >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <MapPin style={{ width: 24, height: 24, color: "#E8A87C" }} />
-                        <h3 style={{ fontWeight: 600, color: "#222222" }}>Plan de salle ({tables.length} tables)</h3>
-                    </div>
-                    <button
-                        onClick={() => setShowAddTable(true)}
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "8px 16px",
-                            backgroundColor: "#E8A87C",
-                            color: "#FFFFFF",
-                            border: "none",
-                            borderRadius: "8px",
-                            fontSize: "0.875rem",
-                            fontWeight: 500,
-                            cursor: "pointer",
-                        }}
-                    >
-                        <Plus style={{ width: 16, height: 16 }} />
-                        Ajouter une table
-                    </button>
-                </div>
 
-                {showAddTable && (
-                    <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
-                        <input
-                            type="text"
-                            placeholder="N° Table"
-                            value={newTable.number}
-                            onChange={(e) => setNewTable({ ...newTable, number: e.target.value })}
-                            style={{ width: "100px", padding: "10px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
-                        />
-                        <input
-                            type="number"
-                            placeholder="Places"
-                            value={newTable.capacity}
-                            onChange={(e) => setNewTable({ ...newTable, capacity: parseInt(e.target.value) || 4 })}
-                            style={{ width: "80px", padding: "10px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
-                        />
-                        <select
-                            value={newTable.zone}
-                            onChange={(e) => setNewTable({ ...newTable, zone: e.target.value })}
-                            style={{ padding: "10px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
-                        >
-                            {zones.map(z => <option key={z} value={z}>{z}</option>)}
-                        </select>
-                        <button onClick={addTable} style={{ padding: "10px 20px", backgroundColor: "#22C55E", color: "#FFF", border: "none", borderRadius: "8px", cursor: "pointer" }}>
-                            Ajouter
-                        </button>
-                        <button onClick={() => setShowAddTable(false)} style={{ padding: "10px", backgroundColor: "#F3F4F6", border: "none", borderRadius: "8px", cursor: "pointer" }}>
-                            ✕
-                        </button>
-                    </div>
-                )}
-
-                {/* Tables by Zone */}
-                {zones.map((zone) => {
-                    const zoneTables = tables.filter(t => t.zone === zone);
-                    if (zoneTables.length === 0) return null;
-                    return (
-                        <div key={zone} style={{ marginBottom: "1.5rem" }}>
-                            <h4 style={{ fontWeight: 500, color: "#6B7280", marginBottom: "0.75rem", fontSize: "0.875rem" }}>
-                                {zone} ({zoneTables.length} tables)
-                            </h4>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
-                                {zoneTables.map((table) => (
-                                    <div
-                                        key={table.id}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "12px",
-                                            padding: "12px 16px",
-                                            backgroundColor: "#F9FAFB",
-                                            borderRadius: "12px",
-                                            border: "1px solid #E5E7EB",
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                width: "40px",
-                                                height: "40px",
-                                                backgroundColor: "#E8A87C",
-                                                borderRadius: "8px",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                                color: "#FFF",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            {table.number}
-                                        </div>
-                                        <div>
-                                            <p style={{ fontWeight: 500, color: "#222222" }}>Table {table.number}</p>
-                                            <p style={{ fontSize: "0.75rem", color: "#7A7A7A" }}>{table.capacity} places</p>
-                                        </div>
-                                        <button
-                                            onClick={() => deleteTable(table.id)}
-                                            style={{
-                                                padding: "6px",
-                                                backgroundColor: "transparent",
-                                                border: "none",
-                                                cursor: "pointer",
-                                                color: "#9CA3AF",
-                                                marginLeft: "8px",
-                                            }}
-                                        >
-                                            <Trash2 style={{ width: 14, height: 14 }} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+            <ReservationConfigPanel />
         </div>
     );
 }

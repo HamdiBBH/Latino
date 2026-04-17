@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Calendar, Users, UserRound, Umbrella, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { DatePickerDropdown } from "@/components/reservation/DatePickerDropdown";
+import { getReservationConfig, ReservationConfig } from "@/app/actions/settings";
 
 interface Package {
     id: string;
@@ -24,10 +25,16 @@ export function BookingBar() {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [config, setConfig] = useState<ReservationConfig | null>(null);
 
     useEffect(() => {
-        loadPackages();
+        Promise.all([loadPackages(), loadConfig()]);
     }, []);
+
+    const loadConfig = async () => {
+        const data = await getReservationConfig();
+        setConfig(data);
+    };
 
     const loadPackages = async () => {
         const supabase = createClient();
@@ -39,36 +46,69 @@ export function BookingBar() {
         if (data) setPackages(data);
     };
 
-    const selectedPackage = packages.find(p => p.id === formData.type);
-    const maxCapacity = selectedPackage?.capacity_max || 10;
-    const minCapacity = selectedPackage?.capacity_min || 1;
+    const totalGuests = parseInt(formData.adults || "0") + parseInt(formData.children || "0");
 
-    // Generate person options based on selected package capacity
-    const adultOptions = [];
-    for (let i = minCapacity; i <= maxCapacity; i++) {
-        adultOptions.push(i);
-    }
+    const isRestrictedPeriod = () => {
+        if (!formData.date || !config) return false;
+        
+        const date = new Date(formData.date);
+        const y = date.getFullYear();
+        
+        const [rStartMonth, rStartDay] = config.restrictionStart.split("-").map(Number);
+        const [rEndMonth, rEndDay] = config.restrictionEnd.split("-").map(Number);
+        
+        const start = new Date(y, rStartMonth - 1, rStartDay);
+        const end = new Date(y, rEndMonth - 1, rEndDay);
+        
+        return date >= start && date <= end;
+    };
 
+    const getFilteredPackages = () => {
+        if (!config || packages.length === 0) return packages;
+        
+        let available = packages;
+        if (totalGuests > 0) {
+            available = available.filter(pkg => totalGuests <= (pkg.capacity_max || 15));
+        }
+
+        if (isRestrictedPeriod() && totalGuests > 0) {
+            available = available.filter(pkg => {
+                const name = pkg.name.toLowerCase();
+                if (totalGuests <= config.rules.parasolMaxGuests) {
+                    return name.includes("parasol");
+                } else if (totalGuests <= config.rules.cabanePailloteMaxGuests) {
+                    return (name.includes("cabane") || name.includes("paillote")) && !name.includes("vip");
+                } else if (totalGuests >= config.rules.vipMinGuests) {
+                    return name.includes("cabane") || name.includes("paillote");
+                }
+                return true;
+            });
+        }
+        return available;
+    };
+
+    const filteredPackages = getFilteredPackages();
+    const adultOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     const childrenOptions = [0, 1, 2, 3, 4, 5];
 
     const handleSubmit = () => {
         if (!formData.type || !formData.date || !formData.adults) {
             // Redirect to reservation page with whatever data we have
             const params = new URLSearchParams();
-            if (formData.type) params.set("type", formData.type);
-            if (formData.date) params.set("date", formData.date);
             if (formData.adults) params.set("adults", formData.adults);
             if (formData.children && formData.children !== "0") params.set("children", formData.children);
+            if (formData.date) params.set("date", formData.date);
+            if (formData.type) params.set("type", formData.type);
             router.push(`/reservation?${params.toString()}`);
             return;
         }
 
         setIsLoading(true);
         const params = new URLSearchParams();
-        params.set("type", formData.type);
-        params.set("date", formData.date);
         params.set("adults", formData.adults);
         if (formData.children && formData.children !== "0") params.set("children", formData.children);
+        params.set("date", formData.date);
+        params.set("type", formData.type);
         router.push(`/reservation?${params.toString()}`);
     };
 
@@ -98,10 +138,10 @@ export function BookingBar() {
                     flexWrap: "wrap",
                 }}
             >
-                {/* Forfait (Package) */}
+                {/* Adultes */}
                 <div
                     style={{
-                        flex: "1 1 200px",
+                        flex: "1 1 180px",
                         display: "flex",
                         alignItems: "center",
                         gap: "1rem",
@@ -122,7 +162,7 @@ export function BookingBar() {
                             flexShrink: 0,
                         }}
                     >
-                        <Umbrella style={{ width: 18, height: 18 }} />
+                        <Users style={{ width: 18, height: 18 }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <label
@@ -134,25 +174,85 @@ export function BookingBar() {
                                 marginBottom: "4px",
                             }}
                         >
-                            Forfait
+                            Adultes
                         </label>
                         <select
-                            value={formData.type}
-                            onChange={(e) => setFormData({ ...formData, type: e.target.value, adults: "" })}
+                            value={formData.adults}
+                            onChange={(e) => setFormData({ ...formData, adults: e.target.value, type: "" })}
                             style={{
                                 width: "100%",
                                 padding: 0,
                                 fontSize: "0.9rem",
-                                color: formData.type ? "#222" : "#7A7A7A",
+                                color: formData.adults ? "#222" : "#7A7A7A",
                                 border: "none",
                                 background: "transparent",
                                 cursor: "pointer",
                             }}
                         >
                             <option value="">Sélectionner</option>
-                            {packages.map((pkg) => (
-                                <option key={pkg.id} value={pkg.id}>
-                                    {pkg.name}
+                            {adultOptions.map((num) => (
+                                <option key={num} value={num}>
+                                    {num}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Enfants */}
+                <div
+                    style={{
+                        flex: "1 1 180px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "1rem",
+                        padding: "2rem",
+                        borderRight: "1px solid #eee",
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "45px",
+                            height: "45px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: "#F9F5F0",
+                            borderRadius: "50%",
+                            color: "#222222",
+                            flexShrink: 0,
+                        }}
+                    >
+                        <UserRound style={{ width: 18, height: 18 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <label
+                            style={{
+                                display: "block",
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                color: "#222222",
+                                marginBottom: "4px",
+                            }}
+                        >
+                            Enfants <span style={{ fontWeight: 400, fontSize: "0.75rem", color: "#7A7A7A" }}>(4-12 ans)</span>
+                        </label>
+                        <select
+                            value={formData.children}
+                            onChange={(e) => setFormData({ ...formData, children: e.target.value, type: "" })}
+                            style={{
+                                width: "100%",
+                                padding: 0,
+                                fontSize: "0.9rem",
+                                color: "#222",
+                                border: "none",
+                                background: "transparent",
+                                cursor: "pointer",
+                            }}
+                        >
+                            {childrenOptions.map((num) => (
+                                <option key={num} value={num}>
+                                    {num}
                                 </option>
                             ))}
                         </select>
@@ -213,25 +313,25 @@ export function BookingBar() {
                                 : "Sélectionner"}
                         </div>
                     </div>
-                    {showDatePicker && (
+                    {showDatePicker && config && (
                         <DatePickerDropdown
                             selectedDate={formData.date}
-                            onDateSelect={(date) => setFormData({ ...formData, date })}
+                            onDateSelect={(date) => setFormData({ ...formData, date, type: "" })}
                             onClose={() => setShowDatePicker(false)}
-                            packageId={formData.type}
+                            packageId={undefined}
+                            config={config}
                         />
                     )}
                 </div>
 
-                {/* Adultes */}
+                {/* Forfait (Package) */}
                 <div
                     style={{
-                        flex: "1 1 180px",
+                        flex: "1 1 200px",
                         display: "flex",
                         alignItems: "center",
                         gap: "1rem",
                         padding: "2rem",
-                        borderRight: "1px solid #eee",
                     }}
                 >
                     <div
@@ -247,7 +347,7 @@ export function BookingBar() {
                             flexShrink: 0,
                         }}
                     >
-                        <Users style={{ width: 18, height: 18 }} />
+                        <Umbrella style={{ width: 18, height: 18 }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <label
@@ -259,91 +359,33 @@ export function BookingBar() {
                                 marginBottom: "4px",
                             }}
                         >
-                            Adultes
+                            Forfait
                         </label>
                         <select
-                            value={formData.adults}
-                            onChange={(e) => setFormData({ ...formData, adults: e.target.value })}
-                            disabled={!formData.type}
+                            value={formData.type}
+                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                            disabled={!formData.adults || !formData.date}
                             style={{
                                 width: "100%",
                                 padding: 0,
                                 fontSize: "0.9rem",
-                                color: formData.adults ? "#222" : "#7A7A7A",
+                                color: formData.type ? "#222" : "#7A7A7A",
                                 border: "none",
                                 background: "transparent",
-                                cursor: formData.type ? "pointer" : "not-allowed",
-                                opacity: formData.type ? 1 : 0.5,
+                                cursor: formData.adults && formData.date ? "pointer" : "not-allowed",
+                                opacity: formData.adults && formData.date ? 1 : 0.5,
                             }}
                         >
-                            <option value="">{formData.type ? "Choisir" : "—"}</option>
-                            {adultOptions.map((num) => (
-                                <option key={num} value={num}>
-                                    {num}
+                            <option value="">{formData.adults && formData.date ? "Sélectionner" : "—"}</option>
+                            {filteredPackages.map((pkg) => (
+                                <option key={pkg.id} value={pkg.id}>
+                                    {pkg.name}
                                 </option>
                             ))}
                         </select>
                     </div>
                 </div>
 
-                {/* Enfants */}
-                <div
-                    style={{
-                        flex: "1 1 180px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "1rem",
-                        padding: "2rem",
-                    }}
-                >
-                    <div
-                        style={{
-                            width: "45px",
-                            height: "45px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: "#F9F5F0",
-                            borderRadius: "50%",
-                            color: "#222222",
-                            flexShrink: 0,
-                        }}
-                    >
-                        <UserRound style={{ width: 18, height: 18 }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <label
-                            style={{
-                                display: "block",
-                                fontSize: "0.9rem",
-                                fontWeight: 600,
-                                color: "#222222",
-                                marginBottom: "4px",
-                            }}
-                        >
-                            Enfants <span style={{ fontWeight: 400, fontSize: "0.75rem", color: "#7A7A7A" }}>(4-12 ans)</span>
-                        </label>
-                        <select
-                            value={formData.children}
-                            onChange={(e) => setFormData({ ...formData, children: e.target.value })}
-                            style={{
-                                width: "100%",
-                                padding: 0,
-                                fontSize: "0.9rem",
-                                color: "#222",
-                                border: "none",
-                                background: "transparent",
-                                cursor: "pointer",
-                            }}
-                        >
-                            {childrenOptions.map((num) => (
-                                <option key={num} value={num}>
-                                    {num}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
 
                 {/* Submit Button */}
                 <button
