@@ -79,7 +79,74 @@ interface ReservationEmailData {
     reservationId?: string;
 }
 
-// Send reservation confirmation to guest
+// Send reservation request acknowledgment to guest
+export async function sendReservationRequestEmail(data: ReservationEmailData) {
+    const transporter = getTransporter();
+
+    const formattedDate = new Date(data.date).toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+
+    const content = `
+        <h2 style="color: #222222; margin: 0 0 20px; font-size: 24px;">
+            Demande de réservation reçue 🌴
+        </h2>
+        <p style="color: #7A7A7A; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
+            Bonjour <strong>${data.guestName}</strong>,<br><br>
+            Votre demande de réservation a bien été enregistrée. Elle est actuellement <strong>en attente de validation</strong> par notre équipe. Vous recevrez un email de confirmation définitive très prochainement !
+        </p>
+        
+        <div style="background-color: #F9F5F0; border-radius: 12px; padding: 25px; margin: 25px 0;">
+            <h3 style="color: #E8A87C; margin: 0 0 15px; font-size: 18px;">📋 Récapitulatif de la demande</h3>
+            <table style="width: 100%; font-size: 15px;">
+                <tr>
+                    <td style="color: #7A7A7A; padding: 8px 0;">Date</td>
+                    <td style="color: #222222; font-weight: 500; text-align: right;">${formattedDate}</td>
+                </tr>
+                <tr>
+                    <td style="color: #7A7A7A; padding: 8px 0;">Forfait</td>
+                    <td style="color: #222222; font-weight: 500; text-align: right;">${data.packageName}</td>
+                </tr>
+                <tr>
+                    <td style="color: #7A7A7A; padding: 8px 0;">Adultes</td>
+                    <td style="color: #222222; font-weight: 500; text-align: right;">${data.adults}</td>
+                </tr>
+                ${data.children > 0 ? `
+                <tr>
+                    <td style="color: #7A7A7A; padding: 8px 0;">Enfants (4-12 ans)</td>
+                    <td style="color: #222222; font-weight: 500; text-align: right;">${data.children}</td>
+                </tr>
+                ` : ""}
+                <tr style="border-top: 1px solid #ddd;">
+                    <td style="color: #222222; padding: 15px 0 0; font-weight: 600; font-size: 18px;">Prix estimé</td>
+                    <td style="color: #E8A87C; font-weight: 600; text-align: right; font-size: 18px; padding: 15px 0 0;">${data.totalPrice} DT</td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="color: #7A7A7A; font-size: 14px; line-height: 1.6;">
+            Pour toute question, contactez-nous au <a href="tel:${RESTAURANT_INFO.phone}" style="color: #E8A87C;">${RESTAURANT_INFO.phone}</a>
+        </p>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: `"${RESTAURANT_INFO.name}" <${process.env.SMTP_USER}>`,
+            to: data.guestEmail,
+            subject: `⏳ Demande de réservation reçue - ${formattedDate}`,
+            html: getBaseTemplate(content),
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error sending request acknowledgment email:", error);
+        return { success: false, error: "Failed to send email" };
+    }
+}
+
+// Send true reservation confirmation to guest (used when manager validates)
 export async function sendReservationConfirmationEmail(data: ReservationEmailData) {
     const transporter = getTransporter();
 
@@ -92,11 +159,11 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
 
     const content = `
         <h2 style="color: #222222; margin: 0 0 20px; font-size: 24px;">
-            Merci pour votre réservation ! 🎉
+            Bonne nouvelle ! Réservation confirmée 🎉
         </h2>
         <p style="color: #7A7A7A; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
             Bonjour <strong>${data.guestName}</strong>,<br><br>
-            Votre réservation a bien été enregistrée. Nous avons hâte de vous accueillir !
+            Excellente nouvelle ! Votre réservation au Latino Coucou Beach a été <strong>définitivement validée</strong> par notre équipe. Nous avons hâte de vous accueillir pour une journée mémorable !
         </p>
         
         <div style="background-color: #F9F5F0; border-radius: 12px; padding: 25px; margin: 25px 0;">
@@ -121,7 +188,7 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
                 </tr>
                 ` : ""}
                 <tr style="border-top: 1px solid #ddd;">
-                    <td style="color: #222222; padding: 15px 0 0; font-weight: 600; font-size: 18px;">Total</td>
+                    <td style="color: #222222; padding: 15px 0 0; font-weight: 600; font-size: 18px;">Total à régler sur place</td>
                     <td style="color: #E8A87C; font-weight: 600; text-align: right; font-size: 18px; padding: 15px 0 0;">${data.totalPrice} DT</td>
                 </tr>
             </table>
@@ -130,7 +197,7 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
         <div style="background-color: #E8F5E9; border-radius: 12px; padding: 20px; margin: 25px 0;">
             <p style="color: #2E7D32; margin: 0; font-size: 14px;">
                 ⏰ <strong>Horaires :</strong> ${RESTAURANT_INFO.hours}<br>
-                📍 <strong>Lieu :</strong> ${RESTAURANT_INFO.location}
+                📍 <strong>Lieu :</strong> <a href="${RESTAURANT_INFO.googleMapsUrl}" style="color: #2E7D32;">${RESTAURANT_INFO.location}</a>
             </p>
         </div>
 

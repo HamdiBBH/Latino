@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
 import { getReservationConfig, ReservationConfig } from "@/app/actions/settings";
-import { sendReservationConfirmationEmail, sendManagerNotificationEmail } from "@/lib/email";
+import { sendReservationRequestEmail, sendManagerNotificationEmail } from "@/lib/email";
 import {
     Umbrella,
     Calendar,
@@ -245,7 +245,7 @@ function ReservationContent() {
             
             // Envoi en parallèle pour éviter les timeouts en production
             await Promise.all([
-                sendReservationConfirmationEmail(emailData),
+                sendReservationRequestEmail(emailData),
                 sendManagerNotificationEmail(emailData)
             ]);
         } catch (emailError) {

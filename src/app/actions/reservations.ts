@@ -158,7 +158,31 @@ export async function updateReservationStatus(
         return { success: false, error: error.message };
     }
 
-    // TODO: Send email notification to guest
+    if (status === "confirmed") {
+        const { data: reservation } = await supabase
+            .from("reservations")
+            .select("*, packages(name)")
+            .eq("id", id)
+            .single();
+
+        if (reservation && reservation.guest_email) {
+            const { sendReservationConfirmationEmail } = await import('@/lib/email');
+            try {
+                await sendReservationConfirmationEmail({
+                    guestName: reservation.guest_name,
+                    guestEmail: reservation.guest_email,
+                    date: reservation.reservation_date,
+                    packageName: reservation.packages?.name || "Forfait",
+                    adults: reservation.guest_count,
+                    children: 0, // le découpage n'est pas gardé en DB
+                    totalPrice: reservation.estimated_price || 0,
+                    reservationId: reservation.id,
+                });
+            } catch (err) {
+                console.error("Erreur envoi email de confirmation:", err);
+            }
+        }
+    }
 
     revalidatePath("/dashboard/reservations");
     return { success: true };
