@@ -242,8 +242,12 @@ function ReservationContent() {
                 totalPrice: calculatePrice(),
                 reservationId: data.id,
             };
-            await sendReservationConfirmationEmail(emailData);
-            await sendManagerNotificationEmail(emailData);
+            
+            // Envoi en parallèle pour éviter les timeouts en production
+            await Promise.all([
+                sendReservationConfirmationEmail(emailData),
+                sendManagerNotificationEmail(emailData)
+            ]);
         } catch (emailError) {
             console.error("Failed to send emails:", emailError);
             // On ne bloque pas la redirection de l'utilisateur si l'email échoue
