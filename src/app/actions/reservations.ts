@@ -103,7 +103,7 @@ export async function getReservation(id: string) {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from("reservations")
-        .select("*, packages(*)")
+        .select("*, packages!reservations_package_id_fkey(*)")
         .eq("id", id)
         .single();
 
@@ -159,29 +159,39 @@ export async function updateReservationStatus(
     }
 
     if (status === "confirmed") {
-        const { data: reservation } = await supabase
+        console.log("=== DEBUT CONFIRMATION EMAIL ===");
+        console.log("Fetching reservation ID:", id);
+        const { data: reservation, error: fetchErr } = await supabase
             .from("reservations")
-            .select("*, packages(name)")
+            .select("*, packages!reservations_package_id_fkey(name)")
             .eq("id", id)
             .single();
 
-        if (reservation && reservation.guest_email) {
+        if (fetchErr) {
+             console.error("Error fetching reservation for email:", fetchErr);
+        } else if (reservation && reservation.guest_email) {
+            console.log("Reservation retrieved successfully:", reservation.guest_email);
             const { sendReservationConfirmationEmail } = await import('@/lib/email');
             try {
-                await sendReservationConfirmationEmail({
+                const emailResult = await sendReservationConfirmationEmail({
                     guestName: reservation.guest_name,
                     guestEmail: reservation.guest_email,
                     date: reservation.reservation_date,
                     packageName: reservation.packages?.name || "Forfait",
-                    adults: reservation.guest_count,
-                    children: 0, // le découpage n'est pas gardé en DB
+                    // Utilisation des vrais champs ajoutés dans la DB
+                    adults: reservation.adults_count || reservation.guest_count,
+                    children: reservation.children_4_12_count || 0, 
                     totalPrice: reservation.estimated_price || 0,
                     reservationId: reservation.id,
                 });
+                console.log("Email Result:", emailResult);
             } catch (err) {
-                console.error("Erreur envoi email de confirmation:", err);
+                console.error("Erreur catchée pendant l'envoi:", err);
             }
+        } else {
+             console.warn("No guest_email found on reservation!");
         }
+        console.log("=== FIN CONFIRMATION EMAIL ===");
     }
 
     revalidatePath("/dashboard/reservations");
