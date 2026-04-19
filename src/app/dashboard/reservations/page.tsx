@@ -68,6 +68,21 @@ export default function ReservationsPage() {
         setLoading(true);
         const data = await getReservations({ status: filter });
         setReservations(data as Reservation[]);
+        
+        // Ouvrir automatiquement la réservation si l'ID est dans l'URL
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const idParam = params.get("id");
+            if (idParam && data) {
+                const found = (data as Reservation[]).find(r => r.id === idParam);
+                if (found) {
+                    setSelectedReservation(found);
+                    // Nettoyer l'URL pour ne pas rester bloqué sur cette résa si on navigue
+                    window.history.replaceState(null, "", window.location.pathname);
+                }
+            }
+        }
+        
         setLoading(false);
     };
 
