@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
 import { getReservationConfig, ReservationConfig } from "@/app/actions/settings";
+import { sendReservationConfirmationEmail, sendManagerNotificationEmail } from "@/lib/email";
 import {
     Umbrella,
     Calendar,
@@ -228,6 +229,24 @@ function ReservationContent() {
             console.error("No data returned from insert:", data);
             alert("Erreur: La réservation n'a pas pu être créée. Vérifiez que la table 'reservations' existe dans Supabase.");
             return;
+        }
+
+        try {
+            const emailData = {
+                guestName,
+                guestEmail,
+                date: selectedDate,
+                packageName: selectedPackage.name,
+                adults,
+                children: children4to12 + childrenUnder4,
+                totalPrice: calculatePrice(),
+                reservationId: data.id,
+            };
+            await sendReservationConfirmationEmail(emailData);
+            await sendManagerNotificationEmail(emailData);
+        } catch (emailError) {
+            console.error("Failed to send emails:", emailError);
+            // On ne bloque pas la redirection de l'utilisateur si l'email échoue
         }
 
         router.push(`/reservation/confirmation/${data.id}`);

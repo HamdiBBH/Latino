@@ -196,7 +196,7 @@ export async function sendManagerNotificationEmail(data: ReservationEmailData) {
 
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reservations" 
            style="display: inline-block; background-color: #222222; color: #FFFFFF; padding: 15px 30px; text-decoration: none; border-radius: 100px; font-weight: 600; margin-top: 20px;">
-            Voir dans le Dashboard →
+            Valider la réservation →
         </a>
     `;
 
