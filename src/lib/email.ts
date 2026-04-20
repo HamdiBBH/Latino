@@ -163,7 +163,7 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
         </h2>
         <p style="color: #7A7A7A; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
             Bonjour <strong>${data.guestName}</strong>,<br><br>
-            Excellente nouvelle ! Votre réservation au Latino Coucou Beach a été <strong>définitivement validée</strong> par notre équipe. Nous avons hâte de vous accueillir pour une journée mémorable !
+            Excellente nouvelle ! Votre réservation au Latino Coucou Beach a été <strong>validée</strong> par notre équipe. Nous avons hâte de vous accueillir pour une journée mémorable !
         </p>
         
         <div style="background-color: #F9F5F0; border-radius: 12px; padding: 25px; margin: 25px 0;">

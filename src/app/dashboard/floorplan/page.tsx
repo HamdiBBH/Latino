@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { MapPin, Users, Clock, AlertCircle, Check, X, AlertTriangle, ShoppingBag, Sparkles, UserPlus, ChevronLeft, ChevronRight, Anchor, Ship, Calendar } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { MapPin, Users, Clock, AlertCircle, Check, X, AlertTriangle, ShoppingBag, Sparkles, UserPlus, ChevronLeft, ChevronRight, Anchor, Ship, Calendar, Loader2 } from "lucide-react";
 import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
-import { getReservations } from "@/app/actions/reservations";
+import { getReservations, createReservation, updateReservationStatus } from "@/app/actions/reservations";
 import { getReservationConfig, type ReservationConfig } from "@/app/actions/settings";
+import { getPackages } from "@/app/actions/cms";
+
 // Zone status for beach club (day-long stays)
 type ZoneStatus = "libre" | "reserve" | "occupe";
 
@@ -14,63 +16,102 @@ interface Zone {
     label: string;
     capacity: number;
     status: ZoneStatus;
-    occupiedSince?: string; // ISO timestamp when occupation started
+    occupiedSince?: string;
     reservation?: {
+        id: string;
         name: string;
         time: string;
         guests: number;
+        packageName: string;
+        email?: string;
+        phone?: string;
+        specialRequest?: string;
+        estimatedPrice?: number;
     };
 }
 
-// Generate initial zones with timestamps
-const generateInitialZones = (): Zone[] => {
-    const now = new Date();
-    return [
-        // Cabanes Normales (9)
-        { id: "C1", type: "cabane_normale", label: "Cabane 1", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 45 * 60000).toISOString() },
-        { id: "C2", type: "cabane_normale", label: "Cabane 2", capacity: 6, status: "libre" },
-        { id: "C3", type: "cabane_normale", label: "Cabane 3", capacity: 6, status: "reserve", reservation: { name: "Martin", time: new Date(now.getTime() + 20 * 60000).toTimeString().slice(0, 5), guests: 4 } },
-        { id: "C4", type: "cabane_normale", label: "Cabane 4", capacity: 6, status: "libre" },
-        { id: "C5", type: "cabane_normale", label: "Cabane 5", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 120 * 60000).toISOString() }, // 2h - LONG
-        { id: "C6", type: "cabane_normale", label: "Cabane 6", capacity: 6, status: "libre" },
-        { id: "C7", type: "cabane_normale", label: "Cabane 7", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 30 * 60000).toISOString() }, // ORDER DELAY
-        { id: "C8", type: "cabane_normale", label: "Cabane 8", capacity: 6, status: "libre" },
-        { id: "C9", type: "cabane_normale", label: "Cabane 9", capacity: 6, status: "occupe", occupiedSince: new Date(now.getTime() - 55 * 60000).toISOString() },
-        { id: "C10", type: "cabane_normale", label: "Cabane 10", capacity: 6, status: "libre" },
+// DB Reservation type
+interface DBReservation {
+    id: string;
+    package_id: string;
+    guest_name: string;
+    guest_email: string;
+    guest_phone: string;
+    reservation_date: string;
+    time_slot: string;
+    guest_count: number;
+    special_request: string | null;
+    estimated_price: number | null;
+    status: string;
+    created_at: string;
+    packages?: { name: string };
+}
 
-        // Cabanes VIP (5)
-        { id: "VIP1", type: "cabane_vip", label: "VIP 1", capacity: 10, status: "reserve", reservation: { name: "VIP Event", time: new Date(now.getTime() + 10 * 60000).toTimeString().slice(0, 5), guests: 8 } }, // IMMINENT
-        { id: "VIP2", type: "cabane_vip", label: "VIP 2", capacity: 10, status: "libre" },
-        { id: "VIP3", type: "cabane_vip", label: "VIP 3", capacity: 10, status: "occupe", occupiedSince: new Date(now.getTime() - 90 * 60000).toISOString() },
-        { id: "VIP4", type: "cabane_vip", label: "VIP 4", capacity: 10, status: "libre" },
-        { id: "VIP5", type: "cabane_vip", label: "VIP 5", capacity: 10, status: "libre" },
+// Season constants
+const SEASON_START_MONTH = 5; // June (0-indexed)
+const SEASON_END_MONTH = 8;  // September (0-indexed)
+const SEASON_START_DAY = 1;
+const SEASON_END_DAY = 30;
 
-        // Parasoles (6)
-        { id: "P1", type: "parasole", label: "Parasole 1", capacity: 4, status: "occupe", occupiedSince: new Date(now.getTime() - 35 * 60000).toISOString() },
-        { id: "P2", type: "parasole", label: "Parasole 2", capacity: 4, status: "libre" },
-        { id: "P3", type: "parasole", label: "Parasole 3", capacity: 4, status: "occupe", occupiedSince: new Date(now.getTime() - 25 * 60000).toISOString() },
-        { id: "P4", type: "parasole", label: "Parasole 4", capacity: 4, status: "reserve", reservation: { name: "Famille", time: new Date(now.getTime() - 5 * 60000).toTimeString().slice(0, 5), guests: 4 } }, // LATE
-        { id: "P5", type: "parasole", label: "Parasole 5", capacity: 4, status: "libre" },
-        { id: "P6", type: "parasole", label: "Parasole 6", capacity: 4, status: "occupe", occupiedSince: new Date(now.getTime() - 40 * 60000).toISOString() },
+// Helper: check if a date is within season (June 1 - September 30)
+const isDateInSeason = (date: Date): boolean => {
+    const month = date.getMonth();
+    const day = date.getDate();
+    if (month < SEASON_START_MONTH) return false;
+    if (month === SEASON_START_MONTH && day < SEASON_START_DAY) return false;
+    if (month > SEASON_END_MONTH) return false;
+    if (month === SEASON_END_MONTH && day > SEASON_END_DAY) return false;
+    return true;
+};
 
-        // Paillotes (16)
-        { id: "M1", type: "paillote", label: "Paillote 1", capacity: 2, status: "occupe", occupiedSince: new Date(now.getTime() - 60 * 60000).toISOString() },
-        { id: "M2", type: "paillote", label: "Paillote 2", capacity: 2, status: "libre" },
-        { id: "M3", type: "paillote", label: "Paillote 3", capacity: 2, status: "occupe", occupiedSince: new Date(now.getTime() - 20 * 60000).toISOString() },
-        { id: "M4", type: "paillote", label: "Paillote 4", capacity: 2, status: "libre" },
-        { id: "M5", type: "paillote", label: "Paillote 5", capacity: 2, status: "libre" },
-        { id: "M6", type: "paillote", label: "Paillote 6", capacity: 2, status: "reserve", reservation: { name: "Couple", time: new Date(now.getTime() + 45 * 60000).toTimeString().slice(0, 5), guests: 2 } },
-        { id: "M7", type: "paillote", label: "Paillote 7", capacity: 2, status: "libre" },
-        { id: "M8", type: "paillote", label: "Paillote 8", capacity: 2, status: "occupe", occupiedSince: new Date(now.getTime() - 50 * 60000).toISOString() },
-        { id: "M9", type: "paillote", label: "Paillote 9", capacity: 2, status: "libre" },
-        { id: "M10", type: "paillote", label: "Paillote 10", capacity: 2, status: "libre" },
-        { id: "M11", type: "paillote", label: "Paillote 11", capacity: 2, status: "occupe", occupiedSince: new Date(now.getTime() - 75 * 60000).toISOString() },
-        { id: "M12", type: "paillote", label: "Paillote 12", capacity: 2, status: "libre" },
-        { id: "M13", type: "paillote", label: "Paillote 13", capacity: 2, status: "libre" },
-        { id: "M14", type: "paillote", label: "Paillote 14", capacity: 2, status: "occupe", occupiedSince: new Date(now.getTime() - 30 * 60000).toISOString() },
-        { id: "M15", type: "paillote", label: "Paillote 15", capacity: 2, status: "libre" },
-        { id: "M16", type: "paillote", label: "Paillote 16", capacity: 2, status: "libre" },
-    ];
+// Map package name to zone type
+const packageNameToZoneType = (packageName: string): Zone["type"] => {
+    const name = packageName.toLowerCase();
+    if (name.includes("vip")) return "cabane_vip";
+    if (name.includes("parasol")) return "parasole";
+    if (name.includes("paillote") || name.includes("mer")) return "paillote";
+    if (name.includes("cabane")) return "cabane_normale";
+    // Default: cabane_normale for unknown packages
+    return "cabane_normale";
+};
+
+// Zone layout definition (fixed positions in the beach club)
+const ZONE_LAYOUT = {
+    cabane_normale: Array.from({ length: 10 }, (_, i) => ({
+        id: `C${i + 1}`,
+        type: "cabane_normale" as const,
+        label: `Cabane ${i + 1}`,
+        capacity: 6,
+    })),
+    cabane_vip: Array.from({ length: 5 }, (_, i) => ({
+        id: `VIP${i + 1}`,
+        type: "cabane_vip" as const,
+        label: `VIP ${i + 1}`,
+        capacity: 10,
+    })),
+    parasole: Array.from({ length: 6 }, (_, i) => ({
+        id: `P${i + 1}`,
+        type: "parasole" as const,
+        label: `Parasole ${i + 1}`,
+        capacity: 4,
+    })),
+    paillote: Array.from({ length: 16 }, (_, i) => ({
+        id: `M${i + 1}`,
+        type: "paillote" as const,
+        label: `Paillote ${i + 1}`,
+        capacity: 2,
+    })),
+};
+
+// Generate all zones with default "libre" status
+const generateEmptyZones = (): Zone[] => {
+    const allZones: Zone[] = [];
+    for (const zones of Object.values(ZONE_LAYOUT)) {
+        for (const z of zones) {
+            allZones.push({ ...z, status: "libre" });
+        }
+    }
+    return allZones;
 };
 
 const statusConfig: Record<ZoneStatus, { bg: string; border: string; text: string; label: string }> = {
@@ -102,15 +143,6 @@ const formatDuration = (minutes: number) => {
     return `${minutes}m`;
 };
 
-// Helper: check if reservation is late
-const isReservationLate = (reservation?: Zone["reservation"]) => {
-    if (!reservation) return false;
-    const [hours, minutes] = reservation.time.split(":").map(Number);
-    const reservationTime = new Date();
-    reservationTime.setHours(hours, minutes, 0, 0);
-    return Date.now() > reservationTime.getTime();
-};
-
 export default function FloorPlanPage() {
     const [zones, setZones] = useState<Zone[]>([]);
     const [config, setConfig] = useState<ReservationConfig | null>(null);
@@ -120,18 +152,39 @@ export default function FloorPlanPage() {
     const [guestCount, setGuestCount] = useState(2);
     const [pendingCount, setPendingCount] = useState(0);
     const [showCalendarPopup, setShowCalendarPopup] = useState(false);
+    const [loadingReservations, setLoadingReservations] = useState(false);
+    const [confirmedReservations, setConfirmedReservations] = useState<DBReservation[]>([]);
+
+    // Form state for new reservation
+    const [packages, setPackages] = useState<any[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [newRes, setNewRes] = useState({ guest_name: "", guest_phone: "", package_id: "", guest_count: 2 });
+
+    // Initialize to the start of season if today is out of season
+    const getInitialDate = (): Date => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (isDateInSeason(today)) return today;
+        // If before season, show June 1st of this year
+        const year = today.getMonth() > SEASON_END_MONTH ? today.getFullYear() + 1 : today.getFullYear();
+        return new Date(year, SEASON_START_MONTH, SEASON_START_DAY);
+    };
+
+    const [selectedDate, setSelectedDate] = useState<Date>(getInitialDate);
+
     const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
-        const d = new Date();
-        d.setHours(0, 0, 0, 0);
+        const d = new Date(getInitialDate());
         const day = d.getDay();
         const diff = d.getDate() - day + (day === 0 ? -6 : 1);
         return new Date(d.setDate(diff));
     });
-    const [selectedDate, setSelectedDate] = useState<Date>(() => {
-        const d = new Date();
-        d.setHours(0, 0, 0, 0);
-        return d;
-    });
+
+    // Check if today is in season
+    const isTodayInSeason = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return isDateInSeason(today);
+    }, []);
 
     const handlePreviousWeek = () => {
         const newDate = new Date(currentWeekStart);
@@ -146,12 +199,13 @@ export default function FloorPlanPage() {
     };
 
     const handleToday = () => {
+        if (!isTodayInSeason) return;
         const d = new Date();
         d.setHours(0, 0, 0, 0);
         setSelectedDate(d);
         const day = d.getDay();
         const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        setCurrentWeekStart(new Date(d.setDate(diff)));
+        setCurrentWeekStart(new Date(new Date(d).setDate(diff)));
     };
 
     const daysOfWeek = useMemo(() => {
@@ -168,12 +222,81 @@ export default function FloorPlanPage() {
             d1.getDate() === d2.getDate();
     };
 
-    // Initialize zones
+    const formatDateForQuery = (date: Date): string => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+    };
+
+    // Fetch reservations for the selected date and populate zones
+    const loadReservationsForDate = useCallback(async (date: Date) => {
+        setLoadingReservations(true);
+        try {
+            const dateStr = formatDateForQuery(date);
+            const data = await getReservations({ date: dateStr, status: "confirmed" });
+
+            if (data && Array.isArray(data)) {
+                setConfirmedReservations(data as DBReservation[]);
+
+                // Assign reservations to zones
+                const emptyZones = generateEmptyZones();
+
+                // Group reservations by zone type
+                const reservationsByType: Record<string, DBReservation[]> = {
+                    cabane_vip: [],
+                    cabane_normale: [],
+                    parasole: [],
+                    paillote: [],
+                };
+
+                for (const res of data as DBReservation[]) {
+                    const packageName = res.packages?.name || "";
+                    const zoneType = packageNameToZoneType(packageName);
+                    reservationsByType[zoneType].push(res);
+                }
+
+                // Assign each reservation to the first available zone of its type
+                const updatedZones = emptyZones.map(zone => {
+                    const typeReservations = reservationsByType[zone.type];
+                    if (typeReservations && typeReservations.length > 0) {
+                        const res = typeReservations.shift()!;
+                        return {
+                            ...zone,
+                            status: "reserve" as ZoneStatus,
+                            reservation: {
+                                id: res.id,
+                                name: res.guest_name,
+                                time: "09:00", // Full day reservations
+                                guests: res.guest_count,
+                                packageName: res.packages?.name || "Forfait",
+                                email: res.guest_email,
+                                phone: res.guest_phone,
+                                specialRequest: res.special_request || undefined,
+                                estimatedPrice: res.estimated_price || undefined,
+                            },
+                        };
+                    }
+                    return zone;
+                });
+
+                setZones(updatedZones);
+            } else {
+                setZones(generateEmptyZones());
+            }
+        } catch (error) {
+            console.error("Error loading reservations:", error);
+            setZones(generateEmptyZones());
+        } finally {
+            setLoadingReservations(false);
+        }
+    }, []);
+
+    // Initialize config and pending count
     useEffect(() => {
-        setZones(generateInitialZones());
         getReservationConfig().then(setConfig);
-        
-        // Fetch pending reservations count
+        getPackages().then(setPackages);
+
         const fetchPendingCount = async () => {
             const data = await getReservations({ status: "pending" });
             if (data && Array.isArray(data)) {
@@ -182,6 +305,11 @@ export default function FloorPlanPage() {
         };
         fetchPendingCount();
     }, []);
+
+    // Load reservations when selected date changes
+    useEffect(() => {
+        loadReservationsForDate(selectedDate);
+    }, [selectedDate, loadReservationsForDate]);
 
     // Timer tick every 30 seconds
     useEffect(() => {
@@ -200,15 +328,14 @@ export default function FloorPlanPage() {
     const kpis = useMemo(() => {
         const occupied = zones.filter(z => z.status === "occupe");
         const reserved = zones.filter(z => z.status === "reserve");
-        const lateReservations = zones.filter(z => isReservationLate(z.reservation));
 
         return {
             occupied: occupied.length,
             libre: zones.filter(z => z.status === "libre").length,
             reserved: reserved.length,
-            lateReservations: lateReservations.length,
+            totalReservations: confirmedReservations.length,
         };
-    }, [zones]);
+    }, [zones, confirmedReservations]);
 
     // Smart assignment suggestions
     const suggestedZones = useMemo(() => {
@@ -216,30 +343,20 @@ export default function FloorPlanPage() {
 
         const freeZones = zones.filter(z => z.status === "libre");
 
-        // Score zones based on capacity match
         const scored = freeZones.map(zone => {
             let score = 0;
-
-            // Perfect capacity match = highest score
             if (zone.capacity === guestCount) score += 100;
-            // Slight over-capacity is okay
             else if (zone.capacity > guestCount && zone.capacity <= guestCount + 2) score += 80;
-            // Under-capacity = bad
             else if (zone.capacity < guestCount) score += 0;
-            // Large over-capacity = wasteful
             else score += 50;
 
-            // VIP for groups of 6+
             if (guestCount >= 6 && zone.type === "cabane_vip") score += 20;
-            // Paillotes for couples
             if (guestCount <= 2 && zone.type === "paillote") score += 15;
-            // Cabanes for medium groups
             if (guestCount >= 4 && guestCount <= 6 && zone.type === "cabane_normale") score += 10;
 
             return { zone, score };
         });
 
-        // Filter viable options and sort by score
         return scored
             .filter(s => s.zone.capacity >= guestCount)
             .sort((a, b) => b.score - a.score)
@@ -253,7 +370,7 @@ export default function FloorPlanPage() {
             return {
                 ...z,
                 status: newStatus,
-                reservation: undefined,
+                reservation: newStatus === "libre" ? undefined : z.reservation,
                 occupiedSince: newStatus === "occupe" ? new Date().toISOString() : undefined,
             };
         }));
@@ -263,7 +380,6 @@ export default function FloorPlanPage() {
     const renderZone = (zone: Zone, shape: "rect" | "hex" | "square") => {
         const status = statusConfig[zone.status];
         const isSelected = selectedZone?.id === zone.id;
-        const late = isReservationLate(zone.reservation);
         const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
 
         const baseStyle: React.CSSProperties = {
@@ -311,29 +427,25 @@ export default function FloorPlanPage() {
                     <span style={{ fontSize: "0.55rem", color: status.text }}>{zone.capacity}p</span>
                 )}
 
-                {/* Reservation time for reserved zones */}
+                {/* Guest count for reserved zones */}
                 {zone.status === "reserve" && zone.reservation && (
-                    <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>
+                    <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.guests}p</span>
                 )}
 
-                {late && (
+                {/* Reserved indicator dot */}
+                {zone.status === "reserve" && (
                     <div
                         style={{
                             position: "absolute",
-                            top: "-6px",
-                            right: "-6px",
-                            width: "16px",
-                            height: "16px",
-                            backgroundColor: "#EF4444",
+                            top: "-4px",
+                            right: "-4px",
+                            width: "12px",
+                            height: "12px",
+                            backgroundColor: "#F59E0B",
                             borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            animation: "pulse 1s infinite",
+                            border: "2px solid #FFF",
                         }}
-                    >
-                        <AlertTriangle style={{ width: 10, height: 10, color: "#FFF" }} />
-                    </div>
+                    />
                 )}
             </button>
         );
@@ -373,10 +485,10 @@ export default function FloorPlanPage() {
                         }}
                     >
                         <UserPlus style={{ width: 16, height: 16 }} />
-                        {showAssignmentPanel ? "Fermer" : "Placer des clients"}
+                        {showAssignmentPanel ? "Fermer" : "Nouvelle réservation"}
                     </button>
                 </div>
-                <p style={{ color: "#7A7A7A" }}>Vue en temps réel des réservations et commandes</p>
+                <p style={{ color: "#7A7A7A" }}>Vue en temps réel des réservations confirmées — Saison Juin-Septembre</p>
             </div>
 
             {/* Weekly Navigation Bar */}
@@ -401,6 +513,9 @@ export default function FloorPlanPage() {
                         <span style={{ fontWeight: 600, color: "#1E40AF", fontSize: "0.875rem", textTransform: "capitalize" }}>
                             {selectedDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                         </span>
+                        {loadingReservations && (
+                            <Loader2 style={{ width: 16, height: 16, color: "#3B82F6", animation: "spin 1s linear infinite" }} />
+                        )}
                         <div style={{ position: "relative", marginLeft: "4px", display: "flex", alignItems: "center", backgroundColor: "#F3F4F6", borderRadius: "8px" }}>
                             <button 
                                 onClick={() => setShowCalendarPopup(!showCalendarPopup)}
@@ -448,19 +563,27 @@ export default function FloorPlanPage() {
                     </div>
                     <button
                         onClick={handleToday}
+                        disabled={!isTodayInSeason}
+                        title={!isTodayInSeason ? "Aujourd'hui est hors saison (Juin-Septembre)" : ""}
                         style={{
                             padding: "4px 12px",
-                            backgroundColor: "#F3F4F6",
-                            color: "#4B5563",
+                            backgroundColor: isTodayInSeason ? "#F3F4F6" : "#F9FAFB",
+                            color: isTodayInSeason ? "#4B5563" : "#D1D5DB",
                             border: "1px solid #E5E7EB",
                             borderRadius: "100px",
                             fontSize: "0.75rem",
                             fontWeight: 600,
-                            cursor: "pointer",
+                            cursor: isTodayInSeason ? "pointer" : "not-allowed",
+                            opacity: isTodayInSeason ? 1 : 0.5,
                         }}
                     >
-                        Aujourd'hui
+                        Aujourd&apos;hui
                     </button>
+                    {!isTodayInSeason && (
+                        <span style={{ fontSize: "0.7rem", color: "#F59E0B", fontWeight: 500 }}>
+                            Hors saison
+                        </span>
+                    )}
                 </div>
 
                 {/* Days of week selector & Week navigation */}
@@ -485,22 +608,25 @@ export default function FloorPlanPage() {
                     <div style={{ display: "flex", gap: "4px", backgroundColor: "#F9FAFB", padding: "4px", borderRadius: "10px", border: "1px solid #F3F4F6" }}>
                         {daysOfWeek.map((dayDate) => {
                             const isSelected = isSameDay(dayDate, selectedDate);
+                            const inSeason = isDateInSeason(dayDate);
                             const dayName = dayDate.toLocaleDateString("fr-FR", { weekday: "short" }).substring(0, 3);
                             return (
                                 <button
                                     key={dayDate.toISOString()}
-                                    onClick={() => setSelectedDate(dayDate)}
+                                    onClick={() => inSeason && setSelectedDate(dayDate)}
+                                    disabled={!inSeason}
                                     style={{
                                         display: "flex",
                                         flexDirection: "column",
                                         alignItems: "center",
                                         padding: "4px 12px",
                                         backgroundColor: isSelected ? "#3B82F6" : "transparent",
-                                        color: isSelected ? "#FFF" : "#6B7280",
+                                        color: !inSeason ? "#D1D5DB" : isSelected ? "#FFF" : "#6B7280",
                                         border: "none",
                                         borderRadius: "8px",
-                                        cursor: "pointer",
+                                        cursor: inSeason ? "pointer" : "not-allowed",
                                         transition: "all 0.2s",
+                                        opacity: inSeason ? 1 : 0.4,
                                     }}
                                 >
                                     <span style={{ fontSize: "0.65rem", textTransform: "uppercase", fontWeight: 600 }}>{dayName}</span>
@@ -529,107 +655,151 @@ export default function FloorPlanPage() {
                 </div>
             </div>
 
-            {/* Assignment Suggestion Panel */}
+            {/* Reservation Creation Panel */}
             {showAssignmentPanel && (
                 <div
                     style={{
                         marginBottom: "1.5rem",
                         padding: "1.5rem",
-                        backgroundColor: "#FEF3E2",
+                        backgroundColor: "#F3F4F6",
                         borderRadius: "16px",
-                        border: "2px solid #E8A87C",
+                        border: "1px solid #E5E7EB",
                     }}
                 >
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1rem" }}>
-                        <Sparkles style={{ width: 20, height: 20, color: "#E8A87C" }} />
-                        <span style={{ fontWeight: 600, color: "#222", fontSize: "1rem" }}>Suggestions intelligentes</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem" }}>
+                        <Anchor style={{ width: 24, height: 24, color: "#3B82F6" }} />
+                        <span style={{ fontWeight: 600, color: "#222", fontSize: "1.125rem" }}>
+                            Créer une réservation (Manager)
+                        </span>
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
-                        <span style={{ fontSize: "0.875rem", color: "#6B7280" }}>Nombre de personnes :</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <button
-                                onClick={() => setGuestCount(Math.max(1, guestCount - 1))}
-                                style={{
-                                    width: "32px",
-                                    height: "32px",
-                                    backgroundColor: "#FFF",
-                                    border: "1px solid #E5E7EB",
-                                    borderRadius: "8px",
-                                    fontSize: "1.25rem",
-                                    cursor: "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                }}
-                            >
-                                -
-                            </button>
-                            <span style={{ fontSize: "1.25rem", fontWeight: 700, color: "#222", minWidth: "30px", textAlign: "center" }}>
-                                {guestCount}
-                            </span>
-                            <button
-                                onClick={() => setGuestCount(guestCount + 1)}
-                                style={{
-                                    width: "32px",
-                                    height: "32px",
-                                    backgroundColor: "#FFF",
-                                    border: "1px solid #E5E7EB",
-                                    borderRadius: "8px",
-                                    fontSize: "1.25rem",
-                                    cursor: "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                }}
-                            >
-                                +
-                            </button>
-                        </div>
-                    </div>
+                    <form 
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            setIsSubmitting(true);
+                            try {
+                                const selectedPkg = packages.find(p => p.id === newRes.package_id);
+                                const price = selectedPkg ? parseFloat(selectedPkg.price) || 0 : 0;
 
-                    {suggestedZones.length > 0 ? (
+                                const res = await createReservation({
+                                    package_id: newRes.package_id,
+                                    guest_name: newRes.guest_name,
+                                    guest_phone: newRes.guest_phone,
+                                    guest_email: "manager@reservation.local", // Paramètre requis
+                                    reservation_date: formatDateForQuery(selectedDate),
+                                    time_slot: "full_day",
+                                    guest_count: newRes.guest_count,
+                                    estimated_price: price,
+                                    autoConfirmEnabled: false
+                                });
+
+                                if (res.success && res.data) {
+                                    // Make sure it's confirmed since manager created it
+                                    await updateReservationStatus(res.data.id, "confirmed");
+                                    await loadReservationsForDate(selectedDate);
+                                    setShowAssignmentPanel(false);
+                                    setNewRes({ guest_name: "", guest_phone: "", package_id: "", guest_count: 2 });
+                                } else {
+                                    alert(res.error || "Erreur de création");
+                                }
+                            } catch(err) {
+                                console.error(err);
+                                alert("Erreur lors de la création");
+                            } finally {
+                                setIsSubmitting(false);
+                            }
+                        }}
+                        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem" }}
+                    >
+                        {/* Name */}
                         <div>
-                            <p style={{ fontSize: "0.75rem", color: "#6B7280", marginBottom: "0.75rem" }}>
-                                Zones recommandées pour {guestCount} personne{guestCount > 1 ? "s" : ""} :
-                            </p>
-                            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-                                {suggestedZones.map((zone, index) => (
-                                    <button
-                                        key={zone.id}
-                                        onClick={() => {
-                                            setSelectedZone(zone);
-                                            setShowAssignmentPanel(false);
-                                        }}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "8px",
-                                            padding: "10px 16px",
-                                            backgroundColor: index === 0 ? "#22C55E" : "#FFF",
-                                            color: index === 0 ? "#FFF" : "#222",
-                                            border: index === 0 ? "none" : "1px solid #E5E7EB",
-                                            borderRadius: "100px",
-                                            cursor: "pointer",
-                                            fontSize: "0.875rem",
-                                            fontWeight: 500,
-                                        }}
-                                    >
-                                        {index === 0 && <Check style={{ width: 14, height: 14 }} />}
-                                        <span style={{ fontWeight: 600 }}>{zone.id}</span>
-                                        <span style={{ opacity: 0.8 }}>•</span>
-                                        <span>{typeConfig[zone.type].label}</span>
-                                        <span style={{ opacity: 0.8 }}>•</span>
-                                        <span>{zone.capacity}p</span>
-                                    </button>
+                            <label style={{ display: "block", fontSize: "0.875rem", marginBottom: "0.5rem", fontWeight: 500 }}>
+                                Nom du client
+                            </label>
+                            <input 
+                                required
+                                value={newRes.guest_name}
+                                onChange={e => setNewRes({...newRes, guest_name: e.target.value})}
+                                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #D1D5DB" }}
+                                placeholder="ex: John Doe"
+                            />
+                        </div>
+
+                        {/* Phone */}
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.875rem", marginBottom: "0.5rem", fontWeight: 500 }}>
+                                Téléphone
+                            </label>
+                            <input 
+                                required
+                                value={newRes.guest_phone}
+                                onChange={e => setNewRes({...newRes, guest_phone: e.target.value})}
+                                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #D1D5DB" }}
+                                placeholder="ex: 50 123 456"
+                            />
+                        </div>
+
+                        {/* Package */}
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.875rem", marginBottom: "0.5rem", fontWeight: 500 }}>
+                                Forfait (Installation)
+                            </label>
+                            <select
+                                required
+                                value={newRes.package_id}
+                                onChange={e => setNewRes({...newRes, package_id: e.target.value})}
+                                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #D1D5DB", backgroundColor: "#FFF" }}
+                            >
+                                <option value="" disabled>Sélectionner un forfait</option>
+                                {packages.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
                                 ))}
+                            </select>
+                        </div>
+
+                        {/* Guests count */}
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.875rem", marginBottom: "0.5rem", fontWeight: 500 }}>
+                                Nombre de personnes
+                            </label>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setNewRes({...newRes, guest_count: Math.max(1, newRes.guest_count - 1)})}
+                                    style={{ width: "42px", height: "42px", border: "1px solid #D1D5DB", borderRadius: "8px", backgroundColor: "#FFF", fontSize:"1.2rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                >-</button>
+                                <span style={{ width: "40px", textAlign: "center", fontWeight: 700, fontSize: "1.2rem", color: "#222" }}>{newRes.guest_count}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setNewRes({...newRes, guest_count: newRes.guest_count + 1})}
+                                    style={{ width: "42px", height: "42px", border: "1px solid #D1D5DB", borderRadius: "8px", backgroundColor: "#FFF", fontSize:"1.2rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                >+</button>
                             </div>
                         </div>
-                    ) : (
-                        <p style={{ fontSize: "0.875rem", color: "#B91C1C" }}>
-                            ⚠️ Aucune zone disponible pour {guestCount} personne{guestCount > 1 ? "s" : ""}.
-                        </p>
-                    )}
+
+                        {/* Submit Button */}
+                        <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", marginTop: "0.5rem" }}>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                style={{
+                                    padding: "0.75rem 2rem",
+                                    backgroundColor: isSubmitting ? "#9CA3AF" : "#22C55E",
+                                    color: "#FFF",
+                                    fontWeight: 600,
+                                    borderRadius: "100px",
+                                    border: "none",
+                                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px"
+                                }}
+                            >
+                                {isSubmitting && <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />}
+                                Confirmer la réservation
+                            </button>
+                        </div>
+                    </form>
                 </div>
             )}
 
@@ -648,7 +818,7 @@ export default function FloorPlanPage() {
                 }}
             >
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: "#EF4444" }} />
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: "#3B82F6" }} />
                     <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>{kpis.occupied}</span>
                     <span style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>occupées</span>
                 </div>
@@ -658,18 +828,16 @@ export default function FloorPlanPage() {
                     <span style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>libres</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: "#3B82F6" }} />
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: "#F59E0B" }} />
                     <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>{kpis.reserved}</span>
                     <span style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>réservées</span>
                 </div>
 
-                {kpis.lateReservations > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "#EF4444" }}>
-                        <AlertTriangle style={{ width: 14, height: 14 }} />
-                        <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>{kpis.lateReservations}</span>
-                        <span style={{ fontSize: "0.75rem" }}>en retard</span>
-                    </div>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", marginLeft: "auto", color: "#6B7280" }}>
+                    <span style={{ fontSize: "0.75rem" }}>
+                        {kpis.totalReservations} réservation{kpis.totalReservations > 1 ? "s" : ""} confirmée{kpis.totalReservations > 1 ? "s" : ""} ce jour
+                    </span>
+                </div>
             </div>
 
             {/* Stats */}
@@ -697,6 +865,25 @@ export default function FloorPlanPage() {
                 ))}
             </div>
 
+            {/* Loading overlay */}
+            {loadingReservations && (
+                <div style={{
+                    padding: "0.75rem",
+                    marginBottom: "1rem",
+                    backgroundColor: "#EFF6FF",
+                    borderRadius: "8px",
+                    border: "1px solid #BFDBFE",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontSize: "0.875rem",
+                    color: "#1E40AF",
+                }}>
+                    <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} />
+                    Chargement des réservations...
+                </div>
+            )}
+
             {/* Floor Plan */}
             <div style={{ display: "flex", gap: "1.5rem" }}>
                 <div
@@ -713,7 +900,6 @@ export default function FloorPlanPage() {
                     <div style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: "12px" }}>
                         {stats.vip.slice(0, 3).map(zone => {
                             const status = statusConfig[zone.status];
-                            const late = isReservationLate(zone.reservation);
                             const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
 
                             return (
@@ -742,11 +928,9 @@ export default function FloorPlanPage() {
                                         </span>
                                     )}
                                     {zone.status === "libre" && <span style={{ fontSize: "0.55rem", color: status.text }}>{zone.capacity}p</span>}
-                                    {zone.status === "reserve" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>}
-                                    {late && (
-                                        <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "14px", height: "14px", backgroundColor: "#EF4444", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 1s infinite" }}>
-                                            <AlertTriangle style={{ width: 8, height: 8, color: "#FFF" }} />
-                                        </div>
+                                    {zone.status === "reserve" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.guests}p</span>}
+                                    {zone.status === "reserve" && (
+                                        <div style={{ position: "absolute", top: "-4px", right: "-4px", width: "12px", height: "12px", backgroundColor: "#F59E0B", borderRadius: "50%", border: "2px solid #FFF" }} />
                                     )}
                                 </button>
                             );
@@ -757,7 +941,6 @@ export default function FloorPlanPage() {
                     <div style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: "12px" }}>
                         {stats.vip.slice(3).map(zone => {
                             const status = statusConfig[zone.status];
-                            const late = isReservationLate(zone.reservation);
                             const occupationMinutes = getOccupationMinutes(zone.occupiedSince);
 
                             return (
@@ -786,11 +969,9 @@ export default function FloorPlanPage() {
                                         </span>
                                     )}
                                     {zone.status === "libre" && <span style={{ fontSize: "0.55rem", color: status.text }}>{zone.capacity}p</span>}
-                                    {zone.status === "reserve" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.time}</span>}
-                                    {late && (
-                                        <div style={{ position: "absolute", top: "-6px", right: "-6px", width: "14px", height: "14px", backgroundColor: "#EF4444", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse 1s infinite" }}>
-                                            <AlertTriangle style={{ width: 8, height: 8, color: "#FFF" }} />
-                                        </div>
+                                    {zone.status === "reserve" && zone.reservation && <span style={{ fontSize: "0.5rem", color: status.text }}>{zone.reservation.guests}p</span>}
+                                    {zone.status === "reserve" && (
+                                        <div style={{ position: "absolute", top: "-4px", right: "-4px", width: "12px", height: "12px", backgroundColor: "#F59E0B", borderRadius: "50%", border: "2px solid #FFF" }} />
                                     )}
                                 </button>
                             );
@@ -865,27 +1046,47 @@ export default function FloorPlanPage() {
                             </div>
                         )}
 
+                        {/* Reservation details from DB */}
                         {selectedZone.reservation && (
-                            <div style={{ backgroundColor: isReservationLate(selectedZone.reservation) ? "#FEE2E2" : "#DBEAFE", padding: "1rem", borderRadius: "10px", marginBottom: "1rem" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                                    <p style={{ fontWeight: 600, color: isReservationLate(selectedZone.reservation) ? "#B91C1C" : "#1E40AF", fontSize: "0.875rem" }}>
-                                        Réservation
+                            <div style={{ backgroundColor: "#FEF3C7", padding: "1rem", borderRadius: "10px", marginBottom: "1rem", border: "1px solid #FDE68A" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                                    <p style={{ fontWeight: 600, color: "#92400E", fontSize: "0.875rem" }}>
+                                        Réservation confirmée
                                     </p>
-                                    {isReservationLate(selectedZone.reservation) && (
-                                        <span style={{ padding: "2px 6px", backgroundColor: "#EF4444", color: "#FFF", borderRadius: "4px", fontSize: "0.625rem", fontWeight: 600 }}>EN RETARD</span>
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                    <p style={{ color: "#92400E", fontSize: "0.875rem", fontWeight: 600 }}>
+                                        {selectedZone.reservation.name}
+                                    </p>
+                                    <p style={{ fontSize: "0.75rem", color: "#B45309" }}>
+                                        📦 {selectedZone.reservation.packageName}
+                                    </p>
+                                    <p style={{ fontSize: "0.75rem", color: "#B45309" }}>
+                                        👥 {selectedZone.reservation.guests} personne{selectedZone.reservation.guests > 1 ? "s" : ""}
+                                    </p>
+                                    {selectedZone.reservation.email && (
+                                        <p style={{ fontSize: "0.75rem", color: "#B45309" }}>
+                                            ✉️ {selectedZone.reservation.email}
+                                        </p>
+                                    )}
+                                    {selectedZone.reservation.phone && (
+                                        <p style={{ fontSize: "0.75rem", color: "#B45309" }}>
+                                            📞 {selectedZone.reservation.phone}
+                                        </p>
+                                    )}
+                                    {selectedZone.reservation.estimatedPrice && (
+                                        <p style={{ fontSize: "0.75rem", color: "#B45309", fontWeight: 600 }}>
+                                            💰 {selectedZone.reservation.estimatedPrice} DT
+                                        </p>
+                                    )}
+                                    {selectedZone.reservation.specialRequest && (
+                                        <p style={{ fontSize: "0.75rem", color: "#B45309", marginTop: "4px", fontStyle: "italic" }}>
+                                            💬 {selectedZone.reservation.specialRequest}
+                                        </p>
                                     )}
                                 </div>
-                                <p style={{ color: isReservationLate(selectedZone.reservation) ? "#B91C1C" : "#1E40AF", fontSize: "0.875rem" }}>
-                                    <Clock style={{ width: 12, height: 12, display: "inline", marginRight: "4px" }} />
-                                    {selectedZone.reservation.time} - {selectedZone.reservation.name}
-                                </p>
-                                <p style={{ fontSize: "0.75rem", color: isReservationLate(selectedZone.reservation) ? "#DC2626" : "#3B82F6" }}>
-                                    {selectedZone.reservation.guests} personnes
-                                </p>
                             </div>
                         )}
-
-
 
                         <p style={{ fontWeight: 500, color: "#222", fontSize: "0.875rem", marginBottom: "0.5rem" }}>Changer le statut</p>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
@@ -914,6 +1115,7 @@ export default function FloorPlanPage() {
 
             <style jsx global>{`
                 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             `}</style>
         </div>
     );
