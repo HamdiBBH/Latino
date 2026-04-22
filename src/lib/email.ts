@@ -371,3 +371,68 @@ export async function sendReservationRejectionEmail(data: ReservationEmailData) 
         return { success: false, error: "Failed to send email" };
     }
 }
+
+// Send reservation modification details to guest
+export async function sendReservationModificationEmail(data: ReservationEmailData) {
+    const transporter = getTransporter();
+
+    const formattedDate = new Date(data.date).toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+
+    const content = `
+        <h2 style="color: #222222; margin: 0 0 20px; font-size: 24px;">
+            Détails de votre réservation mis à jour
+        </h2>
+        <p style="color: #7A7A7A; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
+            Bonjour <strong>${data.guestName}</strong>,<br><br>
+            Suite à votre demande, nous vous confirmons que votre réservation a bien été modifiée. Voici les nouveaux détails :
+        </p>
+
+        <div style="background-color: #F9F5F0; border-radius: 12px; padding: 25px; margin: 0 0 25px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #7A7A7A;">Date</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #222; text-align: right; font-weight: 600;">${formattedDate}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #7A7A7A;">Forfait</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #222; text-align: right; font-weight: 600;">${data.packageName}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #7A7A7A;">Adultes</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #222; text-align: right; font-weight: 600;">${data.adults}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #7A7A7A;">Enfants (4-12 ans)</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #E5E7EB; color: #222; text-align: right; font-weight: 600;">${data.children}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 0 0; color: #222; font-weight: 600;">Nouveau Total Estimé</td>
+                    <td style="padding: 12px 0 0; color: #E8A87C; text-align: right; font-weight: 700; font-size: 18px;">${data.totalPrice} DT</td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="color: #7A7A7A; font-size: 14px; line-height: 1.6;">
+            Nous avons hâte de vous recevoir !<br><br>
+            Pour toute autre question, contactez-nous au <a href="tel:${RESTAURANT_INFO.phone}" style="color: #E8A87C;">${RESTAURANT_INFO.phone}</a>
+        </p>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: `"${RESTAURANT_INFO.name}" <${process.env.SMTP_USER}>`,
+            to: data.guestEmail,
+            subject: `✏️ Modification de votre réservation - ${formattedDate}`,
+            html: getBaseTemplate(content),
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error sending modification email:", error);
+        return { success: false, error: "Failed to send email" };
+    }
+}

@@ -233,6 +233,63 @@ export async function declineReservation(id: string, reason: string) {
     return updateReservationStatus(id, "declined", reason);
 }
 
+export async function updateReservationDetails(
+    id: string,
+    updates: {
+        reservation_date: string;
+        time_slot: string;
+        guest_count: number;
+        adults_count: number;
+        children_4_12_count: number;
+        package_id: string;
+        estimated_price: number;
+    }
+) {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from("reservations")
+        .update({
+            ...updates,
+            updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+    if (error) {
+        console.error("Error updating reservation details:", error);
+        return { success: false, error: error.message };
+    }
+
+    // Send email notification to guest
+    const { data: reservation, error: fetchErr } = await supabase
+        .from("reservations")
+        .select("*, packages!reservations_package_id_fkey(name)")
+        .eq("id", id)
+        .single();
+
+    if (!fetchErr && reservation && reservation.guest_email) {
+        const { sendReservationModificationEmail } = await import('@/lib/email');
+        try {
+            await sendReservationModificationEmail({
+                guestName: reservation.guest_name,
+                guestEmail: reservation.guest_email,
+                date: reservation.reservation_date,
+                packageName: reservation.packages?.name || "Forfait",
+                adults: reservation.adults_count || reservation.guest_count,
+                children: reservation.children_4_12_count || 0,
+                totalPrice: reservation.estimated_price || 0,
+                reservationId: reservation.id,
+            });
+            console.log("Modification email sent successfully.");
+        } catch (err) {
+            console.error("Erreur lors de l'envoi de l'email de modification:", err);
+        }
+    }
+
+    revalidatePath("/dashboard/reservations");
+    return { success: true };
+}
+
 export async function proposeAlternative(
     id: string,
     alternativeDate: string,

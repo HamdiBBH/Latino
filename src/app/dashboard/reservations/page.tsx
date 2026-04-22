@@ -15,8 +15,10 @@ import {
     Filter,
     ChevronRight,
     AlertCircle,
+    Edit,
 } from "lucide-react";
-import { getReservations, confirmReservation, declineReservation } from "@/app/actions/reservations";
+import { getReservations, confirmReservation, declineReservation, updateReservationDetails } from "@/app/actions/reservations";
+import { getPackages } from "@/app/actions/cms";
 import { TodayDashboard } from "@/components/admin/TodayDashboard";
 import { ManagerAlerts } from "@/components/admin/ManagerAlerts";
 
@@ -28,6 +30,10 @@ interface Reservation {
     reservation_date: string;
     time_slot: string;
     guest_count: number;
+    adults_count: number;
+    children_4_12_count: number;
+    children_under_4_count: number;
+    package_id: string;
     special_request: string | null;
     estimated_price: number;
     status: string;
@@ -60,9 +66,48 @@ export default function ReservationsPage() {
     const [declineReason, setDeclineReason] = useState("");
     const [showDeclineModal, setShowDeclineModal] = useState(false);
 
+    // Edit states
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState<Partial<Reservation>>({});
+    const [packagesList, setPackagesList] = useState<any[]>([]);
+
     useEffect(() => {
         loadReservations();
+        loadPackages();
     }, [filter]);
+
+    useEffect(() => {
+        if (isEditing && editData.package_id) {
+            const selectedPackage = packagesList.find(p => p.id === editData.package_id);
+            if (selectedPackage) {
+                const parsePrice = (priceStr: string): number => {
+                    const match = priceStr?.match(/[\d.]+/);
+                    return match ? parseFloat(match[0]) : 0;
+                };
+                
+                const adultPrice = parsePrice(selectedPackage.price);
+                const childPrice = 45; // Prix enfant fixe
+                
+                const adultsCount = editData.adults_count ?? selectedReservation?.adults_count ?? 0;
+                const childrenCount = editData.children_4_12_count ?? selectedReservation?.children_4_12_count ?? 0;
+                
+                const estimated_price = Math.round((adultsCount * adultPrice) + (childrenCount * childPrice));
+                
+                setEditData(prev => {
+                    // Ne mettre à jour que si la valeur a effectivement changé pour éviter les boucles infinies
+                    if (prev.estimated_price !== estimated_price) {
+                        return { ...prev, estimated_price };
+                    }
+                    return prev;
+                });
+            }
+        }
+    }, [editData.package_id, editData.adults_count, editData.children_4_12_count, isEditing, packagesList, selectedReservation]);
+
+    const loadPackages = async () => {
+        const pkgs = await getPackages();
+        setPackagesList(pkgs || []);
+    };
 
     const loadReservations = async () => {
         setLoading(true);
@@ -113,6 +158,37 @@ export default function ReservationsPage() {
         setActionLoading(false);
     };
 
+    const handleEditSave = async () => {
+        if (!selectedReservation) return;
+        setActionLoading(true);
+        
+        // Ensure guest_count is properly updated to match adults + children if they were changed
+        const totalGuests = (editData.adults_count || selectedReservation.adults_count || 0) + 
+                            (editData.children_4_12_count || selectedReservation.children_4_12_count || 0) +
+                            (editData.children_under_4_count || selectedReservation.children_under_4_count || 0);
+
+        const updates = {
+            reservation_date: editData.reservation_date || selectedReservation.reservation_date,
+            time_slot: selectedReservation.time_slot,
+            guest_count: editData.adults_count || editData.children_4_12_count ? totalGuests : (editData.guest_count || selectedReservation.guest_count),
+            adults_count: editData.adults_count !== undefined ? editData.adults_count : selectedReservation.adults_count,
+            children_4_12_count: editData.children_4_12_count !== undefined ? editData.children_4_12_count : selectedReservation.children_4_12_count,
+            package_id: editData.package_id || selectedReservation.package_id,
+            estimated_price: editData.estimated_price !== undefined ? editData.estimated_price : selectedReservation.estimated_price,
+        };
+
+        const result = await updateReservationDetails(selectedReservation.id, updates);
+        
+        if (result.success) {
+            await loadReservations();
+            // Update the local selected reservation so the view refreshes immediately
+            setSelectedReservation(prev => prev ? { ...prev, ...updates, packages: packagesList.find(p => p.id === updates.package_id) || prev.packages } : null);
+            setIsEditing(false);
+        } else {
+            alert("Erreur lors de la modification : " + result.error);
+        }
+        setActionLoading(false);
+    };
 
     const pendingCount = reservations.filter(r => r.status === "pending").length;
 
@@ -272,69 +348,162 @@ export default function ReservationsPage() {
                     <div style={{ backgroundColor: "#FFF", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "1.5rem" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "1.5rem" }}>
                             <h3 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#222" }}>Détails</h3>
-                            <button onClick={() => setSelectedReservation(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-                                <X style={{ width: 20, height: 20, color: "#7A7A7A" }} />
-                            </button>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                                {!isEditing && (
+                                    <button 
+                                        onClick={() => {
+                                            setEditData({
+                                                reservation_date: selectedReservation.reservation_date,
+                                                package_id: selectedReservation.package_id,
+                                                adults_count: selectedReservation.adults_count,
+                                                children_4_12_count: selectedReservation.children_4_12_count,
+                                                estimated_price: selectedReservation.estimated_price,
+                                            });
+                                            setIsEditing(true);
+                                        }} 
+                                        style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                        title="Modifier"
+                                    >
+                                        <Edit style={{ width: 18, height: 18, color: "#E8A87C" }} />
+                                    </button>
+                                )}
+                                <button onClick={() => { setSelectedReservation(null); setIsEditing(false); }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <X style={{ width: 20, height: 20, color: "#7A7A7A" }} />
+                                </button>
+                            </div>
                         </div>
 
-                        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
-                            <div>
-                                <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Client</p>
-                                <p style={{ fontWeight: 600, color: "#222" }}>{selectedReservation.guest_name}</p>
-                            </div>
-                            <div style={{ display: "flex", gap: "1rem" }}>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Email</p>
-                                    <a href={`mailto:${selectedReservation.guest_email}`} style={{ color: "#E8A87C", fontSize: "0.875rem" }}>
-                                        {selectedReservation.guest_email}
-                                    </a>
+                        {!isEditing ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+                                <div>
+                                    <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Client</p>
+                                    <p style={{ fontWeight: 600, color: "#222" }}>{selectedReservation.guest_name}</p>
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Téléphone</p>
-                                    <a href={`tel:${selectedReservation.guest_phone}`} style={{ color: "#E8A87C", fontSize: "0.875rem" }}>
-                                        {selectedReservation.guest_phone}
-                                    </a>
-                                </div>
-                            </div>
-                            <div style={{ display: "flex", gap: "1rem" }}>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Forfait</p>
-                                    <p style={{ fontWeight: 500 }}>{selectedReservation.packages?.name || "-"}</p>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Personnes</p>
-                                    <p style={{ fontWeight: 500 }}>{selectedReservation.guest_count}</p>
-                                </div>
-                            </div>
-                            <div style={{ display: "flex", gap: "1rem" }}>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Date</p>
-                                    <p style={{ fontWeight: 500 }}>
-                                        {new Date(selectedReservation.reservation_date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
-                                    </p>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Créneau</p>
-                                    <p style={{ fontWeight: 500 }}>{timeSlotLabels[selectedReservation.time_slot]}</p>
-                                </div>
-                            </div>
-                            <div>
-                                <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Montant estimé</p>
-                                <p style={{ fontSize: "1.25rem", fontWeight: 700, color: "#E8A87C" }}>{selectedReservation.estimated_price}DT</p>
-                            </div>
-                            {selectedReservation.special_request && (
-                                <div style={{ backgroundColor: "#FEF3C7", padding: "1rem", borderRadius: "12px" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                                        <AlertCircle style={{ width: 16, height: 16, color: "#F59E0B" }} />
-                                        <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#92400E" }}>Demande spéciale</p>
+                                <div style={{ display: "flex", gap: "1rem" }}>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Email</p>
+                                        <a href={`mailto:${selectedReservation.guest_email}`} style={{ color: "#E8A87C", fontSize: "0.875rem" }}>
+                                            {selectedReservation.guest_email}
+                                        </a>
                                     </div>
-                                    <p style={{ fontSize: "0.875rem", color: "#222" }}>{selectedReservation.special_request}</p>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Téléphone</p>
+                                        <a href={`tel:${selectedReservation.guest_phone}`} style={{ color: "#E8A87C", fontSize: "0.875rem" }}>
+                                            {selectedReservation.guest_phone}
+                                        </a>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                                <div style={{ display: "flex", gap: "1rem" }}>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Forfait</p>
+                                        <p style={{ fontWeight: 500 }}>{selectedReservation.packages?.name || "-"}</p>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Personnes</p>
+                                        <p style={{ fontWeight: 500 }}>{selectedReservation.guest_count} (Ad: {selectedReservation.adults_count || 0}, Enf: {selectedReservation.children_4_12_count || 0})</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: "flex", gap: "1rem" }}>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Date</p>
+                                        <p style={{ fontWeight: 500 }}>
+                                            {new Date(selectedReservation.reservation_date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+                                        </p>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Créneau</p>
+                                        <p style={{ fontWeight: 500 }}>{timeSlotLabels[selectedReservation.time_slot]}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: "0.75rem", color: "#7A7A7A", marginBottom: "4px" }}>Montant estimé</p>
+                                    <p style={{ fontSize: "1.25rem", fontWeight: 700, color: "#E8A87C" }}>{selectedReservation.estimated_price}DT</p>
+                                </div>
+                                {selectedReservation.special_request && (
+                                    <div style={{ backgroundColor: "#FEF3C7", padding: "1rem", borderRadius: "12px" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                            <AlertCircle style={{ width: 16, height: 16, color: "#F59E0B" }} />
+                                            <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#92400E" }}>Demande spéciale</p>
+                                        </div>
+                                        <p style={{ fontSize: "0.875rem", color: "#222" }}>{selectedReservation.special_request}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+                                <div>
+                                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#222", marginBottom: "4px" }}>Date</label>
+                                    <input 
+                                        type="date" 
+                                        value={editData.reservation_date || ""}
+                                        onChange={(e) => setEditData({ ...editData, reservation_date: e.target.value })}
+                                        style={{ width: "100%", padding: "8px 12px", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "0.875rem" }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#222", marginBottom: "4px" }}>Forfait</label>
+                                    <select 
+                                        value={editData.package_id || ""}
+                                        onChange={(e) => setEditData({ ...editData, package_id: e.target.value })}
+                                        style={{ width: "100%", padding: "8px 12px", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "0.875rem" }}
+                                    >
+                                        {packagesList.map(pkg => (
+                                            <option key={pkg.id} value={pkg.id}>{pkg.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div style={{ display: "flex", gap: "1rem" }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#222", marginBottom: "4px" }}>Adultes</label>
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            value={editData.adults_count ?? ""}
+                                            onChange={(e) => setEditData({ ...editData, adults_count: parseInt(e.target.value) || 0 })}
+                                            style={{ width: "100%", padding: "8px 12px", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "0.875rem" }}
+                                        />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#222", marginBottom: "4px" }}>Enfants (4-12)</label>
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            value={editData.children_4_12_count ?? ""}
+                                            onChange={(e) => setEditData({ ...editData, children_4_12_count: parseInt(e.target.value) || 0 })}
+                                            style={{ width: "100%", padding: "8px 12px", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "0.875rem" }}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#222", marginBottom: "4px" }}>Montant Estimé (DT)</label>
+                                    <input 
+                                        type="number" 
+                                        min="0"
+                                        value={editData.estimated_price ?? ""}
+                                        onChange={(e) => setEditData({ ...editData, estimated_price: parseInt(e.target.value) || 0 })}
+                                        style={{ width: "100%", padding: "8px 12px", border: "1px solid #E5E7EB", borderRadius: "8px", fontSize: "0.875rem" }}
+                                    />
+                                </div>
+                                <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+                                    <button
+                                        onClick={() => setIsEditing(false)}
+                                        style={{ flex: 1, padding: "10px", backgroundColor: "#F3F4F6", border: "none", borderRadius: "8px", fontWeight: 500, cursor: "pointer" }}
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={handleEditSave}
+                                        disabled={actionLoading}
+                                        style={{ flex: 1, padding: "10px", backgroundColor: "#E8A87C", color: "#FFF", border: "none", borderRadius: "8px", fontWeight: 600, cursor: "pointer" }}
+                                    >
+                                        {actionLoading ? "Enregistrement..." : "Enregistrer"}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Actions */}
-                        {selectedReservation.status === "pending" && (
+                        {!isEditing && selectedReservation.status === "pending" && (
                             <div style={{ display: "flex", gap: "0.75rem" }}>
                                 <button
                                     onClick={() => handleConfirm(selectedReservation.id)}
