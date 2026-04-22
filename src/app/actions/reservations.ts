@@ -130,7 +130,7 @@ export async function getPendingReservationsCount() {
 
 export async function updateReservationStatus(
     id: string,
-    status: "confirmed" | "declined" | "alternative_proposed",
+    status: "confirmed" | "declined" | "cancelled" | "alternative_proposed",
     notes?: string,
     alternativeDate?: string,
     alternativeInstallationId?: string
@@ -192,7 +192,7 @@ export async function updateReservationStatus(
              console.warn("No guest_email found on reservation!");
         }
         console.log("=== FIN CONFIRMATION EMAIL ===");
-    } else if (status === "cancelled") {
+    } else if (status === "declined" || status === "cancelled") {
         console.log("=== DEBUT CANCELLATION EMAIL ===");
         const { data: reservation, error: fetchErr } = await supabase
             .from("reservations")
