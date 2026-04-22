@@ -74,12 +74,20 @@ export function BookingBar() {
         if (isRestrictedPeriod() && totalGuests > 0) {
             available = available.filter(pkg => {
                 const name = pkg.name.toLowerCase();
-                if (totalGuests <= config.rules.parasolMaxGuests) {
-                    return name.includes("parasol");
-                } else if (totalGuests <= config.rules.cabanePailloteMaxGuests) {
-                    return (name.includes("cabane") || name.includes("paillote")) && !name.includes("vip");
-                } else if (totalGuests >= config.rules.vipMinGuests) {
-                    return name.includes("cabane") || name.includes("paillote");
+                const adultCount = parseInt(formData.adults || "0");
+                const childCount = parseInt(formData.children || "0");
+
+                if (name.includes("parasol")) {
+                    return adultCount <= config.rules.parasolMaxAdults;
+                }
+                if (name.includes("cabane") && !name.includes("vip")) {
+                    return adultCount >= config.rules.cabaneMinAdults || (adultCount === 2 && childCount >= 2);
+                }
+                if (name.includes("paillote")) {
+                    return adultCount >= config.rules.pailloteMinAdults;
+                }
+                if (name.includes("vip")) {
+                    return adultCount >= config.rules.vipMinAdults;
                 }
                 return true;
             });

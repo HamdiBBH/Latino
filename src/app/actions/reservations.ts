@@ -192,6 +192,33 @@ export async function updateReservationStatus(
              console.warn("No guest_email found on reservation!");
         }
         console.log("=== FIN CONFIRMATION EMAIL ===");
+    } else if (status === "cancelled") {
+        console.log("=== DEBUT CANCELLATION EMAIL ===");
+        const { data: reservation, error: fetchErr } = await supabase
+            .from("reservations")
+            .select("*, packages!reservations_package_id_fkey(name)")
+            .eq("id", id)
+            .single();
+
+        if (!fetchErr && reservation && reservation.guest_email) {
+            const { sendReservationRejectionEmail } = await import('@/lib/email');
+            try {
+                await sendReservationRejectionEmail({
+                    guestName: reservation.guest_name,
+                    guestEmail: reservation.guest_email,
+                    date: reservation.reservation_date,
+                    packageName: reservation.packages?.name || "Forfait",
+                    adults: reservation.adults_count || reservation.guest_count,
+                    children: reservation.children_4_12_count || 0,
+                    totalPrice: reservation.estimated_price || 0,
+                    reservationId: reservation.id,
+                });
+                console.log("Rejection email sent successfully.");
+            } catch (err) {
+                console.error("Erreur lors de l'envoi de l'email de refus:", err);
+            }
+        }
+        console.log("=== FIN CANCELLATION EMAIL ===");
     }
 
     revalidatePath("/dashboard/reservations");

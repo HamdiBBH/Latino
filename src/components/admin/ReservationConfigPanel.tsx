@@ -147,6 +147,35 @@ export default function ReservationConfigPanel() {
                     </div>
                 </div>
 
+                {/* Période de réservation autorisée */}
+                <div style={cardStyle}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem" }}>
+                        <Calendar style={{ width: 24, height: 24, color: "#E8A87C" }} />
+                        <h3 style={{ fontWeight: 600, color: "#222" }}>Fenêtre de Réservation Client</h3>
+                    </div>
+                    <p style={{ fontSize: "0.875rem", color: "#7A7A7A", marginBottom: "1rem" }}>Limiter le calendrier visible pour les clients (laisser vide pour ne pas limiter).</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Date de début</label>
+                            <input
+                                type="date"
+                                value={config.bookingWindowStart || ""}
+                                onChange={(e) => setConfig({ ...config, bookingWindowStart: e.target.value })}
+                                style={{ width: "100%", padding: "12px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Date de fin</label>
+                            <input
+                                type="date"
+                                value={config.bookingWindowEnd || ""}
+                                onChange={(e) => setConfig({ ...config, bookingWindowEnd: e.target.value })}
+                                style={{ width: "100%", padding: "12px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Règles par personnes */}
                 <div style={cardStyle}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem" }}>
@@ -155,29 +184,38 @@ export default function ReservationConfigPanel() {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                          <div>
-                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Maximum de personnes pour un Parasol</label>
+                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Maximum d'adultes pour un Parasol</label>
                             <input
                                 type="number"
-                                value={config.rules.parasolMaxGuests}
-                                onChange={(e) => updateNestedField(["rules", "parasolMaxGuests"], parseInt(e.target.value))}
+                                value={config.rules.parasolMaxAdults}
+                                onChange={(e) => updateNestedField(["rules", "parasolMaxAdults"], parseInt(e.target.value))}
                                 style={{ width: "100%", padding: "12px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
                             />
                         </div>
                         <div>
-                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Maximum de personnes Cabane Normale / Paillote</label>
+                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Minimum d'adultes pour Cabane sur sable</label>
                             <input
                                 type="number"
-                                value={config.rules.cabanePailloteMaxGuests}
-                                onChange={(e) => updateNestedField(["rules", "cabanePailloteMaxGuests"], parseInt(e.target.value))}
+                                value={config.rules.cabaneMinAdults}
+                                onChange={(e) => updateNestedField(["rules", "cabaneMinAdults"], parseInt(e.target.value))}
                                 style={{ width: "100%", padding: "12px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
                             />
                         </div>
                         <div>
-                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Minimum de personnes Cabane VIP</label>
+                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Minimum d'adultes pour Paillote en mer</label>
                             <input
                                 type="number"
-                                value={config.rules.vipMinGuests}
-                                onChange={(e) => updateNestedField(["rules", "vipMinGuests"], parseInt(e.target.value))}
+                                value={config.rules.pailloteMinAdults}
+                                onChange={(e) => updateNestedField(["rules", "pailloteMinAdults"], parseInt(e.target.value))}
+                                style={{ width: "100%", padding: "12px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.875rem", color: "#6B7280", marginBottom: "0.5rem" }}>Minimum d'adultes pour Cabane VIP</label>
+                            <input
+                                type="number"
+                                value={config.rules.vipMinAdults}
+                                onChange={(e) => updateNestedField(["rules", "vipMinAdults"], parseInt(e.target.value))}
                                 style={{ width: "100%", padding: "12px", border: "1px solid #E5E7EB", borderRadius: "8px" }}
                             />
                         </div>

@@ -178,11 +178,26 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId, co
         return `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     };
 
+    const isOutsideBookingWindow = (day: number) => {
+        if (!config.bookingWindowStart && !config.bookingWindowEnd) return false;
+        
+        const dateStr = getDateString(day);
+        
+        if (config.bookingWindowStart) {
+            if (dateStr < config.bookingWindowStart) return true;
+        }
+        if (config.bookingWindowEnd) {
+            if (dateStr > config.bookingWindowEnd) return true;
+        }
+        return false;
+    };
+
     const getDayStyle = (day: number): React.CSSProperties => {
         const dateStr = getDateString(day);
         const dayInfo = availability[dateStr];
         const isSelected = selectedDate === dateStr;
         const past = isPast(day);
+        const outsideWindow = isOutsideBookingWindow(day);
         const isFull = dayInfo?.fillRate === 100;
         const isOutOfSeason = dayInfo?.isOutOfSeason;
 
@@ -195,7 +210,7 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId, co
             };
         }
 
-        if (past) {
+        if (past || outsideWindow) {
             return {
                 backgroundColor: "#F3F4F6",
                 color: "#9CA3AF",
@@ -294,15 +309,16 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId, co
                     const dateStr = getDateString(day);
                     const dayInfo = availability[dateStr];
                     const past = isPast(day);
+                    const outsideWindow = isOutsideBookingWindow(day);
                     const isFull = dayInfo?.fillRate === 100;
-                    const hasOffer = dayInfo?.offer && !past && !isFull;
+                    const hasOffer = dayInfo?.offer && !past && !isFull && !outsideWindow;
                     const lowAvailability = dayInfo?.fillRate && dayInfo.fillRate > 70 && dayInfo.fillRate < 100;
 
                     return (
                         <button
                             key={day}
-                            onClick={() => !past && !isFull && onDateSelect(dateStr)}
-                            disabled={past || isFull}
+                            onClick={() => !past && !isFull && !outsideWindow && onDateSelect(dateStr)}
+                            disabled={past || isFull || outsideWindow}
                             style={{
                                 position: "relative",
                                 height: 48,

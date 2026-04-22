@@ -7,10 +7,13 @@ export interface ReservationConfig {
     seasonEnd: string; // MM-DD
     restrictionStart: string; // MM-DD
     restrictionEnd: string; // MM-DD
+    bookingWindowStart?: string; // YYYY-MM-DD
+    bookingWindowEnd?: string; // YYYY-MM-DD
     rules: {
-        parasolMaxGuests: number;
-        cabanePailloteMaxGuests: number;
-        vipMinGuests: number;
+        parasolMaxAdults: number;
+        cabaneMinAdults: number;
+        pailloteMinAdults: number;
+        vipMinAdults: number;
     };
     weeklyOffers: Record<string, { type: "discount" | "free_children"; value: string; description: string } | null>;
 }
@@ -20,10 +23,13 @@ const DEFAULT_CONFIG: ReservationConfig = {
     seasonEnd: "09-30",
     restrictionStart: "06-01",
     restrictionEnd: "07-15",
+    bookingWindowStart: "",
+    bookingWindowEnd: "",
     rules: {
-        parasolMaxGuests: 3,
-        cabanePailloteMaxGuests: 5,
-        vipMinGuests: 6
+        parasolMaxAdults: 4,
+        cabaneMinAdults: 3,
+        pailloteMinAdults: 4,
+        vipMinAdults: 6
     },
     weeklyOffers: {
         "3": { type: "free_children", value: "2", description: "2 enfants gratuits" },
@@ -45,7 +51,26 @@ export async function getReservationConfig(): Promise<ReservationConfig> {
         return DEFAULT_CONFIG;
     }
 
-    return data.value as ReservationConfig;
+    const config = data.value as any;
+
+    // Migration pour l'ancien schéma vers le nouveau basé sur la matrice
+    if (config.rules && config.rules.parasolMaxGuests !== undefined) {
+        config.rules = {
+            parasolMaxAdults: 4, // Force default from matrix
+            cabaneMinAdults: 3,  // Force default from matrix
+            pailloteMinAdults: 4, // Force default from matrix
+            vipMinAdults: config.rules.vipMinGuests || 6
+        };
+        delete config.rules.parasolMaxGuests;
+        delete config.rules.cabanePailloteMaxGuests;
+        delete config.rules.vipMinGuests;
+    }
+
+    return { 
+        ...DEFAULT_CONFIG, 
+        ...config, 
+        rules: { ...DEFAULT_CONFIG.rules, ...(config.rules || {}) } 
+    } as ReservationConfig;
 }
 
 export async function saveReservationConfig(config: ReservationConfig) {

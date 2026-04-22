@@ -324,3 +324,50 @@ export async function sendReminderEmail(data: ReservationEmailData) {
         return { success: false, error: "Failed to send email" };
     }
 }
+
+// Send reservation rejection/cancellation to guest
+export async function sendReservationRejectionEmail(data: ReservationEmailData) {
+    const transporter = getTransporter();
+
+    const formattedDate = new Date(data.date).toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    });
+
+    const content = `
+        <h2 style="color: #222222; margin: 0 0 20px; font-size: 24px;">
+            Mise à jour de votre réservation
+        </h2>
+        <p style="color: #7A7A7A; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
+            Bonjour <strong>${data.guestName}</strong>,<br><br>
+            Nous sommes au regret de vous informer que nous ne pouvons malheureusement pas valider votre demande de réservation pour le <strong>${formattedDate}</strong> (${data.packageName}).
+        </p>
+        
+        <div style="background-color: #FEF2F2; border-radius: 12px; padding: 20px; margin: 25px 0;">
+            <p style="color: #B91C1C; margin: 0; font-size: 15px; line-height: 1.6;">
+                En raison d'une forte affluence ou d'un manque de disponibilité pour l'installation demandée à cette date, votre réservation a dû être refusée.<br><br>
+                Nous vous invitons à réessayer pour une autre date ou à nous contacter pour trouver une alternative.
+            </p>
+        </div>
+
+        <p style="color: #7A7A7A; font-size: 14px; line-height: 1.6;">
+            Nous espérons avoir l'occasion de vous accueillir très bientôt.<br><br>
+            Pour toute question, contactez-nous au <a href="tel:${RESTAURANT_INFO.phone}" style="color: #E8A87C;">${RESTAURANT_INFO.phone}</a>
+        </p>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: `"${RESTAURANT_INFO.name}" <${process.env.SMTP_USER}>`,
+            to: data.guestEmail,
+            subject: `❌ Mise à jour de votre demande de réservation - ${formattedDate}`,
+            html: getBaseTemplate(content),
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error sending rejection email:", error);
+        return { success: false, error: "Failed to send email" };
+    }
+}
