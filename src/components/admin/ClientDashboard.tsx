@@ -3,16 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-    Ship,
     Sun,
-    Utensils,
-    Palmtree,
-    Sunset,
-    Clock,
     Thermometer,
     Droplets,
     Wind,
-    ShoppingBag,
+    Utensils,
     Trophy,
     Camera,
     MessageCircle,
@@ -20,17 +15,7 @@ import {
     ArrowRight,
     Gift,
     Bell,
-    Check,
 } from "lucide-react";
-
-// Day timeline steps for Coucou Beach
-const daySteps = [
-    { id: "boat", label: "En route", icon: Ship, time: "9h-10h", description: "Traversée vers l'île" },
-    { id: "beach", label: "Plage", icon: Sun, time: "10h-13h", description: "Profitez du soleil" },
-    { id: "lunch", label: "Déjeuner", icon: Utensils, time: "13h-14h", description: "Service du repas" },
-    { id: "afternoon", label: "Après-midi", icon: Palmtree, time: "14h-18h", description: "Détente & extras" },
-    { id: "sunset", label: "Retour", icon: Sunset, time: "18h-19h", description: "Retour au parking" },
-];
 
 // Mock weather data (in real app, fetch from API)
 const mockWeather = {
@@ -56,23 +41,12 @@ const mockReservation = {
 
 // Quick actions for client
 const quickActions = [
-    { href: "/dashboard/menu-order", label: "Commander", icon: ShoppingBag, color: "#E8A87C", badge: null },
-    { href: "/dashboard/boat-tracker", label: "Bateau", icon: Ship, color: "#3B82F6", badge: "10 min" },
+    { href: "/dashboard/client-menu", label: "Le Menu", icon: Utensils, color: "#E8A87C", badge: null },
     { href: "/dashboard/loyalty", label: "Fidélité", icon: Trophy, color: "#F59E0B", badge: "150 pts" },
     { href: "/dashboard/memories", label: "Photos", icon: Camera, color: "#EC4899", badge: null },
     { href: "/dashboard/concierge", label: "Aide", icon: MessageCircle, color: "#22C55E", badge: null },
     { href: "/dashboard/profile", label: "Profil", icon: User, color: "#6366F1", badge: null },
 ];
-
-// Get current step based on time
-const getCurrentStep = () => {
-    const hour = new Date().getHours();
-    if (hour < 10) return "boat";
-    if (hour < 13) return "beach";
-    if (hour < 14) return "lunch";
-    if (hour < 18) return "afternoon";
-    return "sunset";
-};
 
 interface ClientDashboardProps {
     userName: string;
@@ -80,13 +54,11 @@ interface ClientDashboardProps {
 }
 
 export default function ClientDashboard({ userName, hasReservation = true }: ClientDashboardProps) {
-    const [currentStep, setCurrentStep] = useState(getCurrentStep());
     const [, setTick] = useState(0);
 
-    // Update current step every minute
+    // Update time every minute
     useEffect(() => {
         const timer = setInterval(() => {
-            setCurrentStep(getCurrentStep());
             setTick((t) => t + 1);
         }, 60000);
         return () => clearInterval(timer);
@@ -220,93 +192,6 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                 </div>
             </div>
 
-            {/* Day Timeline */}
-            <div
-                style={{
-                    backgroundColor: "#FFF",
-                    borderRadius: "16px",
-                    padding: "1rem",
-                    marginBottom: "1.5rem",
-                    border: "1px solid #E5E7EB",
-                }}
-            >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "1rem" }}>
-                    <Clock style={{ width: 20, height: 20, color: "#E8A87C" }} />
-                    <span style={{ fontWeight: 600, color: "#222" }}>Votre journée</span>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
-                    {/* Progress Line */}
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "20px",
-                            left: "24px",
-                            right: "24px",
-                            height: "4px",
-                            backgroundColor: "#E5E7EB",
-                            borderRadius: "2px",
-                            zIndex: 0,
-                        }}
-                    />
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "20px",
-                            left: "24px",
-                            width: `${(daySteps.findIndex((s) => s.id === currentStep) / (daySteps.length - 1)) * 100}%`,
-                            height: "4px",
-                            backgroundColor: "#E8A87C",
-                            borderRadius: "2px",
-                            zIndex: 1,
-                            transition: "width 0.5s ease",
-                        }}
-                    />
-
-                    {daySteps.map((step, index) => {
-                        const Icon = step.icon;
-                        const isPast = daySteps.findIndex((s) => s.id === currentStep) > index;
-                        const isCurrent = step.id === currentStep;
-
-                        return (
-                            <div key={step.id} style={{ textAlign: "center", zIndex: 2, flex: 1 }}>
-                                <div
-                                    style={{
-                                        width: "40px",
-                                        height: "40px",
-                                        borderRadius: "50%",
-                                        backgroundColor: isCurrent ? "#E8A87C" : isPast ? "#22C55E" : "#F3F4F6",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        margin: "0 auto 8px",
-                                        border: isCurrent ? "3px solid #FEF3E2" : "none",
-                                        boxShadow: isCurrent ? "0 0 0 4px rgba(232,168,124,0.3)" : "none",
-                                    }}
-                                >
-                                    {isPast ? (
-                                        <Check style={{ width: 18, height: 18, color: "#FFF" }} />
-                                    ) : (
-                                        <Icon style={{ width: 18, height: 18, color: isCurrent ? "#FFF" : "#9CA3AF" }} />
-                                    )}
-                                </div>
-                                <p
-                                    style={{
-                                        fontSize: "0.7rem",
-                                        fontWeight: isCurrent ? 600 : 400,
-                                        color: isCurrent ? "#E8A87C" : isPast ? "#22C55E" : "#6B7280",
-                                        margin: 0,
-                                    }}
-                                >
-                                    {step.label}
-                                </p>
-                                <p style={{ fontSize: "0.6rem", color: "#9CA3AF", margin: "2px 0 0 0" }}>{step.time}</p>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
             {/* Quick Actions Grid */}
             <div style={{ marginBottom: "1.5rem" }}>
                 <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "#222", marginBottom: "0.75rem" }}>
@@ -411,7 +296,7 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                     </p>
                 </div>
                 <Link
-                    href="/dashboard/menu-order"
+                    href="/dashboard/client-menu"
                     style={{
                         padding: "8px 16px",
                         backgroundColor: "#FFF",
@@ -422,7 +307,7 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                         textDecoration: "none",
                     }}
                 >
-                    Commander
+                    Voir le menu
                 </Link>
             </div>
 
@@ -450,18 +335,11 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                             borderRadius: "100px",
                         }}
                     >
-                        2 nouvelles
+                        1 nouvelle
                     </span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", backgroundColor: "#F9FAFB", borderRadius: "10px" }}>
-                        <span style={{ fontSize: "1rem" }}>🚢</span>
-                        <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: "0.8rem", fontWeight: 500, color: "#222", margin: 0 }}>Prochaine navette dans 10 min</p>
-                            <p style={{ fontSize: "0.7rem", color: "#6B7280", margin: "2px 0 0 0" }}>Départ du parking à 14:30</p>
-                        </div>
-                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", backgroundColor: "#F9FAFB", borderRadius: "10px" }}>
                         <span style={{ fontSize: "1rem" }}>🍉</span>
                         <div style={{ flex: 1 }}>
@@ -532,10 +410,6 @@ function NoReservationCard({ userName }: { userName: string }) {
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ fontSize: "1.25rem" }}>🍽️</span>
                         <span style={{ fontSize: "0.875rem", color: "#222" }}>Déjeuner inclus</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontSize: "1.25rem" }}>🚤</span>
-                        <span style={{ fontSize: "0.875rem", color: "#222" }}>Transport bateau</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ fontSize: "1.25rem" }}>🍹</span>

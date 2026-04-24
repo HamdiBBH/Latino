@@ -97,13 +97,6 @@ const navItems: NavItem[] = [
         roles: ["CLIENT"],
     },
     {
-        href: "/dashboard/boat-tracker",
-        label: "Bateau",
-        icon: Layers,
-        roles: ["CLIENT"],
-    },
-
-    {
         href: "/dashboard/loyalty",
         label: "Fidélité",
         icon: CalendarDays,
