@@ -389,7 +389,7 @@ export default function ProfilePage() {
                     {section.items.map((item, index) => {
                         const Icon = item.icon;
                         const hasArrow = 'hasArrow' in item ? item.hasArrow : false;
-                        const itemValue = 'value' in item ? item.value : undefined;
+                        const itemValue = 'value' in item ? (item as any).value as string : undefined;
                         return (
                             <div
                                 key={item.id}
