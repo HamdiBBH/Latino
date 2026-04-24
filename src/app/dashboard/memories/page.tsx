@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Camera, ChevronLeft, Calendar, Share2, Download, Heart, X, UploadCloud, Loader2, Trash2 } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Share2, Download, Heart, X, UploadCloud, Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useCallback } from "react";
 import { getUserMemories, uploadMemory, toggleFavorite, deleteMemory, ClientMemory } from "@/app/actions/memories";
 import imageCompression from 'browser-image-compression';
 
@@ -12,11 +13,25 @@ export default function MemoriesPage() {
     const [memories, setMemories] = useState<ClientMemory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
+    const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>(-1);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         fetchMemories();
     }, []);
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (selectedPhotoIndex < 0) return;
+            if (e.key === "ArrowRight") navigateNext();
+            if (e.key === "ArrowLeft") navigatePrev();
+            if (e.key === "Escape") closeModal();
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedPhotoIndex, filteredMemories]);
 
     const fetchMemories = async () => {
         setIsLoading(true);
@@ -155,7 +170,29 @@ export default function MemoriesPage() {
         ? memories.filter(m => m.is_favorite)
         : memories;
 
-    // Group by month/year for better display if needed, but simple grid for now
+    const openPhoto = (photo: ClientMemory) => {
+        const idx = filteredMemories.findIndex(m => m.id === photo.id);
+        setSelectedPhotoIndex(idx);
+        setSelectedPhoto(photo);
+    };
+
+    const closeModal = () => {
+        setSelectedPhoto(null);
+        setSelectedPhotoIndex(-1);
+    };
+
+    const navigateNext = () => {
+        const nextIdx = (selectedPhotoIndex + 1) % filteredMemories.length;
+        setSelectedPhotoIndex(nextIdx);
+        setSelectedPhoto(filteredMemories[nextIdx]);
+    };
+
+    const navigatePrev = () => {
+        const prevIdx = (selectedPhotoIndex - 1 + filteredMemories.length) % filteredMemories.length;
+        setSelectedPhotoIndex(prevIdx);
+        setSelectedPhoto(filteredMemories[prevIdx]);
+    };
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('fr-FR', { 
             day: 'numeric', month: 'long', year: 'numeric' 
@@ -171,7 +208,7 @@ export default function MemoriesPage() {
                     padding: 10px 10px 30px 10px;
                     border-radius: 4px;
                     box-shadow: 0 4px 8px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
-                    transition: transform 0.3s ease, box-shadow 0.3s ease, z-index 0.3s ease;
+                    transition: transform 0.3s ease, box-shadow 0.3s ease;
                     cursor: pointer;
                     position: relative;
                     z-index: 1;
@@ -183,7 +220,7 @@ export default function MemoriesPage() {
                 }
                 .polaroid-img-container {
                     width: 100%;
-                    aspect-ratio: 1;
+                    aspect-ratio: 1 / 1;
                     background-color: #f3f4f6;
                     overflow: hidden;
                     position: relative;
@@ -192,6 +229,7 @@ export default function MemoriesPage() {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
+                    object-position: center;
                 }
                 .polaroid-caption {
                     font-family: 'Indie Flower', 'Comic Sans MS', cursive, sans-serif;
@@ -392,7 +430,7 @@ export default function MemoriesPage() {
                             <div
                                 key={photo.id}
                                 className="polaroid-card"
-                                onClick={() => setSelectedPhoto(photo)}
+                                onClick={() => openPhoto(photo)}
                                 style={{ transform: `rotate(${rotation}deg)` }}
                             >
                                 <div className="polaroid-img-container">
@@ -434,7 +472,7 @@ export default function MemoriesPage() {
                         flexDirection: "column",
                         animation: "fadeIn 0.2s ease-out"
                     }}
-                    onClick={() => setSelectedPhoto(null)}
+                    onClick={closeModal}
                 >
                     {/* Header */}
                     <div
@@ -452,10 +490,15 @@ export default function MemoriesPage() {
                             </p>
                             <p style={{ fontSize: "0.85rem", opacity: 0.7, margin: "4px 0 0 0" }}>
                                 {formatDate(selectedPhoto.created_at)}
+                                {filteredMemories.length > 1 && (
+                                    <span style={{ marginLeft: "8px", opacity: 0.5 }}>
+                                        {selectedPhotoIndex + 1} / {filteredMemories.length}
+                                    </span>
+                                )}
                             </p>
                         </div>
                         <button
-                            onClick={() => setSelectedPhoto(null)}
+                            onClick={closeModal}
                             style={{
                                 padding: "10px",
                                 backgroundColor: "rgba(255,255,255,0.1)",
@@ -471,18 +514,48 @@ export default function MemoriesPage() {
                         </button>
                     </div>
 
-                    {/* Photo */}
+                    {/* Photo with arrow navigation */}
                     <div
                         style={{
                             flex: 1,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            padding: "0 1rem",
+                            position: "relative",
+                            padding: "0 60px",
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Prev arrow */}
+                        {filteredMemories.length > 1 && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); navigatePrev(); }}
+                                style={{
+                                    position: "absolute",
+                                    left: "8px",
+                                    top: "50%",
+                                    transform: "translateY(-50%)",
+                                    width: "44px",
+                                    height: "44px",
+                                    backgroundColor: "rgba(255,255,255,0.12)",
+                                    border: "none",
+                                    borderRadius: "50%",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    transition: "background-color 0.2s",
+                                    zIndex: 10,
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.25)"}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"}
+                            >
+                                <ChevronLeft style={{ width: 24, height: 24, color: "#FFF" }} />
+                            </button>
+                        )}
+
                         <img 
+                            key={selectedPhoto.id}
                             src={selectedPhoto.image_url} 
                             alt="Souvenir agrandi" 
                             style={{ 
@@ -490,9 +563,38 @@ export default function MemoriesPage() {
                                 maxHeight: "100%", 
                                 objectFit: "contain",
                                 borderRadius: "8px",
-                                boxShadow: "0 10px 30px rgba(0,0,0,0.5)"
+                                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                                animation: "fadeIn 0.2s ease-out"
                             }} 
                         />
+
+                        {/* Next arrow */}
+                        {filteredMemories.length > 1 && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); navigateNext(); }}
+                                style={{
+                                    position: "absolute",
+                                    right: "8px",
+                                    top: "50%",
+                                    transform: "translateY(-50%)",
+                                    width: "44px",
+                                    height: "44px",
+                                    backgroundColor: "rgba(255,255,255,0.12)",
+                                    border: "none",
+                                    borderRadius: "50%",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    transition: "background-color 0.2s",
+                                    zIndex: 10,
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.25)"}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"}
+                            >
+                                <ChevronRight style={{ width: 24, height: 24, color: "#FFF" }} />
+                            </button>
+                        )}
                     </div>
 
                     {/* Actions */}
