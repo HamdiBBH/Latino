@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Camera, ChevronLeft, Calendar, Share2, Download, Heart, X, UploadCloud, Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { getUserMemories, uploadMemory, toggleFavorite, deleteMemory, ClientMemory } from "@/app/actions/memories";
+import imageCompression from 'browser-image-compression';
 
 export default function MemoriesPage() {
     const [viewMode, setViewMode] = useState<"all" | "favorites">("all");
@@ -34,11 +35,28 @@ export default function MemoriesPage() {
         if (!file) return;
 
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append("file", file);
-        // Optional: Can add prompt for caption here
         
         try {
+            // Compress and convert image to WebP
+            const options = {
+                maxSizeMB: 0.3, // Limit to 300KB
+                maxWidthOrHeight: 1200,
+                useWebWorker: true,
+                fileType: "image/webp" as string,
+                initialQuality: 0.8,
+            };
+            
+            const compressedBlob = await imageCompression(file, options);
+            
+            // Re-create a File object with the proper .webp extension
+            const originalName = file.name.split('.')[0];
+            const webpFile = new File([compressedBlob], `${originalName}.webp`, {
+                type: "image/webp",
+            });
+
+            const formData = new FormData();
+            formData.append("file", webpFile);
+            
             const result = await uploadMemory(formData);
             if (result.success && result.data) {
                 setMemories((prev) => [result.data, ...prev]);
@@ -47,7 +65,7 @@ export default function MemoriesPage() {
             }
         } catch (error) {
             console.error("Upload failed", error);
-            alert("Erreur lors de l'upload");
+            alert("Erreur lors de l'upload ou de la compression");
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) {
