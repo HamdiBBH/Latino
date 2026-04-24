@@ -542,22 +542,23 @@ export default function MemoriesPage() {
                             alignItems: "center",
                             justifyContent: "center",
                             position: "relative",
-                            padding: "0 60px",
+                            padding: "0 64px",
+                            overflow: "hidden",
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Prev arrow */}
+                        {/* Prev arrow — on the far left */}
                         {filteredMemories.length > 1 && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); navigatePrev(); }}
                                 style={{
                                     position: "absolute",
-                                    left: "8px",
+                                    left: "12px",
                                     top: "50%",
                                     transform: "translateY(-50%)",
                                     width: "44px",
                                     height: "44px",
-                                    backgroundColor: "rgba(255,255,255,0.12)",
+                                    backgroundColor: "rgba(255,255,255,0.15)",
                                     border: "none",
                                     borderRadius: "50%",
                                     cursor: "pointer",
@@ -567,39 +568,54 @@ export default function MemoriesPage() {
                                     transition: "background-color 0.2s",
                                     zIndex: 10,
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.25)"}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)"}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"}
                             >
                                 <ChevronLeft style={{ width: 24, height: 24, color: "#FFF" }} />
                             </button>
                         )}
 
-                        <img 
-                            key={selectedPhoto.id}
-                            src={selectedPhoto.image_url} 
-                            alt="Souvenir agrandi" 
-                            style={{ 
-                                maxWidth: "100%", 
-                                maxHeight: "100%", 
-                                objectFit: "contain",
-                                borderRadius: "8px",
-                                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-                                animation: "fadeIn 0.2s ease-out"
-                            }} 
-                        />
+                        {/* Image in a centered contained card */}
+                        <div
+                            style={{
+                                maxWidth: "min(560px, 100%)",
+                                width: "100%",
+                                borderRadius: "16px",
+                                overflow: "hidden",
+                                boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+                                backgroundColor: "#111",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <img
+                                key={selectedPhoto.id}
+                                src={selectedPhoto.image_url}
+                                alt="Souvenir agrandi"
+                                style={{
+                                    width: "100%",
+                                    height: "auto",
+                                    maxHeight: "60vh",
+                                    objectFit: "contain",
+                                    display: "block",
+                                    animation: "fadeIn 0.2s ease-out",
+                                }}
+                            />
+                        </div>
 
-                        {/* Next arrow */}
+                        {/* Next arrow — on the far right */}
                         {filteredMemories.length > 1 && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); navigateNext(); }}
                                 style={{
                                     position: "absolute",
-                                    right: "8px",
+                                    right: "12px",
                                     top: "50%",
                                     transform: "translateY(-50%)",
                                     width: "44px",
                                     height: "44px",
-                                    backgroundColor: "rgba(255,255,255,0.12)",
+                                    backgroundColor: "rgba(255,255,255,0.15)",
                                     border: "none",
                                     borderRadius: "50%",
                                     cursor: "pointer",
@@ -609,8 +625,8 @@ export default function MemoriesPage() {
                                     transition: "background-color 0.2s",
                                     zIndex: 10,
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.25)"}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)"}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"}
                             >
                                 <ChevronRight style={{ width: 24, height: 24, color: "#FFF" }} />
                             </button>
