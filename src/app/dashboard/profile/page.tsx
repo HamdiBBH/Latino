@@ -1,59 +1,123 @@
 "use client";
 
-import { useState } from "react";
-import { User, ChevronLeft, Camera, MapPin, Heart, Edit2, Settings, Bell, Lock, LogOut, Save, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, ChevronLeft, Camera, Edit2, Settings, Bell, Lock, LogOut, Save, ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-
-// Mock user profile data
-const mockProfile = {
-    fullName: "Jean Dupont",
-    email: "jean.dupont@email.com",
-    phone: "+216 22 333 444",
-    avatarUrl: null,
-    memberSince: "Mai 2024",
-    totalVisits: 8,
-    totalSpent: 1250,
-    favoriteZone: "Cabane VIP",
-    favoriteDrink: "Mojito",
-    birthDate: "15/06/1985",
-    preferences: {
-        newsletter: true,
-        smsNotifications: false,
-        pushNotifications: true,
-        specialOffers: true,
-    },
-};
-
-// Stats
-const stats = [
-    { label: "Visites", value: mockProfile.totalVisits, icon: "🏖️" },
-    { label: "Dépensé", value: `${mockProfile.totalSpent} TND`, icon: "💰" },
-    { label: "Points", value: 850, icon: "⭐" },
-    { label: "Badges", value: 4, icon: "🏆" },
-];
-
-// Menu sections
-const menuSections = [
-    {
-        title: "Préférences",
-        items: [
-            { id: "favorite-zone", label: "Zone préférée", value: mockProfile.favoriteZone, icon: MapPin },
-            { id: "favorite-drink", label: "Boisson favorite", value: mockProfile.favoriteDrink, icon: Heart },
-        ],
-    },
-    {
-        title: "Paramètres",
-        items: [
-            { id: "notifications", label: "Notifications", icon: Bell, hasArrow: true },
-            { id: "security", label: "Sécurité", icon: Lock, hasArrow: true },
-            { id: "settings", label: "Paramètres", icon: Settings, hasArrow: true },
-        ],
-    },
-];
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
+    const router = useRouter();
+    const supabase = createClient();
     const [isEditing, setIsEditing] = useState(false);
-    const [profile, setProfile] = useState(mockProfile);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [profile, setProfile] = useState<any>(null);
+    const [stats, setStats] = useState<any[]>([]);
+
+    useEffect(() => {
+        async function fetchProfile() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    router.push("/login");
+                    return;
+                }
+
+                const { data, error } = await supabase
+                    .from("profiles")
+                    .select("*")
+                    .eq("id", user.id)
+                    .single();
+
+                if (error) throw error;
+
+                // Fetch reservations to calculate visits
+                const { data: reservations } = await supabase
+                    .from("reservations")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .eq("status", "completed");
+
+                const totalVisits = reservations?.length || 0;
+
+                const memberSinceDate = new Date(data.created_at);
+                const memberSince = memberSinceDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+                setProfile({
+                    id: data.id,
+                    fullName: data.full_name || "Utilisateur",
+                    email: data.email || user.email,
+                    phone: data.phone || "",
+                    avatarUrl: data.avatar_url,
+                    memberSince: memberSince,
+                    loyaltyPoints: data.loyalty_points || 0,
+                    role: data.role
+                });
+
+                setStats([
+                    { label: "Visites", value: totalVisits, icon: "🏖️" },
+                    { label: "Points", value: data.loyalty_points || 0, icon: "⭐" },
+                ]);
+
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchProfile();
+    }, [router, supabase]);
+
+    const handleSave = async () => {
+        if (!profile) return;
+        setIsSaving(true);
+        try {
+            const { error } = await supabase
+                .from("profiles")
+                .update({
+                    full_name: profile.fullName,
+                    phone: profile.phone,
+                })
+                .eq("id", profile.id);
+
+            if (error) throw error;
+            setIsEditing(false);
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            alert("Erreur lors de la mise à jour du profil");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push("/");
+    };
+
+    if (isLoading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <Loader2 style={{ width: 32, height: 32, color: '#6366F1' }} className="animate-spin" />
+            </div>
+        );
+    }
+
+    if (!profile) return null;
+
+    // Menu sections
+    const menuSections = [
+        {
+            title: "Paramètres",
+            items: [
+                { id: "notifications", label: "Notifications", icon: Bell, hasArrow: true },
+                { id: "security", label: "Sécurité", icon: Lock, hasArrow: true },
+                { id: "settings", label: "Paramètres", icon: Settings, hasArrow: true },
+            ],
+        },
+    ];
 
     return (
         <div style={{ maxWidth: "100%" }}>
@@ -81,34 +145,54 @@ export default function ProfilePage() {
                             Mon Profil
                         </h1>
                     </div>
-                    <button
-                        onClick={() => setIsEditing(!isEditing)}
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "8px 14px",
-                            backgroundColor: isEditing ? "#22C55E" : "#F3F4F6",
-                            color: isEditing ? "#FFF" : "#374151",
-                            border: "none",
-                            borderRadius: "10px",
-                            fontSize: "0.875rem",
-                            fontWeight: 500,
-                            cursor: "pointer",
-                        }}
-                    >
-                        {isEditing ? (
-                            <>
-                                <Save style={{ width: 16, height: 16 }} />
-                                Sauver
-                            </>
-                        ) : (
-                            <>
-                                <Edit2 style={{ width: 16, height: 16 }} />
-                                Modifier
-                            </>
-                        )}
-                    </button>
+                    {isEditing ? (
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                padding: "8px 14px",
+                                backgroundColor: isSaving ? "#9CA3AF" : "#22C55E",
+                                color: "#FFF",
+                                border: "none",
+                                borderRadius: "10px",
+                                fontSize: "0.875rem",
+                                fontWeight: 500,
+                                cursor: isSaving ? "not-allowed" : "pointer",
+                            }}
+                        >
+                            {isSaving ? (
+                                <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" />
+                            ) : (
+                                <>
+                                    <Save style={{ width: 16, height: 16 }} />
+                                    Sauver
+                                </>
+                            )}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                padding: "8px 14px",
+                                backgroundColor: "#F3F4F6",
+                                color: "#374151",
+                                border: "none",
+                                borderRadius: "10px",
+                                fontSize: "0.875rem",
+                                fontWeight: 500,
+                                cursor: "pointer",
+                            }}
+                        >
+                            <Edit2 style={{ width: 16, height: 16 }} />
+                            Modifier
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -216,7 +300,7 @@ export default function ProfilePage() {
             <div
                 style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gridTemplateColumns: "repeat(2, 1fr)",
                     gap: "10px",
                     marginBottom: "1.5rem",
                 }}
@@ -257,24 +341,7 @@ export default function ProfilePage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>Email</span>
-                        {isEditing ? (
-                            <input
-                                type="email"
-                                value={profile.email}
-                                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                                style={{
-                                    fontSize: "0.875rem",
-                                    fontWeight: 500,
-                                    color: "#222",
-                                    border: "1px solid #E5E7EB",
-                                    borderRadius: "8px",
-                                    padding: "6px 10px",
-                                    outline: "none",
-                                }}
-                            />
-                        ) : (
-                            <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#222" }}>{profile.email}</span>
-                        )}
+                        <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#222" }}>{profile.email}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>Téléphone</span>
@@ -291,15 +358,13 @@ export default function ProfilePage() {
                                     borderRadius: "8px",
                                     padding: "6px 10px",
                                     outline: "none",
+                                    width: "60%",
+                                    textAlign: "right"
                                 }}
                             />
                         ) : (
-                            <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#222" }}>{profile.phone}</span>
+                            <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#222" }}>{profile.phone || "Non renseigné"}</span>
                         )}
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.8rem", color: "#6B7280" }}>Date de naissance</span>
-                        <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#222" }}>{profile.birthDate}</span>
                     </div>
                 </div>
             </div>
@@ -355,6 +420,7 @@ export default function ProfilePage() {
 
             {/* Logout Button */}
             <button
+                onClick={handleLogout}
                 style={{
                     width: "100%",
                     display: "flex",
@@ -378,3 +444,4 @@ export default function ProfilePage() {
         </div>
     );
 }
+

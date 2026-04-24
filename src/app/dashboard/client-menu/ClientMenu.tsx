@@ -64,10 +64,10 @@ export default function ClientMenu({ items }: { items: MenuItem[] }) {
                             border: "1px solid #E5E7EB",
                             display: "flex",
                             flexDirection: "column",
-                            opacity: item.available ? 1 : 0.6,
+                            opacity: 1,
                             transition: "transform 0.2s ease",
                         }}
-                        onMouseEnter={(e) => { if(item.available) e.currentTarget.style.transform = 'translateY(-4px)'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                     >
                         {/* Image Placeholder or Actual Image */}
@@ -80,23 +80,6 @@ export default function ClientMenu({ items }: { items: MenuItem[] }) {
                                 />
                             ) : (
                                 <span style={{ fontSize: "3rem" }}>🍽️</span>
-                            )}
-                            
-                            {!item.available && (
-                                <div style={{
-                                    position: "absolute",
-                                    top: "12px",
-                                    right: "12px",
-                                    backgroundColor: "rgba(0,0,0,0.7)",
-                                    color: "#FFF",
-                                    padding: "4px 12px",
-                                    borderRadius: "100px",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 600,
-                                    backdropFilter: "blur(4px)"
-                                }}>
-                                    Indisponible
-                                </div>
                             )}
                         </div>
 
