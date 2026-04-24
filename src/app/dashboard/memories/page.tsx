@@ -375,7 +375,7 @@ export default function MemoriesPage() {
                                 key={photo.id}
                                 className="polaroid-card"
                                 onClick={() => setSelectedPhoto(photo)}
-                                style={{ transform: \`rotate(\${rotation}deg)\` }}
+                                style={{ transform: `rotate(${rotation}deg)` }}
                             >
                                 <div className="polaroid-img-container">
                                     <img src={photo.image_url} alt="Souvenir" className="polaroid-img" />
