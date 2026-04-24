@@ -16,6 +16,17 @@ export default function MemoriesPage() {
     const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number>(-1);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Compute filtered list at top level so it's available for hooks
+    const filteredMemories = viewMode === "favorites"
+        ? memories.filter(m => m.is_favorite)
+        : memories;
+
+    // Keep a ref to the latest nav state to avoid stale closures in event listeners
+    const navRef = useRef({ selectedPhotoIndex, filteredMemories });
+    useEffect(() => {
+        navRef.current = { selectedPhotoIndex, filteredMemories };
+    });
+
     useEffect(() => {
         fetchMemories();
     }, []);
@@ -23,15 +34,26 @@ export default function MemoriesPage() {
     // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (selectedPhotoIndex < 0) return;
-            if (e.key === "ArrowRight") navigateNext();
-            if (e.key === "ArrowLeft") navigatePrev();
-            if (e.key === "Escape") closeModal();
+            const { selectedPhotoIndex: idx, filteredMemories: list } = navRef.current;
+            if (idx < 0) return;
+            if (e.key === "ArrowRight") {
+                const next = (idx + 1) % list.length;
+                setSelectedPhotoIndex(next);
+                setSelectedPhoto(list[next]);
+            }
+            if (e.key === "ArrowLeft") {
+                const prev = (idx - 1 + list.length) % list.length;
+                setSelectedPhotoIndex(prev);
+                setSelectedPhoto(list[prev]);
+            }
+            if (e.key === "Escape") {
+                setSelectedPhoto(null);
+                setSelectedPhotoIndex(-1);
+            }
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedPhotoIndex, filteredMemories]);
+    }, []);
 
     const fetchMemories = async () => {
         setIsLoading(true);
@@ -166,9 +188,7 @@ export default function MemoriesPage() {
         }
     };
 
-    const filteredMemories = viewMode === "favorites" 
-        ? memories.filter(m => m.is_favorite)
-        : memories;
+    const filteredMemoriesForNav = filteredMemories; // alias for clarity in functions below
 
     const openPhoto = (photo: ClientMemory) => {
         const idx = filteredMemories.findIndex(m => m.id === photo.id);
