@@ -124,6 +124,7 @@ export function BookingBar() {
 
     return (
         <div
+            className="hidden-mobile"
             style={{
                 position: "relative",
                 zIndex: 50,

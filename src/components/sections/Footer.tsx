@@ -97,7 +97,7 @@ export function Footer() {
                     </div>
 
                     {/* Navigation */}
-                    <div>
+                    <div className="hidden-mobile">
                         <h4 style={{ fontWeight: 600, fontSize: "1.1rem", marginBottom: "1.5rem" }}>
                             Navigation
                         </h4>
@@ -120,7 +120,7 @@ export function Footer() {
                     </div>
 
                     {/* Services */}
-                    <div>
+                    <div className="hidden-mobile">
                         <h4 style={{ fontWeight: 600, fontSize: "1.1rem", marginBottom: "1.5rem" }}>
                             Nos Services
                         </h4>

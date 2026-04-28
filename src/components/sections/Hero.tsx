@@ -184,6 +184,35 @@ export function Hero({
                             </span>
                         ))}
                     </motion.div>
+
+                    {/* Mobile Reserve Button */}
+                    <motion.div
+                        className="hidden-desktop"
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1, delay: 0.6 }}
+                        style={{ marginTop: "2rem" }}
+                    >
+                        <a
+                            href="/reservation"
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "100%",
+                                padding: "1rem 2rem",
+                                backgroundColor: "#E8A87C",
+                                color: "#FFFFFF",
+                                fontSize: "1.1rem",
+                                fontWeight: 600,
+                                borderRadius: "100px",
+                                textDecoration: "none",
+                                transition: "background-color 0.3s ease",
+                            }}
+                        >
+                            Réserver
+                        </a>
+                    </motion.div>
                 </div>
             </div>
 
