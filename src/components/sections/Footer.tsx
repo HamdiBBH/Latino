@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Instagram, Facebook, MapPin, Phone, Mail } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const navLinks = [
     { href: "#home", label: "Accueil" },
@@ -42,21 +43,9 @@ export function Footer() {
                 >
                     {/* Brand */}
                     <div>
-                        <Link
-                            href="/"
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "10px",
-                                textDecoration: "none",
-                                marginBottom: "1.5rem",
-                            }}
-                        >
-                            <span style={{ fontSize: "2rem" }}>🌴</span>
-                            <span style={{ fontSize: "1.4rem", fontWeight: 600, color: "#FFFFFF" }}>
-                                Latino Coucou <span style={{ color: "#E8A87C" }}>Beach</span>
-                            </span>
-                        </Link>
+                        <div style={{ marginBottom: "1.5rem" }}>
+                            <Logo variant="light" />
+                        </div>
                         <p
                             style={{
                                 color: "rgba(255, 255, 255, 0.6)",
