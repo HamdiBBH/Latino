@@ -976,3 +976,84 @@ export async function getDashboardStats() {
 }
 
 
+// ============================================
+// BEACH INSTALLATIONS
+// ============================================
+
+export async function getBeachInstallations() {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("beach_installations")
+        .select("*")
+        .order("sort_order", { ascending: true });
+
+    if (error) {
+        console.error("Error fetching beach installations:", error);
+        return [];
+    }
+    return data;
+}
+
+export async function createBeachInstallation(installation: {
+    title: string;
+    description: string;
+    price: number;
+    image_url?: string;
+    icon?: string;
+    color?: string;
+    badge?: string;
+}) {
+    const supabase = await createClient();
+
+    // Get current max sort order
+    const { data: installations } = await supabase
+        .from("beach_installations")
+        .select("sort_order")
+        .order("sort_order", { ascending: false })
+        .limit(1);
+
+    const nextOrder = installations && installations.length > 0 ? (installations[0].sort_order || 0) + 1 : 1;
+
+    const { error } = await supabase
+        .from("beach_installations")
+        .insert({ ...installation, sort_order: nextOrder });
+
+    if (error) {
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/cms/installations");
+    return { success: true };
+}
+
+export async function updateBeachInstallation(id: string, updates: Record<string, unknown>) {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from("beach_installations")
+        .update(updates)
+        .eq("id", id);
+
+    if (error) {
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/cms/installations");
+    return { success: true };
+}
+
+export async function deleteBeachInstallation(id: string) {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from("beach_installations")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/cms/installations");
+    return { success: true };
+}

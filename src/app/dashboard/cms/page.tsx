@@ -15,7 +15,8 @@ import {
     Settings,
     Instagram,
     Sparkles,
-    CreditCard
+    CreditCard,
+    Umbrella
 } from "lucide-react";
 import { getDashboardStats } from "@/app/actions/cms";
 
@@ -127,6 +128,14 @@ const initialCmsModules: CMSModule[] = [
         href: "/dashboard/cms/testimonials",
         color: "#6366F1",
         stats: { label: "Avis", value: "-" },
+    },
+    {
+        id: "installations",
+        title: "Installations Plage",
+        description: "Gérer les cabanes, paillotes et parasols",
+        icon: Umbrella,
+        href: "/dashboard/cms/installations",
+        color: "#43B0A8",
     },
 ];
 

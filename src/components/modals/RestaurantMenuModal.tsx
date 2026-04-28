@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Utensils, Fish, Flame, Anchor, ArrowRight, Loader2, Star } from "lucide-react";
+import { X, Utensils, Fish, Flame, Anchor, ArrowRight, Loader2, Star, Info } from "lucide-react";
 import { getMenuItems } from "@/app/actions/cms";
 
 interface MenuItem {
@@ -43,18 +43,18 @@ const menuCategories = [
         color: "#E8A87C"
     },
     {
-        id: "seafood",
-        title: "Latino's Seafood",
-        subtitle: "Plats en Extra",
-        icon: Fish,
-        color: "#4ECDC4"
-    },
-    {
         id: "grill",
         title: "Latino's Grill",
         subtitle: "Plats en Extra",
         icon: Flame,
         color: "#FF6B6B"
+    },
+    {
+        id: "seafood",
+        title: "Plats en Extra",
+        subtitle: "Spécialités & Fruits de mer",
+        icon: Fish,
+        color: "#4ECDC4"
     },
 ];
 
@@ -307,6 +307,26 @@ export function RestaurantMenuModal({ isOpen, onClose, serviceImage, serviceDesc
                                                         </span>
                                                     </div>
                                                 </div>
+
+                                                {/* Smart UX Notice for Menu Standard */}
+                                                {category.id === 'menu-standard' && (
+                                                    <div style={{
+                                                        backgroundColor: `${category.color}10`,
+                                                        border: `1px solid ${category.color}30`,
+                                                        borderLeft: `4px solid ${category.color}`,
+                                                        padding: "12px 16px",
+                                                        borderRadius: "8px",
+                                                        marginBottom: "1.25rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "12px",
+                                                    }}>
+                                                        <Info style={{ width: 24, height: 24, color: category.color, flexShrink: 0 }} />
+                                                        <p style={{ margin: 0, fontSize: "0.85rem", color: "#444", lineHeight: 1.5 }}>
+                                                            <strong>Choix unique :</strong> Chaque forfait inclut <strong>un seul plat principal au choix</strong> par personne (Cordon bleu, Escalope ou Dorade).
+                                                        </p>
+                                                    </div>
+                                                )}
 
                                                 {/* Menu Items - Horizontal Scroll Cards */}
                                                 <div
