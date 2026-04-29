@@ -2,9 +2,12 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { STAFF_ROLES, forbidden, requireRole } from "@/lib/authz";
 
 export async function updateOrderStatus(orderId: string, status: string) {
-    const supabase = await createClient();
+    const auth = await requireRole(STAFF_ROLES);
+    if (!auth.authorized) return forbidden(auth.error);
+    const { supabase } = auth;
 
     const { error } = await supabase
         .from("orders")

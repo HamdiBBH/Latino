@@ -141,7 +141,7 @@ export default async function HomePage() {
   };
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen" style={{ width: "100%", maxWidth: "100vw", overflowX: "hidden" }}>
       <Navbar />
       <Hero
         images={heroMedia}

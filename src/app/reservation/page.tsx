@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
 import { getReservationConfig, ReservationConfig } from "@/app/actions/settings";
-import { sendReservationRequestEmail, sendManagerNotificationEmail } from "@/lib/email";
+import { submitReservationRequest } from "@/app/actions/booking";
 import {
     Umbrella,
     Calendar,
@@ -23,6 +23,13 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+    calculateReservationPrice,
+    getReservationGuestCount,
+    isPackageAllowedForReservation,
+    isValidReservationPhone,
+    MAX_RESERVATION_GUESTS,
+} from "@/lib/reservation-domain";
 
 interface Package {
     id: string;
@@ -114,26 +121,14 @@ function ReservationContent() {
         setLoading(false);
     };
 
-    const parsePrice = (priceStr: string): number => {
-        const match = priceStr?.match(/[\d.]+/);
-        return match ? parseFloat(match[0]) : 0;
-    };
-
     const calculatePrice = () => {
         if (!selectedPackage) return 0;
-        const adultPrice = parsePrice(selectedPackage.price);
-        const childPrice = 45; // Prix enfant fixe (4-12 ans)
-        // Children under 4 are free
-
-        // Réservation toujours à la journée complète
-        const adultsTotal = adults * adultPrice;
-        const childrenTotal = children4to12 * childPrice;
-        // childrenUnder4 = 0 (gratuit)
-
-        return Math.round(adultsTotal + childrenTotal);
+        return calculateReservationPrice(selectedPackage.price, adults, children4to12);
     };
 
-    const totalGuests = adults + children4to12 + childrenUnder4;
+    const totalGuests = getReservationGuestCount(adults, children4to12, childrenUnder4);
+    const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    const isValidPhone = isValidReservationPhone;
 
     const canProceed = () => {
         switch (step) {
@@ -141,9 +136,12 @@ function ReservationContent() {
             case 2: return selectedDate !== "";
             case 3: 
                 return selectedPackage !== null 
-                    && totalGuests <= (selectedPackage?.capacity_max || 15)
+                    && totalGuests <= (selectedPackage?.capacity_max || MAX_RESERVATION_GUESTS)
                     && getFilteredPackages().some(pkg => pkg.id === selectedPackage.id);
-            case 4: return /^\+?\d{8,15}$/.test(guestPhone.replace(/[\s-]/g, ""));
+            case 4:
+                return guestName.trim().length >= 2
+                    && isValidEmail(guestEmail)
+                    && isValidPhone(guestPhone);
             default: return true;
         }
     };
@@ -167,101 +165,47 @@ function ReservationContent() {
         if (!config || packages.length === 0) return [];
         
         // Toujours filtrer par capacité maximale
-        let available = packages.filter(pkg => totalGuests <= (pkg.capacity_max || 15));
+        let available = packages.filter(pkg => totalGuests <= (pkg.capacity_max || MAX_RESERVATION_GUESTS));
 
         if (isRestrictedPeriod()) {
             available = available.filter(pkg => {
-                const name = pkg.name.toLowerCase();
-                const adultCount = adults;
-                const childCount = children4to12 + childrenUnder4;
-
-                if (name.includes("parasol")) {
-                    return adultCount <= config.rules.parasolMaxAdults;
-                }
-                if (name.includes("cabane") && !name.includes("vip")) {
-                    return adultCount >= config.rules.cabaneMinAdults || (adultCount === 2 && childCount >= 2);
-                }
-                if (name.includes("paillote")) {
-                    return adultCount >= config.rules.pailloteMinAdults;
-                }
-                if (name.includes("vip")) {
-                    return adultCount >= config.rules.vipMinAdults;
-                }
-                return true;
+                return isPackageAllowedForReservation(pkg.name, adults, children4to12 + childrenUnder4, selectedDate, config);
             });
         }
         return available;
     };
 
-    const buildSpecialRequest = () => {
-        const parts = [];
-        parts.push(`Adultes: ${adults}, Enfants 4-12: ${children4to12}, Bébés: ${childrenUnder4}`);
-        if (specialRequest.trim()) {
-            parts.push(specialRequest.trim());
-        }
-        return parts.join(". ");
-    };
-
     const handleSubmit = async () => {
         if (!selectedPackage) return;
+        if (!guestName.trim() || !isValidEmail(guestEmail) || !isValidPhone(guestPhone)) {
+            alert("Merci de renseigner un nom, un email valide et un numéro de téléphone valide.");
+            return;
+        }
 
         setSubmitting(true);
-        const supabase = createClient();
-
-        const { data, error } = await supabase
-            .from("reservations")
-            .insert({
-                package_id: selectedPackage.id,
-                guest_name: guestName,
-                guest_email: guestEmail,
-                guest_phone: guestPhone,
-                reservation_date: selectedDate,
-                time_slot: "full_day",
-                guest_count: totalGuests,
-                special_request: buildSpecialRequest(),
-                estimated_price: calculatePrice(),
-                status: "pending",
-            })
-            .select()
-            .single();
-
+        const result = await submitReservationRequest({
+            packageId: selectedPackage.id,
+            selectedDate,
+            adults,
+            children4to12,
+            childrenUnder4,
+            guestName: guestName.trim(),
+            guestEmail: guestEmail.trim().toLowerCase(),
+            guestPhone,
+            specialRequest: specialRequest.trim(),
+        });
         setSubmitting(false);
 
-        if (error) {
-            console.error("Reservation insert error:", error);
-            alert("Erreur lors de l'envoi: " + error.message);
+        if (!result.success) {
+            alert(result.error);
             return;
         }
 
-        if (!data || !data.id) {
-            console.error("No data returned from insert:", data);
-            alert("Erreur: La réservation n'a pas pu être créée. Vérifiez que la table 'reservations' existe dans Supabase.");
-            return;
-        }
+        const { reservation } = result;
 
-        try {
-            const emailData = {
-                guestName,
-                guestEmail,
-                date: selectedDate,
-                packageName: selectedPackage.name,
-                adults,
-                children: children4to12 + childrenUnder4,
-                totalPrice: calculatePrice(),
-                reservationId: data.id,
-            };
-            
-            // Envoi en parallèle pour éviter les timeouts en production
-            await Promise.all([
-                sendReservationRequestEmail(emailData),
-                sendManagerNotificationEmail(emailData)
-            ]);
-        } catch (emailError) {
-            console.error("Failed to send emails:", emailError);
-            // On ne bloque pas la redirection de l'utilisateur si l'email échoue
-        }
+        sessionStorage.setItem(`reservation:${reservation.id}`, JSON.stringify(reservation));
 
-        router.push(`/reservation/confirmation/${data.id}`);
+        router.push(`/reservation/confirmation/${reservation.id}`);
     };
 
     const today = new Date().toISOString().split("T")[0];
@@ -279,11 +223,12 @@ function ReservationContent() {
             {/* Header */}
             <header style={{
                 backgroundColor: "#FFFFFF",
-                padding: "1rem 2rem",
+                padding: "1rem clamp(1rem, 4vw, 2rem)",
                 borderBottom: "1px solid #E5E7EB",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                gap: "1rem",
             }}>
                 <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
                     <ArrowLeft style={{ width: 20, height: 20, color: "#7A7A7A" }} />
@@ -294,7 +239,7 @@ function ReservationContent() {
             </header>
 
             {/* Progress Bar */}
-            <div style={{ backgroundColor: "#FFFFFF", padding: "1.5rem 2rem" }}>
+            <div style={{ backgroundColor: "#FFFFFF", padding: "1.5rem clamp(1rem, 4vw, 2rem)", overflow: "hidden" }}>
                 <div style={{ maxWidth: "800px", margin: "0 auto" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         {[1, 2, 3, 4, 5].map((s) => (
@@ -317,7 +262,7 @@ function ReservationContent() {
                                 {s < 5 && (
                                     <div
                                         style={{
-                                            width: "80px",
+                                            width: "clamp(24px, 8vw, 80px)",
                                             height: "4px",
                                             backgroundColor: s < step ? "#E8A87C" : "#E5E7EB",
                                             marginLeft: "8px",
@@ -338,7 +283,7 @@ function ReservationContent() {
             </div>
 
             {/* Content */}
-            <main style={{ maxWidth: "900px", margin: "0 auto", padding: "2rem" }}>
+            <main style={{ maxWidth: "900px", margin: "0 auto", padding: "clamp(1.5rem, 5vw, 2rem)" }}>
                 {/* Step 3: Package */}
                 {step === 3 && (
                     <div>
@@ -348,7 +293,7 @@ function ReservationContent() {
                         <p style={{ color: "#7A7A7A", marginBottom: "2rem" }}>
                             Sélectionnez le forfait qui vous convient
                         </p>
-                        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr)", gap: "2rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "2rem" }}>
                             {/* Colonne gauche : liste déroulante ou grille des forfaits */}
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "1.5rem", height: "fit-content" }}>
                             {getFilteredPackages().length === 0 ? (
@@ -517,7 +462,7 @@ function ReservationContent() {
                                         {adults}
                                     </span>
                                     <button
-                                        onClick={() => setAdults(Math.min(15 - children4to12 - childrenUnder4, adults + 1))}
+                                        onClick={() => setAdults(Math.min(MAX_RESERVATION_GUESTS - children4to12 - childrenUnder4, adults + 1))}
                                         style={{
                                             width: 44, height: 44, borderRadius: "50%", border: "2px solid #E8A87C",
                                             backgroundColor: "#E8A87C", color: "#FFF", fontSize: "1.25rem", cursor: "pointer"
@@ -548,7 +493,7 @@ function ReservationContent() {
                                         {children4to12}
                                     </span>
                                     <button
-                                        onClick={() => setChildren4to12(Math.min(15 - adults - childrenUnder4, children4to12 + 1))}
+                                        onClick={() => setChildren4to12(Math.min(MAX_RESERVATION_GUESTS - adults - childrenUnder4, children4to12 + 1))}
                                         style={{
                                             width: 44, height: 44, borderRadius: "50%", border: "2px solid #E8A87C",
                                             backgroundColor: "#E8A87C", color: "#FFF", fontSize: "1.25rem", cursor: "pointer"
@@ -579,7 +524,7 @@ function ReservationContent() {
                                         {childrenUnder4}
                                     </span>
                                     <button
-                                        onClick={() => setChildrenUnder4(Math.min(15 - adults - children4to12, childrenUnder4 + 1))}
+                                        onClick={() => setChildrenUnder4(Math.min(MAX_RESERVATION_GUESTS - adults - children4to12, childrenUnder4 + 1))}
                                         style={{
                                             width: 44, height: 44, borderRadius: "50%", border: "2px solid #E8A87C",
                                             backgroundColor: "#E8A87C", color: "#FFF", fontSize: "1.25rem", cursor: "pointer"
@@ -650,7 +595,7 @@ function ReservationContent() {
                                         placeholder="+216 XX XXX XXX"
                                         style={{ width: "100%", padding: "1rem", border: "2px solid #E5E7EB", borderRadius: "12px", fontSize: "1rem" }}
                                     />
-                                    {guestPhone.trim() !== "" && !/^\+?\d{8,15}$/.test(guestPhone.replace(/[\s-]/g, "")) && (
+                                    {guestPhone.trim() !== "" && !isValidPhone(guestPhone) && (
                                         <p style={{ color: "#EF4444", fontSize: "0.875rem", marginTop: "4px" }}>
                                             Numéro de téléphone invalide.
                                         </p>
@@ -670,7 +615,7 @@ function ReservationContent() {
                         <p style={{ color: "#7A7A7A", marginBottom: "2rem" }}>
                             Vérifiez les détails de votre réservation
                         </p>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "2rem" }}>
                             <div style={{ backgroundColor: "#FFF", padding: "2rem", borderRadius: "16px", border: "1px solid #E5E7EB" }}>
                                 <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#222", marginBottom: "1.5rem" }}>Détails</h3>
                                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { ADMIN_ROLES, forbidden, requireRole } from "@/lib/authz";
 
 export interface ReservationConfig {
     seasonStart: string; // MM-DD
@@ -74,14 +75,9 @@ export async function getReservationConfig(): Promise<ReservationConfig> {
 }
 
 export async function saveReservationConfig(config: ReservationConfig) {
-    const supabase = await createClient();
-
-    // Vérifier les droits d'administration (optionnel: vous pouvez rajouter un vrai check si vous avez un rôle admin)
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        return { success: false, error: "Non autorisé" };
-    }
+    const auth = await requireRole(ADMIN_ROLES);
+    if (!auth.authorized) return forbidden(auth.error);
+    const { supabase, user } = auth;
 
     const { error } = await supabase
         .from("app_settings")

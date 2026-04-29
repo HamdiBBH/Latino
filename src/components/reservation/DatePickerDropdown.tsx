@@ -73,17 +73,15 @@ export function DatePickerDropdown({ selectedDate, onDateSelect, onClose, packag
         const startDate = new Date(currentYear, currentMonth, 1);
         const endDate = new Date(currentYear, currentMonth + 1, 0);
 
-        const { data: reservations } = await supabase
-            .from("reservations")
-            .select("reservation_date, guest_count")
-            .gte("reservation_date", startDate.toISOString().split("T")[0])
-            .lte("reservation_date", endDate.toISOString().split("T")[0])
-            .in("status", ["pending", "confirmed"]);
+        const { data: reservations } = await supabase.rpc("get_public_reservation_capacity", {
+            start_date: startDate.toISOString().split("T")[0],
+            end_date: endDate.toISOString().split("T")[0],
+        });
 
         const newAvailability: Record<string, DayInfo> = {};
         const guestsByDate: Record<string, number> = {};
 
-        reservations?.forEach(r => {
+        reservations?.forEach((r: { reservation_date: string; guest_count: number }) => {
             guestsByDate[r.reservation_date] = (guestsByDate[r.reservation_date] || 0) + r.guest_count;
         });
 

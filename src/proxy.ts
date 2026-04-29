@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
     });
@@ -72,9 +72,19 @@ export async function middleware(request: NextRequest) {
         // Role-based route protection
         const routeRoles: Record<string, string[]> = {
             "/dashboard/site-editor": ["DEV", "ADMIN"],
+            "/dashboard/cms": ["DEV", "ADMIN"],
             "/dashboard/kitchen": ["RESTAURANT", "ADMIN"],
             "/dashboard/orders": ["RESTAURANT", "MANAGER", "ADMIN"],
             "/dashboard/reservations": ["MANAGER", "ADMIN"],
+            "/dashboard/config": ["ADMIN"],
+            "/dashboard/customers": ["MANAGER", "ADMIN"],
+            "/dashboard/analytics": ["MANAGER", "ADMIN"],
+            "/dashboard/finance": ["ADMIN"],
+            "/dashboard/floorplan": ["MANAGER", "ADMIN"],
+            "/dashboard/loyalty": ["MANAGER", "ADMIN"],
+            "/dashboard/menu": ["RESTAURANT", "MANAGER", "ADMIN"],
+            "/dashboard/staff": ["ADMIN"],
+            "/dashboard/stocks": ["RESTAURANT", "MANAGER", "ADMIN"],
             "/dashboard/users": ["ADMIN"],
             "/dashboard/settings": ["ADMIN"],
             "/dashboard": ["DEV", "CLIENT", "RESTAURANT", "MANAGER", "ADMIN"],

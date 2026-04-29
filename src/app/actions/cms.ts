@@ -3,8 +3,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { generateDishImage } from "./ai";
+import { CMS_ROLES, forbidden, requireRole } from "@/lib/authz";
+
+async function requireCmsAccess() {
+    const auth = await requireRole(CMS_ROLES);
+    if (!auth.authorized) return { authorized: false as const, response: forbidden(auth.error) };
+    return auth;
+}
 
 export async function generateAndSaveMenuImage(dishName: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     // 1. Generate Image
@@ -83,6 +93,9 @@ export async function getSections() {
 }
 
 export async function updateSectionOrder(sections: { id: string; display_order: number }[]) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     for (const section of sections) {
@@ -102,6 +115,9 @@ export async function updateSectionOrder(sections: { id: string; display_order: 
 }
 
 export async function toggleSectionActive(id: string, isActive: boolean) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -146,6 +162,9 @@ export async function getContentBySection(sectionName: string) {
 }
 
 export async function updateContent(id: string, content: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -163,6 +182,9 @@ export async function updateContent(id: string, content: string) {
 }
 
 export async function createContent(sectionId: string, fieldName: string, fieldType: string, content: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -201,6 +223,9 @@ export async function getMedia(folder?: string) {
 }
 
 export async function uploadMedia(formData: FormData) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const file = formData.get("file") as File;
@@ -213,11 +238,10 @@ export async function uploadMedia(formData: FormData) {
 
     // Generate unique filename
     const timestamp = Date.now();
-    const ext = file.name.split(".").pop();
     const filename = `${folder}/${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
 
     // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
         .from("cms-media")
         .upload(filename, file, {
             cacheControl: "3600",
@@ -231,9 +255,6 @@ export async function uploadMedia(formData: FormData) {
 
     // Get public URL
     const { data: urlData } = supabase.storage.from("cms-media").getPublicUrl(filename);
-
-    // Get image dimensions (approximate for now)
-    const isImage = file.type.startsWith("image/");
 
     // Insert into site_media table
     const { data: mediaData, error: dbError } = await supabase
@@ -261,6 +282,9 @@ export async function uploadMedia(formData: FormData) {
 }
 
 export async function deleteMedia(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     // Get the media record first
@@ -310,6 +334,9 @@ export async function getAlbums() {
 }
 
 export async function createAlbum(name: string, slug: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { data: albums } = await supabase
@@ -336,6 +363,9 @@ export async function createAlbum(name: string, slug: string) {
 }
 
 export async function toggleAlbumActive(id: string, isActive: boolean) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -394,6 +424,9 @@ export async function getPublicGalleryImages() {
 }
 
 export async function addImagesToAlbum(albumId: string, mediaIds: string[]) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     // Get current max display order
@@ -404,7 +437,7 @@ export async function addImagesToAlbum(albumId: string, mediaIds: string[]) {
         .order("display_order", { ascending: false })
         .limit(1);
 
-    let nextOrder = images && images.length > 0 ? images[0].display_order + 1 : 1;
+    const nextOrder = images && images.length > 0 ? images[0].display_order + 1 : 1;
 
     // Prepare inserts
     const inserts = mediaIds.map((mediaId, index) => ({
@@ -426,6 +459,9 @@ export async function addImagesToAlbum(albumId: string, mediaIds: string[]) {
 }
 
 export async function toggleImageFeatured(id: string, isFeatured: boolean) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -442,6 +478,9 @@ export async function toggleImageFeatured(id: string, isFeatured: boolean) {
 }
 
 export async function deleteGalleryImage(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -494,6 +533,9 @@ export async function createMenuItem(item: {
     tags?: string[];
     image_id?: string;
 }) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -509,6 +551,9 @@ export async function createMenuItem(item: {
 }
 
 export async function updateMenuItem(id: string, updates: Record<string, unknown>) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -525,6 +570,9 @@ export async function updateMenuItem(id: string, updates: Record<string, unknown
 }
 
 export async function deleteMenuItem(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error, count } = await supabase
@@ -570,6 +618,9 @@ export async function createEvent(event: {
     end_time: string;
     category: string;
 }) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -585,6 +636,9 @@ export async function createEvent(event: {
 }
 
 export async function updateEvent(id: string, updates: Record<string, unknown>) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -601,6 +655,9 @@ export async function updateEvent(id: string, updates: Record<string, unknown>) 
 }
 
 export async function deleteEvent(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -640,6 +697,9 @@ export async function createTestimonial(testimonial: {
     content: string;
     rating: number;
 }) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -655,6 +715,9 @@ export async function createTestimonial(testimonial: {
 }
 
 export async function updateTestimonial(id: string, updates: Record<string, unknown>) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -671,6 +734,9 @@ export async function updateTestimonial(id: string, updates: Record<string, unkn
 }
 
 export async function deleteTestimonial(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -704,6 +770,9 @@ export async function getBranding() {
 }
 
 export async function updateBranding(assetType: string, mediaId: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -753,6 +822,9 @@ export async function getPublicReels() {
 }
 
 export async function createReel(data: any) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("instagram_reels")
@@ -768,6 +840,9 @@ export async function createReel(data: any) {
 }
 
 export async function updateReel(id: string, data: any) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("instagram_reels")
@@ -784,6 +859,9 @@ export async function updateReel(id: string, data: any) {
 }
 
 export async function deleteReel(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("instagram_reels")
@@ -819,6 +897,9 @@ export async function getServices() {
 }
 
 export async function createService(data: any) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("services")
@@ -834,6 +915,9 @@ export async function createService(data: any) {
 }
 
 export async function updateService(id: string, data: any) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("services")
@@ -850,6 +934,9 @@ export async function updateService(id: string, data: any) {
 }
 
 export async function deleteService(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("services")
@@ -884,6 +971,9 @@ export async function getPackages() {
 }
 
 export async function createPackage(data: any) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("packages")
@@ -899,6 +989,9 @@ export async function createPackage(data: any) {
 }
 
 export async function updatePackage(id: string, data: any) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("packages")
@@ -915,6 +1008,9 @@ export async function updatePackage(id: string, data: any) {
 }
 
 export async function deletePackage(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
     const { error } = await supabase
         .from("packages")
@@ -1003,6 +1099,9 @@ export async function createBeachInstallation(installation: {
     color?: string;
     badge?: string;
 }) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     // Get current max sort order
@@ -1027,6 +1126,9 @@ export async function createBeachInstallation(installation: {
 }
 
 export async function updateBeachInstallation(id: string, updates: Record<string, unknown>) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -1043,6 +1145,9 @@ export async function updateBeachInstallation(id: string, updates: Record<string
 }
 
 export async function deleteBeachInstallation(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
     const supabase = await createClient();
 
     const { error } = await supabase

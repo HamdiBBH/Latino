@@ -58,6 +58,8 @@ export function Hero({
             aria-label="Bienvenue au Latino Coucou Beach"
             style={{
                 position: "relative",
+                width: "100%",
+                maxWidth: "100vw",
                 minHeight: "100vh",
                 display: "flex",
                 alignItems: "center",
@@ -84,8 +86,7 @@ export function Hero({
                             backgroundSize: "cover",
                             backgroundPosition: "center",
                             opacity: index === currentSlide ? 1 : 0,
-                            transform: index === currentSlide ? "scale(1)" : "scale(1.1)",
-                            transition: "opacity 1s ease, transform 8s ease",
+                            transition: "opacity 1s ease",
                         }}
                         aria-hidden={index !== currentSlide}
                     />
@@ -116,9 +117,10 @@ export function Hero({
                     flexDirection: "column",
                     gap: "3rem",
                     paddingTop: "100px",
+                    minWidth: 0,
                 }}
             >
-                <div style={{ maxWidth: "800px" }}>
+                <div style={{ maxWidth: "800px", minWidth: 0 }}>
                     {/* Title */}
                     <motion.h1
                         initial={{ opacity: 0, y: 30 }}
@@ -134,6 +136,7 @@ export function Hero({
                         <span style={{ display: "block", fontWeight: 200, fontStyle: "italic" }}>
                             {titleLight}
                         </span>
+                        {" "}
                         <span style={{ display: "block", fontWeight: 500 }}>
                             {titleBold}
                         </span>
@@ -247,4 +250,3 @@ export function Hero({
         </section>
     );
 }
-

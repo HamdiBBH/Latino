@@ -41,7 +41,7 @@ export async function seedMenuItems() {
             console.log(`✓ Added: ${item.name}`);
         } else {
             errorCount++;
-            console.error(`✗ Failed: ${item.name} - ${result.error}`);
+            console.error(`✗ Failed: ${item.name} - ${"error" in result ? result.error : "Erreur inconnue"}`);
         }
     }
 

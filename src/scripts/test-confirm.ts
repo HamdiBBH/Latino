@@ -1,9 +1,11 @@
-require('dotenv').config({ path: '.env.local' });
+import { config } from "dotenv";
+import { createClient } from "@supabase/supabase-js";
 import { updateReservationStatus } from '../app/actions/reservations';
+
+config({ path: ".env.local" });
 
 async function run() {
     // We need a valid reservation ID. Let's find one.
-    const { createClient } = require('@supabase/supabase-js');
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
     
     const { data } = await supabase.from('reservations').select('id').limit(1).single();

@@ -8,4 +8,6 @@ Sitemap: https://latinocoucoubeach.com/sitemap.xml
 Disallow: /dashboard/
 Disallow: /api/
 Disallow: /login
+Disallow: /register
 Disallow: /auth/
+Disallow: /reservation/confirmation/

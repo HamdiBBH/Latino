@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 
 export interface CMSBranding {
     logo?: string;
@@ -26,7 +27,7 @@ export interface CMSContent {
  * Get all branding assets
  */
 export async function getCMSBranding(): Promise<CMSBranding> {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     const { data, error } = await supabase
         .from("site_branding")

@@ -1,5 +1,6 @@
 "use server";
 
+import "server-only";
 import nodemailer from "nodemailer";
 import { RESTAURANT_INFO } from "@/lib/config";
 

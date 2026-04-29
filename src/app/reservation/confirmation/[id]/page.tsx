@@ -15,7 +15,6 @@ import {
     Sparkles,
     Home,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 interface Reservation {
     id: string;
@@ -50,40 +49,13 @@ export default function ConfirmationPage() {
     }, []);
 
     const loadReservation = async () => {
-        const supabase = createClient();
+        const reservationId = String(params.id);
+        const cachedReservation = sessionStorage.getItem(`reservation:${reservationId}`);
 
-        // First, get the reservation without join
-        const { data: resData, error: resError } = await supabase
-            .from("reservations")
-            .select("*")
-            .eq("id", params.id)
-            .single();
-
-        console.log("Confirmation page - Reservation ID:", params.id);
-        console.log("Confirmation page - Reservation Data:", resData);
-        console.log("Confirmation page - Reservation Error:", resError);
-
-        if (resData) {
-            // Then get the package info separately
-            let packageData = { name: "Forfait", description: "" };
-
-            if (resData.package_id) {
-                const { data: pkgData } = await supabase
-                    .from("packages")
-                    .select("name, description")
-                    .eq("id", resData.package_id)
-                    .single();
-
-                if (pkgData) {
-                    packageData = pkgData;
-                }
-            }
-
-            setReservation({
-                ...resData,
-                packages: packageData
-            } as Reservation);
+        if (cachedReservation) {
+            setReservation(JSON.parse(cachedReservation) as Reservation);
         }
+
         setLoading(false);
     };
 
@@ -99,7 +71,7 @@ export default function ConfirmationPage() {
         return (
             <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#F9F5F0" }}>
                 <div style={{ textAlign: "center" }}>
-                    <p style={{ marginBottom: "1rem" }}>Réservation non trouvée</p>
+                    <p style={{ marginBottom: "1rem" }}>Votre demande a été envoyée. Les détails ne sont plus disponibles dans cette session.</p>
                     <Link href="/" style={{ color: "#E8A87C" }}>Retour à l'accueil</Link>
                 </div>
             </div>

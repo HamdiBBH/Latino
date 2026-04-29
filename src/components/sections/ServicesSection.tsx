@@ -92,6 +92,7 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
             style={{
                 padding: "7rem 0",
                 backgroundColor: "#FFFFFF",
+                overflow: "hidden",
             }}
         >
             <div className="container">
@@ -99,8 +100,8 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                 <div className="experience-grid">
                     {/* Left: Organic Images */}
                     <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={isInView ? { opacity: 1, x: 0 } : {}}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
                         transition={{ duration: 0.6 }}
                         className="experience-images"
                     >
@@ -146,9 +147,10 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
 
                     {/* Right: Text Content */}
                     <motion.div
-                        initial={{ opacity: 0, x: 30 }}
-                        animate={isInView ? { opacity: 1, x: 0 } : {}}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
                         transition={{ duration: 0.6, delay: 0.2 }}
+                        style={{ minWidth: 0 }}
                     >
                         <h2
                             style={{
@@ -185,8 +187,8 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                                 return (
                                     <motion.div
                                         key={index}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={isInView ? { opacity: 1, x: 0 } : {}}
+                                        initial={{ opacity: 0, y: 16 }}
+                                        animate={isInView ? { opacity: 1, y: 0 } : {}}
                                         transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
                                         style={{
                                             display: "flex",
@@ -635,15 +637,18 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
             <style jsx global>{`
                 .experience-grid {
                     display: grid;
-                    grid-template-columns: 1fr 1fr;
+                    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
                     gap: 4rem;
                     margin-bottom: 5rem;
                     align-items: center;
+                    min-width: 0;
                 }
                 .experience-images {
                     position: relative;
                     height: 500px;
                     min-height: 500px;
+                    width: 100%;
+                    max-width: 470px;
                 }
                 @media (max-width: 1024px) {
                     .experience-grid {

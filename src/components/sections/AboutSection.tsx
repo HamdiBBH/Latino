@@ -33,13 +33,14 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
             style={{
                 padding: "100px 0 7rem 0",
                 backgroundColor: "#F9F5F0",
+                overflow: "hidden",
             }}
         >
             <div className="container">
                 <div
                     style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))",
                         gap: "5rem",
                         alignItems: "center",
                     }}
@@ -105,7 +106,7 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
                         initial={{ opacity: 0, x: 30 }}
                         animate={isInView ? { opacity: 1, x: 0 } : {}}
                         transition={{ duration: 0.8, delay: 0.2 }}
-                        style={{ position: "relative" }}
+                        style={{ position: "relative", width: "100%", maxWidth: "540px", margin: "0 auto" }}
                     >
                         <div style={{ position: "relative", zIndex: 10 }}>
                             <Image
@@ -117,17 +118,19 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
                                     borderRadius: "24px",
                                     objectFit: "cover",
                                     boxShadow: "0 20px 60px rgba(0, 0, 0, 0.2)",
+                                    width: "100%",
+                                    height: "auto",
                                 }}
                             />
                         </div>
                         <div
                             style={{
                                 position: "absolute",
-                                bottom: "-40px",
-                                right: "-40px",
+                                bottom: "-32px",
+                                right: 0,
                                 zIndex: 20,
-                                width: "250px",
-                                height: "300px",
+                                width: "min(250px, 48%)",
+                                aspectRatio: "5 / 6",
                             }}
                         >
                             <Image
@@ -146,7 +149,7 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
                             style={{
                                 position: "absolute",
                                 top: "-24px",
-                                right: "-24px",
+                                right: 0,
                                 width: "120px",
                                 height: "120px",
                                 backgroundColor: "#E8A87C",

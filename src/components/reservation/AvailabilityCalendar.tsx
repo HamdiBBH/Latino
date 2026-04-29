@@ -75,18 +75,15 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId, co
         const startDate = firstDay.toISOString().split("T")[0];
         const endDate = lastDay.toISOString().split("T")[0];
 
-        // Fetch reservations for this month
-        const { data: reservations } = await supabase
-            .from("reservations")
-            .select("reservation_date, guest_count, status")
-            .gte("reservation_date", startDate)
-            .lte("reservation_date", endDate)
-            .in("status", ["pending", "confirmed"]);
+        const { data: reservations } = await supabase.rpc("get_public_reservation_capacity", {
+            start_date: startDate,
+            end_date: endDate,
+        });
 
         // Calculate fill rate per day
         const dayReservations: Record<string, number> = {};
 
-        reservations?.forEach(r => {
+        reservations?.forEach((r: { reservation_date: string; guest_count: number }) => {
             const dateKey = r.reservation_date;
             dayReservations[dateKey] = (dayReservations[dateKey] || 0) + r.guest_count;
         });
@@ -105,11 +102,8 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId, co
             const guestCount = dayReservations[dateStr] || 0;
             const fillRate = Math.min(100, Math.round((guestCount / MAX_DAILY_CAPACITY) * 100));
 
-            // Add some mock variation for demo
-            const mockFillRate = Math.min(100, fillRate + (Math.floor(Math.random() * 30)));
-
             availMap[dateStr] = {
-                fillRate: !isInSeason ? 100 : (d === 11 || d === 18 || d === 25 ? 100 : mockFillRate),
+                fillRate: !isInSeason ? 100 : fillRate,
                 offer: isInSeason && config.weeklyOffers[String(dayOfWeek)] ? config.weeklyOffers[String(dayOfWeek)]! : undefined,
                 isOutOfSeason: !isInSeason,
             };

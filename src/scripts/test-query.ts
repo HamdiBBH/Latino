@@ -1,7 +1,9 @@
-require('dotenv').config({ path: '.env.local' });
+import { config } from "dotenv";
+import { createClient } from "@supabase/supabase-js";
+
+config({ path: ".env.local" });
 
 async function run() {
-    const { createClient } = require('@supabase/supabase-js');
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
     
     // Test the exact query

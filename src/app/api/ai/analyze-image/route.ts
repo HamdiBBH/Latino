@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { CMS_ROLES, requireRole } from "@/lib/authz";
+
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 /**
  * Analyze an image and generate SEO-friendly filename and alt text
@@ -7,6 +11,11 @@ import OpenAI from "openai";
  */
 export async function POST(request: NextRequest) {
     try {
+        const auth = await requireRole(CMS_ROLES);
+        if (!auth.authorized) {
+            return NextResponse.json({ error: auth.error }, { status: 403 });
+        }
+
         // Check if API key is configured
         const apiKey = process.env.OPENROUTER_API_KEY;
         if (!apiKey) {
@@ -32,6 +41,14 @@ export async function POST(request: NextRequest) {
 
         if (!file) {
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
+        }
+
+        if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+            return NextResponse.json({ error: "Unsupported image type" }, { status: 415 });
+        }
+
+        if (file.size > MAX_IMAGE_SIZE_BYTES) {
+            return NextResponse.json({ error: "Image too large" }, { status: 413 });
         }
 
         console.log(`Analyzing image: ${file.name} (${file.size} bytes) with Qwen/OpenRouter`);

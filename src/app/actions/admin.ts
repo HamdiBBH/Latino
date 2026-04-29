@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { CMS_ROLES, STAFF_ROLES, forbidden, requireRole } from "@/lib/authz";
 
 /**
  * Update site content (DEV role only)
@@ -11,7 +12,9 @@ export async function updateSiteContent(
     value: { text: string; type: string }
 ) {
     try {
-        const supabase = await createClient();
+        const auth = await requireRole(CMS_ROLES);
+        if (!auth.authorized) return forbidden(auth.error);
+        const { supabase } = auth;
 
         const { error } = await supabase
             .from("site_content")
@@ -36,7 +39,9 @@ export async function batchUpdateSiteContent(
     updates: Array<{ id: string; value: { text: string; type: string } }>
 ) {
     try {
-        const supabase = await createClient();
+        const auth = await requireRole(CMS_ROLES);
+        if (!auth.authorized) return forbidden(auth.error);
+        const { supabase } = auth;
 
         // Update each item
         for (const update of updates) {
@@ -65,7 +70,9 @@ export async function updateSiteBranding(
     value: string
 ) {
     try {
-        const supabase = await createClient();
+        const auth = await requireRole(CMS_ROLES);
+        if (!auth.authorized) return forbidden(auth.error);
+        const { supabase } = auth;
 
         const { error } = await supabase
             .from("site_branding")
@@ -91,7 +98,9 @@ export async function updateOrderStatus(
     status: "new" | "preparing" | "ready" | "served" | "paid" | "cancelled"
 ) {
     try {
-        const supabase = await createClient();
+        const auth = await requireRole(STAFF_ROLES);
+        if (!auth.authorized) return forbidden(auth.error);
+        const { supabase } = auth;
 
         const { error } = await supabase
             .from("orders")

@@ -64,6 +64,7 @@ export function ReelsSection({ reels = [] }: ReelsSectionProps) {
             style={{
                 padding: "7rem 0",
                 backgroundColor: "#FFFFFF",
+                overflow: "hidden",
             }}
         >
             <div className="container">
@@ -98,7 +99,7 @@ export function ReelsSection({ reels = [] }: ReelsSectionProps) {
                         onClick={() => scroll("left")}
                         style={{
                             position: "absolute",
-                            left: "-24px",
+                            left: 0,
                             top: "50%",
                             transform: "translateY(-50%)",
                             zIndex: 10,
@@ -125,9 +126,11 @@ export function ReelsSection({ reels = [] }: ReelsSectionProps) {
                             gap: "1.5rem",
                             overflowX: "auto",
                             scrollBehavior: "smooth",
-                            padding: "1rem",
+                            padding: "1rem 0.25rem",
                             scrollbarWidth: "none",
                             msOverflowStyle: "none",
+                            width: "100%",
+                            maxWidth: "100%",
                         }}
                     >
                         {reels.map((reel, index) => (
@@ -198,7 +201,7 @@ export function ReelsSection({ reels = [] }: ReelsSectionProps) {
                         onClick={() => scroll("right")}
                         style={{
                             position: "absolute",
-                            right: "-24px",
+                            right: 0,
                             top: "50%",
                             transform: "translateY(-50%)",
                             zIndex: 10,

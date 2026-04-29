@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { MANAGER_ROLES, forbidden, requireRole } from "@/lib/authz";
 
 // ============================================
 // INSTALLATIONS
@@ -135,7 +136,9 @@ export async function updateReservationStatus(
     alternativeDate?: string,
     alternativeInstallationId?: string
 ) {
-    const supabase = await createClient();
+    const auth = await requireRole(MANAGER_ROLES);
+    if (!auth.authorized) return forbidden(auth.error);
+    const { supabase } = auth;
 
     const updates: Record<string, unknown> = {
         status,
@@ -245,7 +248,9 @@ export async function updateReservationDetails(
         estimated_price: number;
     }
 ) {
-    const supabase = await createClient();
+    const auth = await requireRole(MANAGER_ROLES);
+    if (!auth.authorized) return forbidden(auth.error);
+    const { supabase } = auth;
 
     const { error } = await supabase
         .from("reservations")

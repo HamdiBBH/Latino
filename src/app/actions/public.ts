@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { BookingFormData, ContactFormData } from "@/types";
+import { MANAGER_ROLES, forbidden, requireRole } from "@/lib/authz";
 
 /**
  * Create a new reservation
@@ -41,7 +42,9 @@ export async function updateReservationStatus(
     status: "pending" | "confirmed" | "cancelled" | "completed"
 ) {
     try {
-        const supabase = await createClient();
+        const auth = await requireRole(MANAGER_ROLES);
+        if (!auth.authorized) return forbidden(auth.error);
+        const { supabase } = auth;
 
         const { error } = await supabase
             .from("reservations")

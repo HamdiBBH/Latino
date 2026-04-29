@@ -9,6 +9,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://latinocoucoubeach.com"),
   title: "Latino Coucou Beach | Beach Club Ghar El Melh, Tunisie",
   description:
     "Beach club exclusif à Coucou Beach, Ghar El Melh. Restaurant méditerranéen, plage privée, cocktails et ambiance festive. Réservez votre journée du 1er juin au 30 septembre.",
@@ -29,6 +30,13 @@ export const metadata: Metadata = {
     telephone: true,
     email: true,
   },
+  applicationName: "Latino Coucou Beach",
+  appleWebApp: {
+    capable: true,
+    title: "Latino Coucou Beach",
+    statusBarStyle: "default",
+  },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     title: "Latino Coucou Beach | Beach Club Ghar El Melh",
     description: "L'expérience beach club ultime à Coucou Beach, Ghar El Melh. Restaurant, plage privée, DJ sets et cocktails sous le soleil tunisien.",
