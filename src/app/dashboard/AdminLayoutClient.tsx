@@ -21,6 +21,7 @@ import {
     TrendingUp,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
+import Logo from "@/components/Logo";
 
 interface NavItem {
     href: string;
@@ -180,9 +181,9 @@ export function AdminLayoutClient({
                 >
                     <Menu style={{ width: 24, height: 24 }} />
                 </button>
-                <span style={{ fontWeight: 600, color: "#111827" }}>
-                    Latino Coucou Admin
-                </span>
+                <div style={{ display: "flex", justifyContent: "center", flex: 1 }}>
+                    <Logo variant="dark" />
+                </div>
                 <div style={{ width: 40 }} />
             </header>
 
@@ -229,19 +230,9 @@ export function AdminLayoutClient({
                         borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
                     }}
                 >
-                    <Link
-                        href="/dashboard"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            textDecoration: "none",
-                            color: "#FFFFFF",
-                        }}
-                    >
-                        <span style={{ fontSize: "1.5rem" }}>🌴</span>
-                        <span style={{ fontWeight: 600 }}>Admin Panel</span>
-                    </Link>
+                    <div style={{ transform: "scale(0.8)", transformOrigin: "left center" }}>
+                        <Logo variant="light" />
+                    </div>
                     <button
                         onClick={() => setIsSidebarOpen(false)}
                         style={{

@@ -305,8 +305,8 @@ export function AvailabilityCalendar({ selectedDate, onDateSelect, packageId, co
                     const past = isPast(day);
                     const outsideWindow = isOutsideBookingWindow(day);
                     const isFull = dayInfo?.fillRate === 100;
-                    const hasOffer = dayInfo?.offer && !past && !isFull && !outsideWindow;
-                    const lowAvailability = dayInfo?.fillRate && dayInfo.fillRate > 70 && dayInfo.fillRate < 100;
+                    const lowAvailability = (dayInfo?.fillRate ?? 0) > 70 && (dayInfo?.fillRate ?? 0) < 100;
+                    const hasOffer = dayInfo?.offer && !past && !isFull && !outsideWindow && !dayInfo?.isOutOfSeason;
 
                     return (
                         <button

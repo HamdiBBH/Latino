@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, Lock, LogIn, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import Logo from "@/components/Logo";
 
 const inputStyle = {
     width: "100%",
@@ -71,22 +72,9 @@ function LoginForm() {
             style={{ width: "100%", maxWidth: "420px" }}
         >
             {/* Logo */}
-            <Link
-                href="/"
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "10px",
-                    textDecoration: "none",
-                    marginBottom: "2rem",
-                }}
-            >
-                <span style={{ fontSize: "2.5rem" }}>🌴</span>
-                <span style={{ fontSize: "1.5rem", fontWeight: 600, color: "#222222" }}>
-                    Latino Coucou <span style={{ color: "#E8A87C" }}>Beach</span>
-                </span>
-            </Link>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "2rem" }}>
+                <Logo variant="dark" />
+            </div>
 
             {/* Card */}
             <div

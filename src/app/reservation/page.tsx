@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 import { AvailabilityCalendar } from "@/components/reservation/AvailabilityCalendar";
 import { getReservationConfig, ReservationConfig } from "@/app/actions/settings";
 import { submitReservationRequest } from "@/app/actions/booking";
@@ -33,13 +34,12 @@ import {
 
 interface Package {
     id: string;
-    name: string;
-    price: string;
+    title: string;
+    price: number;
     description: string | null;
     image_url: string | null;
-    capacity_min: number;
-    capacity_max: number;
-    features: string[];
+    capacity_min?: number;
+    capacity_max?: number;
 }
 
 // Loading fallback component
@@ -93,10 +93,10 @@ function ReservationContent() {
     const loadPackages = async () => {
         const supabase = createClient();
         const { data } = await supabase
-            .from("packages")
+            .from("beach_installations")
             .select("*")
             .eq("is_active", true)
-            .order("display_order");
+            .order("sort_order");
 
         if (data) {
             setPackages(data);
@@ -169,7 +169,7 @@ function ReservationContent() {
 
         if (isRestrictedPeriod()) {
             available = available.filter(pkg => {
-                return isPackageAllowedForReservation(pkg.name, adults, children4to12 + childrenUnder4, selectedDate, config);
+                return isPackageAllowedForReservation(pkg.title, adults, children4to12 + childrenUnder4, selectedDate, config);
             });
         }
         return available;
@@ -230,12 +230,16 @@ function ReservationContent() {
                 justifyContent: "space-between",
                 gap: "1rem",
             }}>
-                <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
-                    <ArrowLeft style={{ width: 20, height: 20, color: "#7A7A7A" }} />
-                    <span style={{ color: "#7A7A7A" }}>Retour au site</span>
-                </Link>
-                <span style={{ fontWeight: 600, color: "#222" }}>🌴 Latino Coucou Beach</span>
-                <div style={{ width: 100 }} />
+                <div style={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
+                    <Link href="/" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
+                        <ArrowLeft style={{ width: 20, height: 20, color: "#7A7A7A" }} />
+                        <span style={{ color: "#7A7A7A", fontSize: "0.9rem" }}>Retour</span>
+                    </Link>
+                </div>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                    <Logo variant="dark" />
+                </div>
+                <div style={{ flex: 1 }} />
             </header>
 
             {/* Progress Bar */}
@@ -318,7 +322,7 @@ function ReservationContent() {
                                 >
                                     <div style={{ height: "160px", backgroundColor: "#E8A87C20", position: "relative" }}>
                                         {pkg.image_url ? (
-                                            <Image src={pkg.image_url} alt={pkg.name} fill style={{ objectFit: "cover" }} />
+                                            <Image src={pkg.image_url} alt={pkg.title} fill style={{ objectFit: "cover" }} />
                                         ) : (
                                             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                                 <Umbrella style={{ width: 48, height: 48, color: "#E8A87C" }} />
@@ -334,7 +338,7 @@ function ReservationContent() {
                                         )}
                                     </div>
                                     <div style={{ padding: "1.25rem" }}>
-                                        <h3 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#222", marginBottom: "0.5rem" }}>{pkg.name}</h3>
+                                        <h3 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#222", marginBottom: "0.5rem" }}>{pkg.title}</h3>
                                         <p style={{ fontSize: "0.875rem", color: "#7A7A7A", marginBottom: "1rem" }}>{pkg.description || ""}</p>
                                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                             <span style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>
@@ -361,7 +365,7 @@ function ReservationContent() {
                                 {selectedPackage ? (
                                     <div style={{ backgroundColor: "#F9F5F0", padding: "1.25rem", borderRadius: "12px", marginBottom: "1rem" }}>
                                         <h4 style={{ fontWeight: 600, color: "#222", marginBottom: "0.5rem" }}>
-                                            {selectedPackage.name}
+                                            {selectedPackage.title}
                                         </h4>
                                         <p style={{ fontSize: "0.875rem", color: "#7A7A7A", marginBottom: "0.75rem" }}>
                                             {selectedPackage.description}
@@ -621,7 +625,7 @@ function ReservationContent() {
                                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                                         <span style={{ color: "#7A7A7A" }}>Forfait</span>
-                                        <span style={{ fontWeight: 600 }}>{selectedPackage?.name}</span>
+                                        <span style={{ fontWeight: 600 }}>{selectedPackage?.title}</span>
                                     </div>
                                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                                         <span style={{ color: "#7A7A7A" }}>Date</span>

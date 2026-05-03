@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 import {
     CheckCircle2,
     Clock,
@@ -80,6 +81,21 @@ export default function ConfirmationPage() {
 
     return (
         <div style={{ minHeight: "100vh", backgroundColor: "#F9F5F0" }}>
+            {/* Header */}
+            <header style={{
+                backgroundColor: "#FFFFFF",
+                padding: "1rem clamp(1rem, 4vw, 2rem)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                borderBottom: "1px solid #E5E7EB",
+                position: "sticky",
+                top: 0,
+                zIndex: 100
+            }}>
+                <Logo variant="dark" />
+            </header>
+
             {/* Success Header */}
             <div style={{
                 backgroundColor: "#22C55E",

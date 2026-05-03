@@ -112,22 +112,22 @@ export async function submitReservationRequest(payload: ReservationPayload) {
   }
 
   const { data: packageRow, error: packageError } = await supabase
-    .from("packages")
-    .select("id, name, price, description, capacity_max")
+    .from("beach_installations")
+    .select("id, title, price, description")
     .eq("id", data.packageId)
     .eq("is_active", true)
-    .single<PackageRow>();
+    .single();
 
   if (packageError || !packageRow) {
     return { success: false as const, error: "Le forfait sélectionné n'est plus disponible." };
   }
 
-  if (totalGuests > (packageRow.capacity_max || MAX_RESERVATION_GUESTS)) {
+  if (totalGuests > MAX_RESERVATION_GUESTS) {
     return { success: false as const, error: "Ce forfait ne peut pas accueillir autant de personnes." };
   }
 
   const config = await getReservationConfig();
-  if (!isPackageAllowedForReservation(packageRow.name, data.adults, data.children4to12 + data.childrenUnder4, data.selectedDate, config)) {
+  if (!isPackageAllowedForReservation(packageRow.title, data.adults, data.children4to12 + data.childrenUnder4, data.selectedDate, config)) {
     return { success: false as const, error: "Ce forfait n'est pas disponible pour cette période." };
   }
 
@@ -162,7 +162,7 @@ export async function submitReservationRequest(payload: ReservationPayload) {
     guestName: reservation.guest_name,
     guestEmail: reservation.guest_email,
     date: reservation.reservation_date,
-    packageName: packageRow.name,
+    packageName: packageRow.title,
     adults: data.adults,
     children: data.children4to12 + data.childrenUnder4,
     totalPrice: estimatedPrice,
@@ -185,7 +185,7 @@ export async function submitReservationRequest(payload: ReservationPayload) {
     reservation: {
       ...reservation,
       packages: {
-        name: packageRow.name,
+        name: packageRow.title,
         description: packageRow.description || "",
       },
     },
