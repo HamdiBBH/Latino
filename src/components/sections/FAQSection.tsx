@@ -26,8 +26,8 @@ const faqs = [
         answer: "Oui, nous proposons la privatisation partielle ou totale du beach club pour vos événements : anniversaires, mariages, séminaires d'entreprise... Contactez-nous pour un devis personnalisé.",
     },
     {
-        question: "Comment annuler ou modifier ma réservation ?",
-        answer: "Vous pouvez modifier ou annuler votre réservation gratuitement jusqu'à 48h avant la date prévue. Contactez-nous par téléphone ou WhatsApp pour toute demande de modification.",
+        question: "Y a-t-il un parking à proximité ?",
+        answer: "Oui, un parking sécurisé est disponible près du port d'embarquement des navettes. Notre équipe vous indiquera le meilleur endroit pour vous garer.",
     },
     {
         question: "Quels moyens de paiement acceptez-vous ?",

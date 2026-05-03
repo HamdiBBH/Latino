@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Mail } from "lucide-react";
+import { subscribeNewsletter } from "@/app/actions/public";
 
 export function NewsletterSection() {
     const [email, setEmail] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [notification, setNotification] = useState({ show: false, message: "" });
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
 
@@ -14,9 +16,16 @@ export function NewsletterSection() {
         e.preventDefault();
         if (!email) return;
         setIsSubmitting(true);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        alert("Inscription réussie !");
-        setEmail("");
+        
+        const result = await subscribeNewsletter(email);
+        
+        if (result.success) {
+            setEmail("");
+            setNotification({ show: true, message: result.message });
+            setTimeout(() => setNotification({ show: false, message: "" }), 5000);
+        } else {
+            alert(result.message);
+        }
         setIsSubmitting(false);
     };
 
@@ -135,6 +144,41 @@ export function NewsletterSection() {
                     </form>
                 </motion.div>
             </div>
+
+            {/* Notification Toast */}
+            <AnimatePresence>
+                {notification.show && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                        style={{
+                            position: "fixed",
+                            bottom: "2rem",
+                            right: "2rem",
+                            zIndex: 9999,
+                            backgroundColor: "#4CAF50",
+                            color: "white",
+                            padding: "1rem 1.5rem",
+                            borderRadius: "12px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            boxShadow: "0 10px 30px rgba(76, 175, 80, 0.3)",
+                            fontWeight: 500,
+                            maxWidth: "400px",
+                            lineHeight: 1.5,
+                        }}
+                    >
+                        <div style={{ backgroundColor: "rgba(255,255,255,0.2)", borderRadius: "50%", padding: "4px", flexShrink: 0 }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                        {notification.message}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </section>
     );
 }

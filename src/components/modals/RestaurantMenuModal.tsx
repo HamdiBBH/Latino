@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Utensils, Fish, Flame, Anchor, ArrowRight, Loader2, Star, Info } from "lucide-react";
 import { getMenuItems } from "@/app/actions/cms";
@@ -26,36 +27,52 @@ interface RestaurantMenuModalProps {
     serviceDescription: string;
 }
 
-// Group menu items by tag category
-const menuCategories = [
+// Group menu items by main category with subcategories
+const menuGroups = [
     {
-        id: "menu-standard",
+        id: "group-standard",
         title: "Menu Standard",
         subtitle: "Inclus dans le forfait",
         icon: Anchor,
-        color: "#66B2FF"
+        color: "#66B2FF",
+        isSingle: true,
+        subcategories: [
+            {
+                id: "menu-standard",
+                title: "Plats",
+                icon: Anchor,
+                color: "#66B2FF"
+            }
+        ]
     },
     {
-        id: "pasta",
-        title: "Latino's Pasta",
-        subtitle: "Plats en Extra",
-        icon: Utensils,
-        color: "#E8A87C"
-    },
-    {
-        id: "grill",
-        title: "Latino's Grill",
-        subtitle: "Plats en Extra",
-        icon: Flame,
-        color: "#FF6B6B"
-    },
-    {
-        id: "seafood",
+        id: "group-extras",
         title: "Plats en Extra",
-        subtitle: "Spécialités & Fruits de mer",
-        icon: Fish,
-        color: "#4ECDC4"
-    },
+        subtitle: "Découvrez nos spécialités",
+        icon: Star,
+        color: "#E8A87C",
+        isSingle: false,
+        subcategories: [
+            {
+                id: "pasta",
+                title: "Latino's Pasta",
+                icon: Utensils,
+                color: "#E8A87C"
+            },
+            {
+                id: "grill",
+                title: "Latino's Grill",
+                icon: Flame,
+                color: "#FF6B6B"
+            },
+            {
+                id: "seafood",
+                title: "Spécialités & Fruits de mer",
+                icon: Fish,
+                color: "#4ECDC4"
+            }
+        ]
+    }
 ];
 
 // Default images for items without custom images
@@ -67,6 +84,7 @@ const defaultImages: Record<string, string> = {
 };
 
 export function RestaurantMenuModal({ isOpen, onClose, serviceImage, serviceDescription }: RestaurantMenuModalProps) {
+    const router = useRouter();
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -249,14 +267,15 @@ export function RestaurantMenuModal({ isOpen, onClose, serviceImage, serviceDesc
                                 </div>
                             ) : (
                                 <div style={{ display: "grid", gap: "1.5rem" }}>
-                                    {menuCategories.map((category) => {
-                                        const items = getItemsByTag(category.id);
-                                        if (items.length === 0) return null;
+                                    {menuGroups.map((group) => {
+                                        // Check if group has any items across subcategories
+                                        const hasItems = group.subcategories.some(sub => getItemsByTag(sub.id).length > 0);
+                                        if (!hasItems) return null;
 
-                                        const Icon = category.icon;
+                                        const GroupIcon = group.icon;
                                         return (
                                             <div
-                                                key={category.id}
+                                                key={group.id}
                                                 style={{
                                                     padding: "1.25rem",
                                                     borderRadius: "16px",
@@ -267,27 +286,27 @@ export function RestaurantMenuModal({ isOpen, onClose, serviceImage, serviceDesc
                                                     overflow: "hidden",
                                                 }}
                                             >
-                                                {/* Category Header */}
+                                                {/* Group Header */}
                                                 <div style={{
                                                     display: "flex",
                                                     alignItems: "center",
                                                     gap: "12px",
                                                     marginBottom: "1rem",
                                                     paddingBottom: "0.75rem",
-                                                    borderBottom: `2px solid ${category.color}20`,
+                                                    borderBottom: `2px solid ${group.color}20`,
                                                 }}>
                                                     <div
                                                         style={{
                                                             width: "40px",
                                                             height: "40px",
                                                             borderRadius: "10px",
-                                                            backgroundColor: `${category.color}15`,
+                                                            backgroundColor: `${group.color}15`,
                                                             display: "flex",
                                                             alignItems: "center",
                                                             justifyContent: "center",
                                                         }}
                                                     >
-                                                        <Icon style={{ width: 20, height: 20, color: category.color }} />
+                                                        <GroupIcon style={{ width: 20, height: 20, color: group.color }} />
                                                     </div>
                                                     <div>
                                                         <h3 style={{
@@ -296,24 +315,24 @@ export function RestaurantMenuModal({ isOpen, onClose, serviceImage, serviceDesc
                                                             color: "#222222",
                                                             margin: 0,
                                                         }}>
-                                                            {category.title}
+                                                            {group.title}
                                                         </h3>
                                                         <span style={{
                                                             fontSize: "0.75rem",
-                                                            color: category.color,
+                                                            color: group.color,
                                                             fontWeight: 500,
                                                         }}>
-                                                            {category.subtitle}
+                                                            {group.subtitle}
                                                         </span>
                                                     </div>
                                                 </div>
 
                                                 {/* Smart UX Notice for Menu Standard */}
-                                                {category.id === 'menu-standard' && (
+                                                {group.id === 'group-standard' && (
                                                     <div style={{
-                                                        backgroundColor: `${category.color}10`,
-                                                        border: `1px solid ${category.color}30`,
-                                                        borderLeft: `4px solid ${category.color}`,
+                                                        backgroundColor: `${group.color}10`,
+                                                        border: `1px solid ${group.color}30`,
+                                                        borderLeft: `4px solid ${group.color}`,
                                                         padding: "12px 16px",
                                                         borderRadius: "8px",
                                                         marginBottom: "1.25rem",
@@ -321,163 +340,197 @@ export function RestaurantMenuModal({ isOpen, onClose, serviceImage, serviceDesc
                                                         alignItems: "center",
                                                         gap: "12px",
                                                     }}>
-                                                        <Info style={{ width: 24, height: 24, color: category.color, flexShrink: 0 }} />
+                                                        <Info style={{ width: 24, height: 24, color: group.color, flexShrink: 0 }} />
                                                         <p style={{ margin: 0, fontSize: "0.85rem", color: "#444", lineHeight: 1.5 }}>
                                                             <strong>Choix unique :</strong> Chaque forfait inclut <strong>un seul plat principal au choix</strong> par personne (Cordon bleu, Escalope ou Dorade).
                                                         </p>
                                                     </div>
                                                 )}
 
-                                                {/* Menu Items - Horizontal Scroll Cards */}
-                                                <div
-                                                    style={{
-                                                        display: "flex",
-                                                        gap: "1rem",
-                                                        overflowX: "auto",
-                                                        overflowY: "visible",
-                                                        paddingBottom: "0.75rem",
-                                                        marginLeft: "-0.5rem",
-                                                        marginRight: "-0.5rem",
-                                                        paddingLeft: "0.5rem",
-                                                        paddingRight: "0.5rem",
-                                                        scrollbarWidth: "thin",
-                                                        scrollbarColor: `${category.color}40 transparent`,
-                                                    }}
-                                                    className="menu-cards-scroll"
-                                                >
-                                                    {items.map((item) => {
-                                                        const imageUrl = item.image_url || defaultImages[category.id] || defaultImages['menu-standard'];
+                                                {/* Subcategories */}
+                                                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                                                    {group.subcategories.map((sub) => {
+                                                        const items = getItemsByTag(sub.id);
+                                                        if (items.length === 0) return null;
+
+                                                        const SubIcon = sub.icon;
 
                                                         return (
-                                                            <div
-                                                                key={item.id}
-                                                                style={{
-                                                                    minWidth: "180px",
-                                                                    maxWidth: "180px",
-                                                                    backgroundColor: "#FFFFFF",
-                                                                    borderRadius: "16px",
-                                                                    overflow: "hidden",
-                                                                    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-                                                                    flexShrink: 0,
-                                                                    transition: "transform 0.2s, box-shadow 0.2s",
-                                                                    cursor: "pointer",
-                                                                }}
-                                                                onMouseEnter={(e) => {
-                                                                    e.currentTarget.style.transform = "translateY(-4px)";
-                                                                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.12)";
-                                                                }}
-                                                                onMouseLeave={(e) => {
-                                                                    e.currentTarget.style.transform = "translateY(0)";
-                                                                    e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.08)";
-                                                                }}
-                                                            >
-                                                                {/* Image Container */}
-                                                                <div style={{
-                                                                    position: "relative",
-                                                                    height: "120px",
-                                                                    backgroundImage: `url(${imageUrl})`,
-                                                                    backgroundSize: "cover",
-                                                                    backgroundPosition: "center",
-                                                                }}>
-                                                                    {/* Rating Badge */}
-                                                                    {item.rating && (
-                                                                        <div style={{
-                                                                            position: "absolute",
-                                                                            top: "8px",
-                                                                            right: "8px",
-                                                                            display: "flex",
-                                                                            alignItems: "center",
-                                                                            gap: "3px",
-                                                                            padding: "4px 8px",
-                                                                            backgroundColor: "rgba(255,255,255,0.95)",
-                                                                            borderRadius: "20px",
-                                                                            fontSize: "0.75rem",
+                                                            <div key={sub.id}>
+                                                                {/* Subcategory Header */}
+                                                                {!group.isSingle && (
+                                                                    <div style={{
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        gap: "8px",
+                                                                        marginBottom: "1rem",
+                                                                    }}>
+                                                                        <SubIcon style={{ width: 18, height: 18, color: sub.color }} />
+                                                                        <h4 style={{
+                                                                            fontSize: "1rem",
                                                                             fontWeight: 600,
                                                                             color: "#333",
+                                                                            margin: 0,
                                                                         }}>
-                                                                            <Star style={{
-                                                                                width: 12,
-                                                                                height: 12,
-                                                                                color: "#FFB800",
-                                                                                fill: "#FFB800"
-                                                                            }} />
-                                                                            {item.rating.toFixed(1)}
-                                                                        </div>
-                                                                    )}
+                                                                            {sub.title}
+                                                                        </h4>
+                                                                    </div>
+                                                                )}
 
-                                                                    {/* Badge (Populaire, etc.) */}
-                                                                    {item.badge && (
-                                                                        <div style={{
-                                                                            position: "absolute",
-                                                                            bottom: "8px",
-                                                                            left: "8px",
-                                                                            padding: "4px 10px",
-                                                                            backgroundColor: category.color,
-                                                                            color: "#FFFFFF",
-                                                                            borderRadius: "6px",
-                                                                            fontSize: "0.65rem",
-                                                                            fontWeight: 600,
-                                                                            textTransform: "uppercase",
-                                                                            letterSpacing: "0.5px",
-                                                                        }}>
-                                                                            {item.badge}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
+                                                                {/* Menu Items - Horizontal Scroll Cards */}
+                                                                <div
+                                                                    style={{
+                                                                        display: "flex",
+                                                                        gap: "1rem",
+                                                                        overflowX: "auto",
+                                                                        overflowY: "visible",
+                                                                        paddingBottom: "0.75rem",
+                                                                        marginLeft: "-0.5rem",
+                                                                        marginRight: "-0.5rem",
+                                                                        paddingLeft: "0.5rem",
+                                                                        paddingRight: "0.5rem",
+                                                                        scrollbarWidth: "thin",
+                                                                        scrollbarColor: `${group.color}40 transparent`,
+                                                                    }}
+                                                                    className="menu-cards-scroll"
+                                                                >
+                                                                    {items.map((item) => {
+                                                                        const imageUrl = item.image_url || defaultImages[sub.id] || defaultImages['menu-standard'];
 
-                                                                {/* Content */}
-                                                                <div style={{ padding: "12px" }}>
-                                                                    <h4 style={{
-                                                                        fontSize: "0.85rem",
-                                                                        fontWeight: 600,
-                                                                        color: "#222",
-                                                                        margin: 0,
-                                                                        marginBottom: "8px",
-                                                                        lineHeight: 1.3,
-                                                                        display: "-webkit-box",
-                                                                        WebkitLineClamp: 2,
-                                                                        WebkitBoxOrient: "vertical",
-                                                                        overflow: "hidden",
-                                                                    }}>
-                                                                        {item.name}
-                                                                    </h4>
-
-                                                                    {/* Price */}
-                                                                    {item.price > 0 && (
-                                                                        <div style={{
-                                                                            display: "flex",
-                                                                            alignItems: "center",
-                                                                            gap: "6px",
-                                                                        }}>
-                                                                            <span style={{
-                                                                                fontSize: "1rem",
-                                                                                fontWeight: 700,
-                                                                                color: category.color,
-                                                                            }}>
-                                                                                {item.price} DT
-                                                                            </span>
-                                                                            {item.old_price && (
-                                                                                <span style={{
-                                                                                    fontSize: "0.75rem",
-                                                                                    color: "#999",
-                                                                                    textDecoration: "line-through",
+                                                                        return (
+                                                                            <div
+                                                                                key={item.id}
+                                                                                style={{
+                                                                                    minWidth: "180px",
+                                                                                    maxWidth: "180px",
+                                                                                    backgroundColor: "#FFFFFF",
+                                                                                    borderRadius: "16px",
+                                                                                    overflow: "hidden",
+                                                                                    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+                                                                                    flexShrink: 0,
+                                                                                    transition: "transform 0.2s, box-shadow 0.2s",
+                                                                                    cursor: "pointer",
+                                                                                }}
+                                                                                onMouseEnter={(e) => {
+                                                                                    e.currentTarget.style.transform = "translateY(-4px)";
+                                                                                    e.currentTarget.style.boxShadow = "0 8px 25px rgba(0,0,0,0.12)";
+                                                                                }}
+                                                                                onMouseLeave={(e) => {
+                                                                                    e.currentTarget.style.transform = "translateY(0)";
+                                                                                    e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.08)";
+                                                                                }}
+                                                                            >
+                                                                                {/* Image Container */}
+                                                                                <div style={{
+                                                                                    position: "relative",
+                                                                                    height: "120px",
+                                                                                    backgroundImage: `url(${imageUrl})`,
+                                                                                    backgroundSize: "cover",
+                                                                                    backgroundPosition: "center",
                                                                                 }}>
-                                                                                    {item.old_price} DT
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
+                                                                                    {/* Rating Badge */}
+                                                                                    {item.rating && (
+                                                                                        <div style={{
+                                                                                            position: "absolute",
+                                                                                            top: "8px",
+                                                                                            right: "8px",
+                                                                                            display: "flex",
+                                                                                            alignItems: "center",
+                                                                                            gap: "3px",
+                                                                                            padding: "4px 8px",
+                                                                                            backgroundColor: "rgba(255,255,255,0.95)",
+                                                                                            borderRadius: "20px",
+                                                                                            fontSize: "0.75rem",
+                                                                                            fontWeight: 600,
+                                                                                            color: "#333",
+                                                                                        }}>
+                                                                                            <Star style={{
+                                                                                                width: 12,
+                                                                                                height: 12,
+                                                                                                color: "#FFB800",
+                                                                                                fill: "#FFB800"
+                                                                                            }} />
+                                                                                            {item.rating.toFixed(1)}
+                                                                                        </div>
+                                                                                    )}
 
-                                                                    {/* Inclus tag for Menu Standard */}
-                                                                    {item.price === 0 && category.id === "menu-standard" && (
-                                                                        <span style={{
-                                                                            fontSize: "0.75rem",
-                                                                            color: "#4CAF50",
-                                                                            fontWeight: 600,
-                                                                        }}>
-                                                                            ✓ Inclus
-                                                                        </span>
-                                                                    )}
+                                                                                    {/* Badge (Populaire, etc.) */}
+                                                                                    {item.badge && (
+                                                                                        <div style={{
+                                                                                            position: "absolute",
+                                                                                            bottom: "8px",
+                                                                                            left: "8px",
+                                                                                            padding: "4px 10px",
+                                                                                            backgroundColor: sub.color,
+                                                                                            color: "#FFFFFF",
+                                                                                            borderRadius: "6px",
+                                                                                            fontSize: "0.65rem",
+                                                                                            fontWeight: 600,
+                                                                                            textTransform: "uppercase",
+                                                                                            letterSpacing: "0.5px",
+                                                                                        }}>
+                                                                                            {item.badge}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+
+                                                                                {/* Content */}
+                                                                                <div style={{ padding: "12px" }}>
+                                                                                    <h4 style={{
+                                                                                        fontSize: "0.85rem",
+                                                                                        fontWeight: 600,
+                                                                                        color: "#222",
+                                                                                        margin: 0,
+                                                                                        marginBottom: "8px",
+                                                                                        lineHeight: 1.3,
+                                                                                        display: "-webkit-box",
+                                                                                        WebkitLineClamp: 2,
+                                                                                        WebkitBoxOrient: "vertical",
+                                                                                        overflow: "hidden",
+                                                                                    }}>
+                                                                                        {item.name}
+                                                                                    </h4>
+
+                                                                                    {/* Price */}
+                                                                                    {item.price > 0 && (
+                                                                                        <div style={{
+                                                                                            display: "flex",
+                                                                                            alignItems: "center",
+                                                                                            gap: "6px",
+                                                                                        }}>
+                                                                                            <span style={{
+                                                                                                fontSize: "1rem",
+                                                                                                fontWeight: 700,
+                                                                                                color: sub.color,
+                                                                                            }}>
+                                                                                                {item.price} DT
+                                                                                            </span>
+                                                                                            {item.old_price && (
+                                                                                                <span style={{
+                                                                                                    fontSize: "0.75rem",
+                                                                                                    color: "#999",
+                                                                                                    textDecoration: "line-through",
+                                                                                                }}>
+                                                                                                    {item.old_price} DT
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                    {/* Inclus tag for Menu Standard */}
+                                                                                    {item.price === 0 && sub.id === "menu-standard" && (
+                                                                                        <span style={{
+                                                                                            fontSize: "0.75rem",
+                                                                                            color: "#4CAF50",
+                                                                                            fontWeight: 600,
+                                                                                        }}>
+                                                                                            ✓ Inclus
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             </div>
                                                         );
@@ -500,7 +553,7 @@ export function RestaurantMenuModal({ isOpen, onClose, serviceImage, serviceDesc
                             <button
                                 onClick={() => {
                                     onClose();
-                                    document.getElementById("forfaits")?.scrollIntoView({ behavior: "smooth" });
+                                    router.push("/reservation");
                                 }}
                                 style={{
                                     width: "100%",

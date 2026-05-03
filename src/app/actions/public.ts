@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { BookingFormData, ContactFormData } from "@/types";
 import { MANAGER_ROLES, forbidden, requireRole } from "@/lib/authz";
+import { sendNewsletterWelcomeEmail, sendManagerNewsletterNotification } from "@/lib/email";
 
 /**
  * Create a new reservation
@@ -88,18 +89,29 @@ export async function submitContactForm(data: ContactFormData) {
  */
 export async function subscribeNewsletter(email: string) {
     try {
-        // TODO: Add to newsletter list (Mailchimp, Supabase, etc.)
-        console.log("Newsletter subscription:", email);
+        // Generate a random 10% discount code
+        const uniqueId = Math.random().toString(36).substring(2, 7).toUpperCase();
+        const discountCode = `WELCOME-${uniqueId}-10`;
+
+        // Send welcome email to user
+        const welcomeResult = await sendNewsletterWelcomeEmail(email, discountCode);
+        
+        // Send notification to manager
+        const managerResult = await sendManagerNewsletterNotification(email);
+
+        if (!welcomeResult.success) {
+            throw new Error("Failed to send welcome email");
+        }
 
         return {
             success: true,
-            message: "Merci pour votre inscription !"
+            message: "Merci pour votre inscription ! Vérifiez vos emails pour votre cadeau de bienvenue."
         };
     } catch (error) {
         console.error("Error subscribing to newsletter:", error);
         return {
             success: false,
-            message: "Erreur lors de l'inscription."
+            message: "Erreur lors de l'inscription. Veuillez réessayer."
         };
     }
 }

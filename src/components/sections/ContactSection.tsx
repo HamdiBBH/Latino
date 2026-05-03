@@ -136,7 +136,7 @@ export function ContactSection() {
                         {/* Social Links */}
                         <div className="contact-socials" style={{ display: "flex", gap: "1rem" }}>
                             <a
-                                href="https://facebook.com"
+                                href="https://www.facebook.com/sidialimekkibeach"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label="Facebook"
@@ -190,7 +190,7 @@ export function ContactSection() {
                             }}
                         >
                             <iframe
-                                src={`https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3000!2d${coordinates.lng}!3d${coordinates.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzfCsDA4JzMyLjQiTiAxMMKwMTInMzcuNSJF!5e0!3m2!1sfr!2stn!4v1704800000000!5m2!1sfr!2stn`}
+                                src={`https://maps.google.com/maps?q=${coordinates.lat},${coordinates.lng}&hl=fr&z=14&output=embed`}
                                 width="100%"
                                 height="100%"
                                 style={{ border: 0 }}
