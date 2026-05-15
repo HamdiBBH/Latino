@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
+import { RESTAURANT_INFO } from "@/lib/config";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -99,8 +100,8 @@ export default function RootLayout({
               name: "Latino Coucou Beach",
               description: "Beach club exclusif sur l'île de Kuriat avec restaurant méditerranéen et plage privée.",
               url: "https://latinocoucoubeach.com",
-              telephone: "+216 50 607 072",
-              email: "contact@latinocoucoubeach.com",
+              telephone: RESTAURANT_INFO.phone,
+              email: RESTAURANT_INFO.email,
               address: {
                 "@type": "PostalAddress",
                 addressLocality: "Ghar El Melh",

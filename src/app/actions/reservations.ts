@@ -4,6 +4,77 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { MANAGER_ROLES, forbidden, requireRole } from "@/lib/authz";
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+type InstallationSummary = {
+    name: string;
+    description?: string;
+    price?: number | null;
+};
+
+async function getInstallationSummaries(
+    supabase: SupabaseServerClient,
+    packageIds: Array<string | null | undefined>
+) {
+    const ids = [...new Set(packageIds.filter((id): id is string => Boolean(id)))];
+    if (ids.length === 0) return new Map<string, InstallationSummary>();
+
+    const { data, error } = await supabase
+        .from("beach_installations")
+        .select("id, title, description, price")
+        .in("id", ids);
+
+    if (error) {
+        console.error("Error fetching beach installations for reservations:", error);
+        return new Map<string, InstallationSummary>();
+    }
+
+    return new Map(
+        (data || []).map((installation) => [
+            installation.id,
+            {
+                name: installation.title,
+                description: installation.description || "",
+                price: installation.price,
+            },
+        ])
+    );
+}
+
+function attachInstallationPackage<T extends { package_id?: string | null }>(
+    reservation: T,
+    installationMap: Map<string, InstallationSummary>
+) {
+    const installation = reservation.package_id ? installationMap.get(reservation.package_id) : undefined;
+
+    return {
+        ...reservation,
+        packages: {
+            name: installation?.name || "Forfait",
+            description: installation?.description || "",
+            price: installation?.price ?? null,
+        },
+    };
+}
+
+async function getReservationWithInstallation(supabase: SupabaseServerClient, id: string) {
+    const { data: reservation, error } = await supabase
+        .from("reservations")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    if (error || !reservation) {
+        return { reservation: null, error };
+    }
+
+    const installationMap = await getInstallationSummaries(supabase, [reservation.package_id]);
+    return {
+        reservation: attachInstallationPackage(reservation, installationMap),
+        error: null,
+    };
+}
+
 // ============================================
 // INSTALLATIONS
 // ============================================
@@ -83,18 +154,8 @@ export async function getReservations(filters?: {
 
     // Fetch package names separately
     if (data && data.length > 0) {
-        const packageIds = [...new Set(data.map(r => r.package_id).filter(Boolean))];
-        const { data: packages } = await supabase
-            .from("packages")
-            .select("id, name")
-            .in("id", packageIds);
-
-        const packageMap = new Map(packages?.map(p => [p.id, p.name]) || []);
-
-        return data.map(r => ({
-            ...r,
-            packages: { name: packageMap.get(r.package_id) || "Forfait" }
-        }));
+        const installationMap = await getInstallationSummaries(supabase, data.map(r => r.package_id));
+        return data.map(r => attachInstallationPackage(r, installationMap));
     }
 
     return data || [];
@@ -102,17 +163,13 @@ export async function getReservations(filters?: {
 
 export async function getReservation(id: string) {
     const supabase = await createClient();
-    const { data, error } = await supabase
-        .from("reservations")
-        .select("*, packages!reservations_package_id_fkey(*)")
-        .eq("id", id)
-        .single();
+    const { reservation, error } = await getReservationWithInstallation(supabase, id);
 
-    if (error) {
+    if (error || !reservation) {
         console.error("Error fetching reservation:", error);
         return null;
     }
-    return data;
+    return reservation;
 }
 
 export async function getPendingReservationsCount() {
@@ -164,14 +221,11 @@ export async function updateReservationStatus(
     if (status === "confirmed") {
         console.log("=== DEBUT CONFIRMATION EMAIL ===");
         console.log("Fetching reservation ID:", id);
-        const { data: reservation, error: fetchErr } = await supabase
-            .from("reservations")
-            .select("*, packages!reservations_package_id_fkey(name)")
-            .eq("id", id)
-            .single();
+        const { reservation, error: fetchErr } = await getReservationWithInstallation(supabase, id);
 
         if (fetchErr) {
              console.error("Error fetching reservation for email:", fetchErr);
+             return { success: false, error: "La réservation a été validée, mais ses détails n'ont pas pu être récupérés pour envoyer l'email." };
         } else if (reservation && reservation.guest_email) {
             console.log("Reservation retrieved successfully:", reservation.guest_email);
             const { sendReservationConfirmationEmail } = await import('@/lib/email');
@@ -188,20 +242,21 @@ export async function updateReservationStatus(
                     reservationId: reservation.id,
                 });
                 console.log("Email Result:", emailResult);
+                if (!emailResult.success) {
+                    return { success: false, error: `La réservation a été validée, mais l'email de confirmation n'a pas pu être envoyé : ${emailResult.error}` };
+                }
             } catch (err) {
                 console.error("Erreur catchée pendant l'envoi:", err);
+                return { success: false, error: "La réservation a été validée, mais l'email de confirmation n'a pas pu être envoyé." };
             }
         } else {
              console.warn("No guest_email found on reservation!");
+             return { success: false, error: "La réservation a été validée, mais aucun email client n'est renseigné." };
         }
         console.log("=== FIN CONFIRMATION EMAIL ===");
     } else if (status === "declined" || status === "cancelled") {
         console.log("=== DEBUT CANCELLATION EMAIL ===");
-        const { data: reservation, error: fetchErr } = await supabase
-            .from("reservations")
-            .select("*, packages!reservations_package_id_fkey(name)")
-            .eq("id", id)
-            .single();
+        const { reservation, error: fetchErr } = await getReservationWithInstallation(supabase, id);
 
         if (!fetchErr && reservation && reservation.guest_email) {
             const { sendReservationRejectionEmail } = await import('@/lib/email');
@@ -266,11 +321,7 @@ export async function updateReservationDetails(
     }
 
     // Send email notification to guest
-    const { data: reservation, error: fetchErr } = await supabase
-        .from("reservations")
-        .select("*, packages!reservations_package_id_fkey(name)")
-        .eq("id", id)
-        .single();
+    const { reservation, error: fetchErr } = await getReservationWithInstallation(supabase, id);
 
     if (!fetchErr && reservation && reservation.guest_email) {
         const { sendReservationModificationEmail } = await import('@/lib/email');

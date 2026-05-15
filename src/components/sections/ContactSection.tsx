@@ -23,6 +23,7 @@ const contactInfo = [
         icon: Phone,
         label: "Téléphone",
         value: RESTAURANT_INFO.phone,
+        subValue: RESTAURANT_INFO.secondaryPhone,
         href: `tel:${RESTAURANT_INFO.phone.replace(/\s/g, "")}`,
     },
     {

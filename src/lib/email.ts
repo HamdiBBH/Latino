@@ -4,6 +4,18 @@ import "server-only";
 import nodemailer from "nodemailer";
 import { RESTAURANT_INFO } from "@/lib/config";
 
+const RESTAURANT_PHONES = [RESTAURANT_INFO.phone, RESTAURANT_INFO.secondaryPhone];
+const formatTelHref = (phone: string) => phone.replace(/\s/g, "");
+const restaurantPhonesDisplay = RESTAURANT_PHONES.join(" / ");
+const restaurantPhonesLinks = RESTAURANT_PHONES
+    .map((phone) => `<a href="tel:${formatTelHref(phone)}" style="color: #E8A87C;">${phone}</a>`)
+    .join(" ou ");
+
+const getEmailErrorMessage = (error: unknown) => {
+    if (error instanceof Error) return error.message;
+    return "Failed to send email";
+};
+
 // Email configuration
 const getTransporter = () => {
     const port = parseInt(process.env.SMTP_PORT || "465");
@@ -54,7 +66,7 @@ const getBaseTemplate = (content: string) => `
                     <tr>
                         <td style="background-color: #F9F5F0; padding: 25px 30px; text-align: center; border-top: 1px solid #eee;">
                             <p style="margin: 0 0 10px; color: #7A7A7A; font-size: 14px;">
-                                📞 ${RESTAURANT_INFO.phone} | ✉️ ${RESTAURANT_INFO.email}
+                                📞 ${restaurantPhonesDisplay} | ✉️ ${RESTAURANT_INFO.email}
                             </p>
                             <p style="margin: 0; color: #7A7A7A; font-size: 12px;">
                                 Ouvert ${RESTAURANT_INFO.hours} | Saison: ${RESTAURANT_INFO.season}
@@ -129,7 +141,7 @@ export async function sendReservationRequestEmail(data: ReservationEmailData) {
         </div>
 
         <p style="color: #7A7A7A; font-size: 14px; line-height: 1.6;">
-            Pour toute question, contactez-nous au <a href="tel:${RESTAURANT_INFO.phone}" style="color: #E8A87C;">${RESTAURANT_INFO.phone}</a>
+            Pour toute question, contactez-nous au ${restaurantPhonesLinks}
         </p>
     `;
 
@@ -143,7 +155,7 @@ export async function sendReservationRequestEmail(data: ReservationEmailData) {
         return { success: true };
     } catch (error) {
         console.error("Error sending request acknowledgment email:", error);
-        return { success: false, error: "Failed to send email" };
+        return { success: false, error: getEmailErrorMessage(error) };
     }
 }
 
@@ -164,7 +176,8 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
         </h2>
         <p style="color: #7A7A7A; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
             Bonjour <strong>${data.guestName}</strong>,<br><br>
-            Excellente nouvelle ! Votre réservation au Latino Coucou Beach a été <strong>validée</strong> par notre équipe. Nous avons hâte de vous accueillir pour une journée mémorable !
+            Excellente nouvelle ! Votre réservation au Latino Coucou Beach a été <strong>validée</strong> par notre équipe. Nous avons hâte de vous accueillir pour une journée mémorable !<br><br>
+            <strong>Important : notre équipe vous contactera par téléphone afin de confirmer votre réservation. Si nous ne parvenons pas à vous joindre, celle-ci pourra malheureusement être annulée.</strong>
         </p>
         
         <div style="background-color: #F9F5F0; border-radius: 12px; padding: 25px; margin: 25px 0;">
@@ -203,7 +216,7 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
         </div>
 
         <p style="color: #7A7A7A; font-size: 14px; line-height: 1.6;">
-            Pour toute question, contactez-nous au <a href="tel:${RESTAURANT_INFO.phone}" style="color: #E8A87C;">${RESTAURANT_INFO.phone}</a>
+            Pour toute question, contactez-nous au ${restaurantPhonesLinks}
         </p>
     `;
 
@@ -217,7 +230,7 @@ export async function sendReservationConfirmationEmail(data: ReservationEmailDat
         return { success: true };
     } catch (error) {
         console.error("Error sending confirmation email:", error);
-        return { success: false, error: "Failed to send email" };
+        return { success: false, error: getEmailErrorMessage(error) };
     }
 }
 
@@ -355,7 +368,7 @@ export async function sendReservationRejectionEmail(data: ReservationEmailData) 
 
         <p style="color: #7A7A7A; font-size: 14px; line-height: 1.6;">
             Nous espérons avoir l'occasion de vous accueillir très bientôt.<br><br>
-            Pour toute question, contactez-nous au <a href="tel:${RESTAURANT_INFO.phone}" style="color: #E8A87C;">${RESTAURANT_INFO.phone}</a>
+            Pour toute question, contactez-nous au ${restaurantPhonesLinks}
         </p>
     `;
 
@@ -420,7 +433,7 @@ export async function sendReservationModificationEmail(data: ReservationEmailDat
 
         <p style="color: #7A7A7A; font-size: 14px; line-height: 1.6;">
             Nous avons hâte de vous recevoir !<br><br>
-            Pour toute autre question, contactez-nous au <a href="tel:${RESTAURANT_INFO.phone}" style="color: #E8A87C;">${RESTAURANT_INFO.phone}</a>
+            Pour toute autre question, contactez-nous au ${restaurantPhonesLinks}
         </p>
     `;
 

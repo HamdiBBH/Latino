@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Instagram, Facebook, MapPin, Phone, Mail } from "lucide-react";
 import Logo from "@/components/Logo";
+import { RESTAURANT_INFO } from "@/lib/config";
 
 const navLinks = [
     { href: "#home", label: "Accueil" },
@@ -162,24 +163,35 @@ export function Footer() {
                                     Tunisie
                                 </a>
                             </li>
-                            <li style={{ marginBottom: "1rem" }}>
-                                <a
-                                    href="tel:+21650607072"
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "12px",
-                                        color: "rgba(255, 255, 255, 0.6)",
-                                        textDecoration: "none",
-                                    }}
-                                >
-                                    <Phone style={{ width: 20, height: 20, color: "#E8A87C" }} />
-                                    +216 50 607 072
-                                </a>
+                            <li
+                                style={{
+                                    display: "flex",
+                                    alignItems: "flex-start",
+                                    gap: "12px",
+                                    marginBottom: "1rem",
+                                    color: "rgba(255, 255, 255, 0.6)",
+                                }}
+                            >
+                                <Phone style={{ width: 20, height: 20, color: "#E8A87C", flexShrink: 0 }} />
+                                <span>
+                                    <a
+                                        href={`tel:${RESTAURANT_INFO.phone.replace(/\s/g, "")}`}
+                                        style={{ color: "inherit", textDecoration: "none" }}
+                                    >
+                                        {RESTAURANT_INFO.phone}
+                                    </a>
+                                    <br />
+                                    <a
+                                        href={`tel:${RESTAURANT_INFO.secondaryPhone.replace(/\s/g, "")}`}
+                                        style={{ color: "inherit", textDecoration: "none" }}
+                                    >
+                                        {RESTAURANT_INFO.secondaryPhone}
+                                    </a>
+                                </span>
                             </li>
                             <li>
                                 <a
-                                    href="mailto:contact@latinocoucoubeach.com"
+                                    href={`mailto:${RESTAURANT_INFO.email}`}
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
@@ -189,7 +201,7 @@ export function Footer() {
                                     }}
                                 >
                                     <Mail style={{ width: 20, height: 20, color: "#E8A87C" }} />
-                                    contact@latinocoucoubeach.com
+                                    {RESTAURANT_INFO.email}
                                 </a>
                             </li>
                         </ul>

@@ -145,6 +145,7 @@ export const RESTAURANT_INFO = {
     location: "Coucou Beach, Ghar El Melh",
     country: "Tunisie",
     phone: "+216 50 607 072",
+    secondaryPhone: "+216 92 607 072",
     email: "latinocoucou.contact@gmail.com",
     currency: "DT",
     currencySymbol: "DT",

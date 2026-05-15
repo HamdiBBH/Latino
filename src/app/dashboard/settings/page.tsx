@@ -1,4 +1,5 @@
 import { Settings, Bell, Globe, Palette, Shield, Save } from "lucide-react";
+import { RESTAURANT_INFO } from "@/lib/config";
 
 export default function SettingsPage() {
     return (
@@ -58,7 +59,7 @@ export default function SettingsPage() {
                             </label>
                             <input
                                 type="email"
-                                defaultValue="contact@latinocoucoubeach.com"
+                                defaultValue={RESTAURANT_INFO.email}
                                 style={{
                                     width: "100%",
                                     padding: "12px",
@@ -74,7 +75,7 @@ export default function SettingsPage() {
                             </label>
                             <input
                                 type="tel"
-                                defaultValue="+216 XX XXX XXX"
+                                defaultValue={`${RESTAURANT_INFO.phone} / ${RESTAURANT_INFO.secondaryPhone}`}
                                 style={{
                                     width: "100%",
                                     padding: "12px",

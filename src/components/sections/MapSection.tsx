@@ -126,6 +126,13 @@ export function MapSection() {
                                     >
                                         {RESTAURANT_INFO.phone}
                                     </a>
+                                    <br />
+                                    <a
+                                        href={`tel:${RESTAURANT_INFO.secondaryPhone.replace(/\s/g, "")}`}
+                                        style={{ fontWeight: 500, color: "#222222", textDecoration: "none" }}
+                                    >
+                                        {RESTAURANT_INFO.secondaryPhone}
+                                    </a>
                                 </div>
                             </div>
                         </div>

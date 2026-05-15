@@ -1,5 +1,7 @@
 "use server";
 
+import { RESTAURANT_INFO } from "@/lib/config";
+
 /**
  * WhatsApp Business API Integration
  * 
@@ -157,7 +159,7 @@ C'est demain ! 🎉
 ✅ Chapeau/lunettes
 ✅ Serviette
 
-📞 En cas de question : +216 XX XXX XXX
+📞 En cas de question : ${RESTAURANT_INFO.phone} / ${RESTAURANT_INFO.secondaryPhone}
 
 À demain ! 🏝️`;
 
