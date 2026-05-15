@@ -30,18 +30,25 @@ const menuItems = [
     { category: "desserts", name: "Fruits du jour", description: "Sélection de fruits frais de saison - Dessert du Menu Standard", price: 0, tags: ["menu-standard", "dessert"] },
 ];
 
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
 export async function seedMenuItems() {
     let successCount = 0;
     let errorCount = 0;
+    
+    const supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     for (const item of menuItems) {
-        const result = await createMenuItem(item);
-        if (result.success) {
+        const { error } = await supabase.from("menu_items").insert(item);
+        if (!error) {
             successCount++;
             console.log(`✓ Added: ${item.name}`);
         } else {
             errorCount++;
-            console.error(`✗ Failed: ${item.name} - ${"error" in result ? result.error : "Erreur inconnue"}`);
+            console.error(`✗ Failed: ${item.name} - ${error.message}`);
         }
     }
 

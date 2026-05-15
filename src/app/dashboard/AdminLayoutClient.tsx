@@ -19,6 +19,7 @@ import {
     Layers,
     ExternalLink,
     TrendingUp,
+    Trophy,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import Logo from "@/components/Logo";
@@ -53,7 +54,7 @@ const navItems: NavItem[] = [
         roles: ["ADMIN"],
     },
     {
-        href: "/dashboard/menu",
+        href: "/dashboard/cms/menu",
         label: "Carte & Produits",
         icon: ChefHat,
         roles: ["ADMIN"],
@@ -100,26 +101,26 @@ const navItems: NavItem[] = [
     {
         href: "/dashboard/loyalty",
         label: "Fidélité",
-        icon: CalendarDays,
-        roles: ["CLIENT"],
+        icon: Trophy,
+        roles: ["CLIENT", "ADMIN", "MANAGER", "DEV"],
     },
     {
         href: "/dashboard/memories",
         label: "Souvenirs",
         icon: Image,
-        roles: ["CLIENT"],
+        roles: ["CLIENT", "ADMIN", "MANAGER", "DEV"],
     },
     {
         href: "/dashboard/profile",
         label: "Mon Profil",
         icon: Users,
-        roles: ["CLIENT"],
+        roles: ["CLIENT", "ADMIN", "MANAGER", "DEV"],
     },
     {
         href: "/dashboard/concierge",
         label: "Aide",
         icon: Settings,
-        roles: ["CLIENT"],
+        roles: ["CLIENT", "ADMIN", "MANAGER", "DEV"],
     },
 ];
 

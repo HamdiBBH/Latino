@@ -392,11 +392,19 @@ function ReservationContent() {
                                     </div>
                                     <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#7A7A7A" }}>
                                         <Check style={{ width: 16, height: 16, color: "#22C55E" }} />
-                                        Bébés &lt; 4 ans : Gratuit
+                                        Bébés &lt; 4 ans : Gratuit (sans consommation)
                                     </div>
                                     <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#7A7A7A" }}>
                                         <Check style={{ width: 16, height: 16, color: "#22C55E" }} />
                                         Traversée en bateau incluse
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#7A7A7A" }}>
+                                        <Check style={{ width: 16, height: 16, color: "#22C55E" }} />
+                                        Parking privé gratuit
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#7A7A7A" }}>
+                                        <Check style={{ width: 16, height: 16, color: "#22C55E" }} />
+                                        Déjeuner inclus
                                     </div>
                                 </div>
                             </div>
@@ -512,7 +520,7 @@ function ReservationContent() {
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.5rem 0" }}>
                                 <div>
                                     <p style={{ fontWeight: 600, color: "#222", fontSize: "1.1rem" }}>Bébés</p>
-                                    <p style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>Moins de 4 ans (gratuit)</p>
+                                    <p style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>Moins de 4 ans (gratuit sans consommation)</p>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                                     <button

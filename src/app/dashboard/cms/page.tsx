@@ -16,7 +16,8 @@ import {
     Instagram,
     Sparkles,
     CreditCard,
-    Umbrella
+    Umbrella,
+    Trophy
 } from "lucide-react";
 import { getDashboardStats } from "@/app/actions/cms";
 
@@ -136,6 +137,15 @@ const initialCmsModules: CMSModule[] = [
         icon: Umbrella,
         href: "/dashboard/cms/installations",
         color: "#43B0A8",
+    },
+    {
+        id: "loyalty",
+        title: "Fidélité",
+        description: "Définir les paliers, points et réductions du programme fidélité",
+        icon: Trophy,
+        href: "/dashboard/cms/loyalty",
+        color: "#F59E0B",
+        stats: { label: "Paliers configurés", value: "-" },
     },
 ];
 

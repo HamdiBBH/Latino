@@ -126,8 +126,8 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                     </div>
                     <div style={{ flex: 1 }}>
                         <p style={{ fontWeight: 600, margin: 0 }}>{mockReservation.zone} • {mockReservation.zoneId}</p>
-                        <p style={{ fontSize: "0.75rem", opacity: 0.9, margin: "2px 0 0 0" }}>
-                            {mockReservation.packageName} • {mockReservation.guests} personnes
+                        <p style={{ fontSize: "0.75rem", opacity: 0.9, margin: "2px 0 0 0", textTransform: "capitalize" }}>
+                            {new Date(mockReservation.date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} • {mockReservation.packageName} • {mockReservation.guests} personnes
                         </p>
                     </div>
                     <div

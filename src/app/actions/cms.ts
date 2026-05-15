@@ -500,8 +500,13 @@ export async function deleteGalleryImage(id: string) {
 // MENU
 // ============================================
 
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
 export async function getMenuItems(category?: string) {
-    const supabase = await createClient();
+    const supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     let query = supabase.from("menu_items")
         .select("*, site_media(*)") // Join with media

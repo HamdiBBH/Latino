@@ -1,16 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Trophy, Star, ChevronLeft, Gift, TrendingUp, Award, Crown, Diamond, ArrowRight, Lock, Check } from "lucide-react";
 import Link from "next/link";
+import { getLoyaltyConfig } from "@/app/actions/loyaltyConfig";
+import { getTierForPoints, type LoyaltyTierConfig } from "@/lib/loyalty-utils";
 
-// VIP Levels
-const vipLevels = [
-    { id: "bronze", name: "Bronze", icon: "🥉", minPoints: 0, color: "#CD7F32", benefits: ["Accueil personnalisé", "Newsletter exclusive"] },
-    { id: "silver", name: "Silver", icon: "🥈", minPoints: 500, color: "#C0C0C0", benefits: ["Jus de bienvenue", "Réservation prioritaire"] },
-    { id: "gold", name: "Gold", icon: "🥇", minPoints: 1500, color: "#FFD700", benefits: ["Upgrade zone gratuit", "-10% sur extras"] },
-    { id: "diamond", name: "Diamond", icon: "💎", minPoints: 5000, color: "#B9F2FF", benefits: ["Cabane VIP offerte/an", "Service conciergerie dédié"] },
-];
 
 // Badges
 const badges = [
@@ -41,25 +36,34 @@ const rewards = [
     { id: "4", name: "Pack VIP Journée", points: 2000, icon: "💎", available: false },
 ];
 
-// Mock user data
+// Mock user data (in production, this would come from the user's profile)
 const userLoyalty = {
-    points: 850,
+    points: 350,
     totalPointsEarned: 1250,
-    level: "silver",
     visits: 8,
     memberSince: "Mai 2024",
-    nextLevelPoints: 1500,
-    referralCode: "BEACH850",
+    referralCode: "BEACH350",
 };
 
 export default function LoyaltyPage() {
     const [activeTab, setActiveTab] = useState<"overview" | "badges" | "rewards" | "history">("overview");
+    const [tiers, setTiers] = useState<LoyaltyTierConfig[]>([]);
+    const [pointsPerVisit, setPointsPerVisit] = useState(100);
+    const [loadingConfig, setLoadingConfig] = useState(true);
 
-    const currentLevel = vipLevels.find((l) => l.id === userLoyalty.level)!;
-    const nextLevel = vipLevels.find((l) => l.minPoints > currentLevel.minPoints);
-    const progressToNext = nextLevel
+    useEffect(() => {
+        getLoyaltyConfig().then((cfg) => {
+            setTiers(cfg.tiers);
+            setPointsPerVisit(cfg.pointsPerVisit);
+            setLoadingConfig(false);
+        });
+    }, []);
+
+    const currentLevel = tiers.length > 0 ? getTierForPoints(userLoyalty.points, tiers) : null;
+    const nextLevel = currentLevel ? tiers.find((t) => t.minPoints > currentLevel.minPoints) : null;
+    const progressToNext = currentLevel && nextLevel
         ? ((userLoyalty.points - currentLevel.minPoints) / (nextLevel.minPoints - currentLevel.minPoints)) * 100
-        : 100;
+        : currentLevel ? 100 : 0;
 
     return (
         <div style={{ maxWidth: "100%" }}>
@@ -91,18 +95,20 @@ export default function LoyaltyPage() {
             {/* Points Card */}
             <div
                 style={{
-                    background: `linear-gradient(135deg, ${currentLevel.color}40 0%, ${currentLevel.color}20 100%)`,
+                    background: currentLevel
+                        ? `linear-gradient(135deg, ${currentLevel.color}40 0%, ${currentLevel.color}20 100%)`
+                        : "linear-gradient(135deg, #F3F4F6, #E5E7EB)",
                     borderRadius: "20px",
                     padding: "1.5rem",
                     marginBottom: "1.5rem",
-                    border: `2px solid ${currentLevel.color}`,
+                    border: `2px solid ${currentLevel?.color ?? "#E5E7EB"}`,
                 }}
             >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
                     <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                            <span style={{ fontSize: "2rem" }}>{currentLevel.icon}</span>
-                            <span style={{ fontWeight: 600, color: "#222" }}>{currentLevel.name}</span>
+                            <span style={{ fontSize: "2rem" }}>{currentLevel?.icon ?? "🏅"}</span>
+                            <span style={{ fontWeight: 600, color: "#222" }}>{currentLevel?.name ?? "Chargement..."}</span>
                         </div>
                         <p style={{ fontSize: "0.75rem", color: "#6B7280" }}>Membre depuis {userLoyalty.memberSince}</p>
                     </div>
@@ -130,8 +136,8 @@ export default function LoyaltyPage() {
                             <div
                                 style={{
                                     height: "100%",
-                                    width: `${progressToNext}%`,
-                                    backgroundColor: currentLevel.color,
+                                    width: `${Math.min(progressToNext, 100)}%`,
+                                    backgroundColor: currentLevel?.color ?? "#E8A87C",
                                     borderRadius: "4px",
                                     transition: "width 0.5s ease",
                                 }}
@@ -216,8 +222,8 @@ export default function LoyaltyPage() {
                             Niveaux VIP
                         </h3>
                         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                            {vipLevels.map((level) => {
-                                const isCurrentLevel = level.id === userLoyalty.level;
+                            {tiers.map((level) => {
+                                const isCurrentLevel = currentLevel?.id === level.id;
                                 const isUnlocked = userLoyalty.points >= level.minPoints;
 
                                 return (
@@ -254,7 +260,8 @@ export default function LoyaltyPage() {
                                                 )}
                                             </div>
                                             <p style={{ fontSize: "0.7rem", color: "#6B7280", margin: "2px 0 0 0" }}>
-                                                {level.minPoints} points • {level.benefits[0]}
+                                                {level.minPoints} points
+                                                {level.discountPercent > 0 ? ` • ${level.discountPercent}% de réduction` : " • Aucune réduction"}
                                             </p>
                                         </div>
                                         {!isUnlocked && <Lock style={{ width: 16, height: 16, color: "#9CA3AF" }} />}

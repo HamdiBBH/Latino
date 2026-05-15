@@ -81,7 +81,7 @@ export async function proxy(request: NextRequest) {
             "/dashboard/analytics": ["MANAGER", "ADMIN"],
             "/dashboard/finance": ["ADMIN"],
             "/dashboard/floorplan": ["MANAGER", "ADMIN"],
-            "/dashboard/loyalty": ["MANAGER", "ADMIN"],
+            "/dashboard/loyalty": ["CLIENT", "MANAGER", "ADMIN", "DEV"],
             "/dashboard/menu": ["RESTAURANT", "MANAGER", "ADMIN"],
             "/dashboard/staff": ["ADMIN"],
             "/dashboard/stocks": ["RESTAURANT", "MANAGER", "ADMIN"],

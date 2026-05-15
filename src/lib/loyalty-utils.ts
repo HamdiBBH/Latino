@@ -2,6 +2,30 @@
 
 export type LoyaltyTier = "bronze" | "silver" | "gold" | "platinum";
 
+// Dynamic tier type (from CMS config)
+export interface LoyaltyTierConfig {
+    id: string;
+    name: string;
+    icon: string;
+    minPoints: number;
+    maxPoints: number | null;
+    color: string;
+    discountPercent: number;
+    benefits: string[];
+}
+
+// Get the matching tier for a given points value from dynamic config
+export function getTierForPoints(points: number, tiers: LoyaltyTierConfig[]): LoyaltyTierConfig {
+    const sorted = [...tiers].sort((a, b) => b.minPoints - a.minPoints);
+    return sorted.find((t) => points >= t.minPoints) ?? tiers[0];
+}
+
+// Full loyalty program config (stored in app_settings)
+export interface LoyaltyConfig {
+    pointsPerVisit: number;
+    tiers: LoyaltyTierConfig[];
+}
+
 export function getLoyaltyTier(visitCount: number): LoyaltyTier {
     if (visitCount >= 10) return "platinum";
     if (visitCount >= 5) return "gold";
