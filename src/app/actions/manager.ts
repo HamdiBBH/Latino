@@ -3,12 +3,26 @@
 import { createClient } from "@/lib/supabase/server";
 
 // ============================================
-// CONFLICT DETECTION
+// CONFLICT DETECTION (Smart)
 // ============================================
+
+export type ConflictSeverity = "info" | "warning" | "critical";
+
+export interface SmartConflict {
+    id: string; // Deterministic ID for dismiss support
+    type: "duplicate_exact" | "duplicate_same_day" | "capacity_global" | "capacity_installation";
+    severity: ConflictSeverity;
+    message: string;
+    date?: string;
+    details?: string;
+    reservationIds: string[]; // For direct navigation
+    actionLabel?: string; // Suggested action
+    actionHref?: string;
+}
 
 export async function detectConflicts() {
     const supabase = await createClient();
-    const conflicts: { type: string; message: string; date?: string; details?: string }[] = [];
+    const conflicts: SmartConflict[] = [];
 
     // Get all confirmed + pending reservations for the next 30 days
     const today = new Date();
@@ -17,12 +31,25 @@ export async function detectConflicts() {
 
     const { data: reservations } = await supabase
         .from("reservations")
-        .select("id, reservation_date, guest_count, guest_email, guest_name, status")
+        .select("id, reservation_date, time_slot, guest_count, guest_email, guest_name, status, installation_id")
         .gte("reservation_date", today.toISOString().split("T")[0])
         .lte("reservation_date", endDate.toISOString().split("T")[0])
         .in("status", ["pending", "confirmed"]);
 
     if (!reservations) return { conflicts };
+
+    // Load installations for per-installation capacity
+    const { data: installations } = await supabase
+        .from("installations")
+        .select("id, name, capacity_max")
+        .eq("is_active", true);
+
+    const installationMap = new Map(
+        (installations || []).map(i => [i.id, i])
+    );
+
+    // Load dismissed conflict IDs
+    const dismissedIds = await getDismissedConflictIds();
 
     // Group by date
     const byDate: Record<string, typeof reservations> = {};
@@ -31,36 +58,184 @@ export async function detectConflicts() {
         byDate[r.reservation_date].push(r);
     });
 
-    const MAX_CAPACITY = 50;
+    // Global capacity (sum of all installation max capacities, fallback 50)
+    const GLOBAL_CAPACITY = installations && installations.length > 0
+        ? installations.reduce((sum, i) => sum + (i.capacity_max || 10), 0)
+        : 50;
 
-    // Check each date
     Object.entries(byDate).forEach(([date, dateReservations]) => {
         const totalGuests = dateReservations.reduce((sum, r) => sum + r.guest_count, 0);
 
-        // 1. Capacity exceeded
-        if (totalGuests > MAX_CAPACITY) {
-            conflicts.push({
-                type: "capacity",
-                message: `Capacité dépassée`,
-                date,
-                details: `${totalGuests}/${MAX_CAPACITY} personnes`
-            });
+        // 1. Global capacity warning (>80%) and critical (>100%)
+        if (totalGuests > GLOBAL_CAPACITY) {
+            const conflictId = `capacity_global_${date}`;
+            if (!dismissedIds.has(conflictId)) {
+                conflicts.push({
+                    id: conflictId,
+                    type: "capacity_global",
+                    severity: "critical",
+                    message: "Capacité globale dépassée",
+                    date,
+                    details: `${totalGuests}/${GLOBAL_CAPACITY} personnes`,
+                    reservationIds: dateReservations.map(r => r.id),
+                    actionLabel: "Voir le calendrier",
+                    actionHref: "/dashboard/reservations/calendar",
+                });
+            }
+        } else if (totalGuests > GLOBAL_CAPACITY * 0.8) {
+            const conflictId = `capacity_warn_${date}`;
+            if (!dismissedIds.has(conflictId)) {
+                conflicts.push({
+                    id: conflictId,
+                    type: "capacity_global",
+                    severity: "warning",
+                    message: "Capacité globale bientôt atteinte",
+                    date,
+                    details: `${totalGuests}/${GLOBAL_CAPACITY} personnes (${Math.round(totalGuests / GLOBAL_CAPACITY * 100)}%)`,
+                    reservationIds: dateReservations.map(r => r.id),
+                });
+            }
         }
 
-        // 2. Duplicate email on same day
-        const emails = dateReservations.map(r => r.guest_email.toLowerCase());
-        const duplicates = emails.filter((email, index) => emails.indexOf(email) !== index);
-        if (duplicates.length > 0) {
-            conflicts.push({
-                type: "duplicate",
-                message: `Double réservation détectée`,
-                date,
-                details: `Email: ${duplicates[0]}`
+        // 2. Smart duplicate detection — only flag if SAME email + SAME date + SAME time_slot + SAME installation
+        const emailGroups: Record<string, typeof reservations> = {};
+        dateReservations.forEach(r => {
+            const key = r.guest_email.toLowerCase();
+            if (!emailGroups[key]) emailGroups[key] = [];
+            emailGroups[key].push(r);
+        });
+
+        Object.entries(emailGroups).forEach(([email, emailReservations]) => {
+            if (emailReservations.length < 2) return;
+
+            // Check if it's an exact duplicate (same installation + same time slot)
+            const slotInstallationPairs = new Map<string, typeof reservations>();
+            emailReservations.forEach(r => {
+                const pairKey = `${r.installation_id || "none"}_${r.time_slot}`;
+                if (!slotInstallationPairs.has(pairKey)) slotInstallationPairs.set(pairKey, []);
+                slotInstallationPairs.get(pairKey)!.push(r);
             });
-        }
+
+            const exactDuplicates = [...slotInstallationPairs.values()].filter(group => group.length > 1);
+
+            if (exactDuplicates.length > 0) {
+                // True duplicate — same person, same installation, same slot = likely mistake
+                const dupes = exactDuplicates[0];
+                const conflictId = `dup_exact_${date}_${email}`;
+                if (!dismissedIds.has(conflictId)) {
+                    conflicts.push({
+                        id: conflictId,
+                        type: "duplicate_exact",
+                        severity: "warning",
+                        message: "Doublon probable",
+                        date,
+                        details: `${emailReservations[0].guest_name} — même créneau, même forfait`,
+                        reservationIds: dupes.map(r => r.id),
+                        actionLabel: "Voir les réservations",
+                        actionHref: `/dashboard/reservations?id=${dupes[0].id}`,
+                    });
+                }
+            } else {
+                // Different installations or time slots — just an info, not blocking
+                const conflictId = `dup_info_${date}_${email}`;
+                if (!dismissedIds.has(conflictId)) {
+                    conflicts.push({
+                        id: conflictId,
+                        type: "duplicate_same_day",
+                        severity: "info",
+                        message: "Réservations multiples",
+                        date,
+                        details: `${emailReservations[0].guest_name} — ${emailReservations.length} réservations (créneaux/forfaits différents)`,
+                        reservationIds: emailReservations.map(r => r.id),
+                        actionLabel: "Vérifier",
+                        actionHref: `/dashboard/reservations?id=${emailReservations[0].id}`,
+                    });
+                }
+            }
+        });
     });
 
+    // Sort: critical first, then warning, then info
+    const severityOrder: Record<ConflictSeverity, number> = { critical: 0, warning: 1, info: 2 };
+    conflicts.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+
     return { conflicts };
+}
+
+// ============================================
+// CONFLICT DISMISSAL
+// ============================================
+
+const DISMISSED_KEY = "conflict_dismissed_ids";
+
+async function getDismissedConflictIds(): Promise<Set<string>> {
+    const supabase = await createClient();
+    const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", DISMISSED_KEY)
+        .single();
+
+    if (data?.value) {
+        try {
+            const parsed = JSON.parse(data.value);
+            // Auto-cleanup: remove entries older than 30 days
+            const now = Date.now();
+            const valid = Object.entries(parsed as Record<string, number>)
+                .filter(([, ts]) => now - (ts as number) < 30 * 24 * 60 * 60 * 1000);
+            return new Set(valid.map(([id]) => id));
+        } catch {
+            return new Set();
+        }
+    }
+    return new Set();
+}
+
+export async function dismissConflict(conflictId: string) {
+    const supabase = await createClient();
+
+    // Get existing dismissed
+    const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", DISMISSED_KEY)
+        .single();
+
+    let dismissed: Record<string, number> = {};
+    if (data?.value) {
+        try { dismissed = JSON.parse(data.value); } catch { /* ignore */ }
+    }
+
+    dismissed[conflictId] = Date.now();
+
+    await supabase
+        .from("app_settings")
+        .upsert({ key: DISMISSED_KEY, value: JSON.stringify(dismissed) }, { onConflict: "key" });
+
+    return { success: true };
+}
+
+export async function restoreConflict(conflictId: string) {
+    const supabase = await createClient();
+
+    const { data } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", DISMISSED_KEY)
+        .single();
+
+    let dismissed: Record<string, number> = {};
+    if (data?.value) {
+        try { dismissed = JSON.parse(data.value); } catch { /* ignore */ }
+    }
+
+    delete dismissed[conflictId];
+
+    await supabase
+        .from("app_settings")
+        .upsert({ key: DISMISSED_KEY, value: JSON.stringify(dismissed) }, { onConflict: "key" });
+
+    return { success: true };
 }
 
 // ============================================

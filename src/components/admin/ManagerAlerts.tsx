@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AlertTriangle, Users, Copy, X, Calendar, Bell, Send } from "lucide-react";
-import { detectConflicts, getTomorrowReservations } from "@/app/actions/manager";
-
-interface Conflict {
-    type: string;
-    message: string;
-    date?: string;
-    details?: string;
-}
+import { AlertTriangle, Info, AlertCircle, Users, X, Bell, Send, ChevronDown, ChevronUp, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { detectConflicts, dismissConflict, getTomorrowReservations } from "@/app/actions/manager";
+import type { SmartConflict, ConflictSeverity } from "@/app/actions/manager";
+import Link from "next/link";
 
 interface TomorrowReservation {
     id: string;
@@ -19,13 +14,45 @@ interface TomorrowReservation {
     guest_count: number;
 }
 
+const severityConfig: Record<ConflictSeverity, {
+    icon: typeof AlertTriangle;
+    color: string;
+    bg: string;
+    border: string;
+    lightBg: string;
+}> = {
+    critical: {
+        icon: AlertTriangle,
+        color: "#DC2626",
+        bg: "#FEE2E2",
+        border: "#FECACA",
+        lightBg: "#FFF5F5",
+    },
+    warning: {
+        icon: AlertCircle,
+        color: "#D97706",
+        bg: "#FEF3C7",
+        border: "#FDE68A",
+        lightBg: "#FFFBEB",
+    },
+    info: {
+        icon: Info,
+        color: "#2563EB",
+        bg: "#DBEAFE",
+        border: "#BFDBFE",
+        lightBg: "#EFF6FF",
+    },
+};
+
 export function ManagerAlerts() {
-    const [conflicts, setConflicts] = useState<Conflict[]>([]);
+    const [conflicts, setConflicts] = useState<SmartConflict[]>([]);
     const [tomorrowReservations, setTomorrowReservations] = useState<TomorrowReservation[]>([]);
     const [tomorrowDate, setTomorrowDate] = useState("");
     const [loading, setLoading] = useState(true);
     const [showRemindersModal, setShowRemindersModal] = useState(false);
     const [remindersSent, setRemindersSent] = useState(false);
+    const [showInfoConflicts, setShowInfoConflicts] = useState(false);
+    const [dismissingId, setDismissingId] = useState<string | null>(null);
 
     useEffect(() => {
         loadData();
@@ -45,9 +72,17 @@ export function ManagerAlerts() {
         setLoading(false);
     };
 
+    const handleDismiss = async (conflictId: string) => {
+        setDismissingId(conflictId);
+        await dismissConflict(conflictId);
+        // Animate out, then remove
+        setTimeout(() => {
+            setConflicts(prev => prev.filter(c => c.id !== conflictId));
+            setDismissingId(null);
+        }, 300);
+    };
+
     const handleSendReminders = async () => {
-        // In a real implementation, this would send emails/SMS
-        // For now, just mark as sent
         setRemindersSent(true);
         setTimeout(() => setShowRemindersModal(false), 1500);
     };
@@ -62,56 +97,201 @@ export function ManagerAlerts() {
 
     if (loading) return null;
 
+    // Separate conflicts by severity
+    const criticalConflicts = conflicts.filter(c => c.severity === "critical");
+    const warningConflicts = conflicts.filter(c => c.severity === "warning");
+    const infoConflicts = conflicts.filter(c => c.severity === "info");
+    const importantConflicts = [...criticalConflicts, ...warningConflicts];
+
     // Only show if there are conflicts or tomorrow has reservations
     if (conflicts.length === 0 && tomorrowReservations.length === 0) return null;
 
     return (
         <>
-            <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-                {/* Conflicts Alert */}
-                {conflicts.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
+
+                {/* Critical & Warning Conflicts */}
+                {importantConflicts.length > 0 && (
                     <div style={{
-                        flex: 1,
-                        minWidth: 280,
                         padding: "1rem 1.25rem",
-                        backgroundColor: "#FEE2E2",
+                        backgroundColor: criticalConflicts.length > 0 ? "#FEE2E2" : "#FEF3C7",
                         borderRadius: "12px",
-                        border: "1px solid #FECACA"
+                        border: `1px solid ${criticalConflicts.length > 0 ? "#FECACA" : "#FDE68A"}`,
                     }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.75rem" }}>
-                            <AlertTriangle style={{ width: 18, height: 18, color: "#DC2626" }} />
-                            <span style={{ fontWeight: 600, color: "#DC2626" }}>
-                                {conflicts.length} conflit{conflicts.length > 1 ? "s" : ""} détecté{conflicts.length > 1 ? "s" : ""}
-                            </span>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                            {conflicts.slice(0, 3).map((c, i) => (
-                                <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.875rem" }}>
-                                    <span style={{ color: "#991B1B" }}>{c.message}</span>
-                                    {c.date && (
-                                        <span style={{ padding: "2px 6px", backgroundColor: "#FFF", borderRadius: "4px", fontSize: "0.75rem", color: "#DC2626" }}>
-                                            {formatDate(c.date)}
-                                        </span>
-                                    )}
-                                    {c.details && (
-                                        <span style={{ fontSize: "0.75rem", color: "#7F1D1D" }}>({c.details})</span>
-                                    )}
-                                </div>
-                            ))}
-                            {conflicts.length > 3 && (
-                                <span style={{ fontSize: "0.75rem", color: "#991B1B" }}>
-                                    +{conflicts.length - 3} autre{conflicts.length - 3 > 1 ? "s" : ""}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <AlertTriangle style={{ width: 18, height: 18, color: criticalConflicts.length > 0 ? "#DC2626" : "#D97706" }} />
+                                <span style={{ fontWeight: 600, color: criticalConflicts.length > 0 ? "#DC2626" : "#D97706" }}>
+                                    {importantConflicts.length} alerte{importantConflicts.length > 1 ? "s" : ""} à traiter
                                 </span>
-                            )}
+                            </div>
                         </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {importantConflicts.map((c) => {
+                                const config = severityConfig[c.severity];
+                                const Icon = config.icon;
+                                const isDismissing = dismissingId === c.id;
+                                return (
+                                    <div
+                                        key={c.id}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            gap: "8px",
+                                            fontSize: "0.875rem",
+                                            padding: "8px 12px",
+                                            backgroundColor: config.lightBg,
+                                            borderRadius: "8px",
+                                            border: `1px solid ${config.border}`,
+                                            opacity: isDismissing ? 0 : 1,
+                                            transform: isDismissing ? "translateX(20px)" : "none",
+                                            transition: "opacity 0.3s ease, transform 0.3s ease",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+                                            <Icon style={{ width: 14, height: 14, color: config.color, flexShrink: 0 }} />
+                                            <span style={{ color: "#222", fontWeight: 500 }}>{c.message}</span>
+                                            {c.date && (
+                                                <span style={{
+                                                    padding: "2px 8px", backgroundColor: "#FFF",
+                                                    borderRadius: "4px", fontSize: "0.75rem", color: config.color,
+                                                    fontWeight: 500, whiteSpace: "nowrap"
+                                                }}>
+                                                    {formatDate(c.date)}
+                                                </span>
+                                            )}
+                                            {c.details && (
+                                                <span style={{ fontSize: "0.75rem", color: "#666" }}>— {c.details}</span>
+                                            )}
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+                                            {c.actionHref && (
+                                                <Link
+                                                    href={c.actionHref}
+                                                    style={{
+                                                        display: "flex", alignItems: "center", gap: "4px",
+                                                        padding: "4px 10px", backgroundColor: config.color,
+                                                        color: "#FFF", borderRadius: "6px", fontSize: "0.75rem",
+                                                        fontWeight: 500, textDecoration: "none", whiteSpace: "nowrap",
+                                                    }}
+                                                >
+                                                    <ExternalLink style={{ width: 10, height: 10 }} />
+                                                    {c.actionLabel || "Voir"}
+                                                </Link>
+                                            )}
+                                            <button
+                                                onClick={() => handleDismiss(c.id)}
+                                                title="Ignorer cette alerte"
+                                                style={{
+                                                    background: "none", border: "none", cursor: "pointer",
+                                                    padding: "4px", display: "flex", alignItems: "center",
+                                                    opacity: 0.5, transition: "opacity 0.2s",
+                                                }}
+                                                onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                                                onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.5")}
+                                            >
+                                                <EyeOff style={{ width: 14, height: 14, color: "#666" }} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Info Conflicts (collapsible) */}
+                {infoConflicts.length > 0 && (
+                    <div style={{
+                        padding: "0.75rem 1.25rem",
+                        backgroundColor: "#F0F9FF",
+                        borderRadius: "12px",
+                        border: "1px solid #BAE6FD",
+                    }}>
+                        <button
+                            onClick={() => setShowInfoConflicts(!showInfoConflicts)}
+                            style={{
+                                display: "flex", alignItems: "center", justifyContent: "space-between",
+                                width: "100%", background: "none", border: "none", cursor: "pointer",
+                                padding: 0,
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <Info style={{ width: 16, height: 16, color: "#0284C7" }} />
+                                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#0284C7" }}>
+                                    {infoConflicts.length} info{infoConflicts.length > 1 ? "s" : ""} — réservations multiples du même client
+                                </span>
+                            </div>
+                            {showInfoConflicts
+                                ? <ChevronUp style={{ width: 16, height: 16, color: "#0284C7" }} />
+                                : <ChevronDown style={{ width: 16, height: 16, color: "#0284C7" }} />
+                            }
+                        </button>
+
+                        {showInfoConflicts && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "0.75rem" }}>
+                                {infoConflicts.map((c) => {
+                                    const isDismissing = dismissingId === c.id;
+                                    return (
+                                        <div
+                                            key={c.id}
+                                            style={{
+                                                display: "flex", alignItems: "center", justifyContent: "space-between",
+                                                gap: "8px", fontSize: "0.875rem", padding: "6px 10px",
+                                                backgroundColor: "#FFF", borderRadius: "6px",
+                                                border: "1px solid #E0F2FE",
+                                                opacity: isDismissing ? 0 : 1,
+                                                transition: "opacity 0.3s ease",
+                                            }}
+                                        >
+                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                <span style={{ color: "#333" }}>{c.details}</span>
+                                                {c.date && (
+                                                    <span style={{
+                                                        padding: "1px 6px", backgroundColor: "#DBEAFE",
+                                                        borderRadius: "4px", fontSize: "0.7rem", color: "#1D4ED8"
+                                                    }}>
+                                                        {formatDate(c.date)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                                {c.actionHref && (
+                                                    <Link
+                                                        href={c.actionHref}
+                                                        style={{
+                                                            fontSize: "0.75rem", color: "#2563EB",
+                                                            textDecoration: "none", fontWeight: 500,
+                                                        }}
+                                                    >
+                                                        {c.actionLabel || "Voir"}
+                                                    </Link>
+                                                )}
+                                                <button
+                                                    onClick={() => handleDismiss(c.id)}
+                                                    title="Ignorer"
+                                                    style={{
+                                                        background: "none", border: "none", cursor: "pointer",
+                                                        padding: "2px", display: "flex", opacity: 0.4,
+                                                    }}
+                                                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                                                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.4")}
+                                                >
+                                                    <X style={{ width: 12, height: 12, color: "#999" }} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* Tomorrow Reminders */}
                 {tomorrowReservations.length > 0 && (
                     <div style={{
-                        flex: 1,
-                        minWidth: 280,
                         padding: "1rem 1.25rem",
                         backgroundColor: "#DBEAFE",
                         borderRadius: "12px",
