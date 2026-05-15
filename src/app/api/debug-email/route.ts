@@ -1,76 +1,106 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { createClient } from "@/lib/supabase/server";
+import { sendReservationConfirmationEmail } from "@/lib/email";
 
-export async function GET() {
-    // 1. Check env vars
-    const envCheck = {
-        SMTP_HOST: process.env.SMTP_HOST ? "✅ set" : "❌ MISSING",
-        SMTP_PORT: process.env.SMTP_PORT ? "✅ set" : "❌ MISSING",
-        SMTP_SECURE: process.env.SMTP_SECURE ? "✅ set" : "❌ MISSING",
-        SMTP_USER: process.env.SMTP_USER ? `✅ ${process.env.SMTP_USER}` : "❌ MISSING",
-        SMTP_PASSWORD: process.env.SMTP_PASSWORD ? `✅ (${process.env.SMTP_PASSWORD.length} chars)` : "❌ MISSING",
-        MANAGER_EMAIL: process.env.MANAGER_EMAIL ? `✅ ${process.env.MANAGER_EMAIL}` : "❌ MISSING",
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const testTarget = searchParams.get("to");
+
+    const logs: string[] = [];
+    const log = (msg: string) => {
+        console.log(`[DEBUG-EMAIL] ${msg}`);
+        logs.push(msg);
     };
 
-    const allSet = Object.values(envCheck).every(v => v.startsWith("✅"));
-
-    if (!allSet) {
-        return NextResponse.json({
-            status: "FAIL",
-            message: "Variables d'environnement SMTP manquantes sur Vercel!",
-            envCheck,
-            fix: "Allez dans Vercel > Project Settings > Environment Variables et ajoutez les variables manquantes.",
-        });
-    }
-
-    // 2. Test SMTP connection
-    let smtpStatus = "unknown";
-    let smtpError = null;
-
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || "465"),
-        secure: process.env.SMTP_SECURE === "true" || parseInt(process.env.SMTP_PORT || "465") === 465,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASSWORD,
-        },
-    });
-
     try {
-        await transporter.verify();
-        smtpStatus = "✅ Connection OK";
-    } catch (err: unknown) {
-        smtpStatus = "❌ Connection FAILED";
-        smtpError = err instanceof Error ? err.message : String(err);
-    }
+        // Step 1: Check SMTP vars
+        log("Step 1: Checking env vars...");
+        const smtpVars = {
+            SMTP_HOST: !!process.env.SMTP_HOST,
+            SMTP_PORT: !!process.env.SMTP_PORT,
+            SMTP_USER: !!process.env.SMTP_USER,
+            SMTP_PASSWORD: !!process.env.SMTP_PASSWORD,
+        };
+        log(`SMTP vars: ${JSON.stringify(smtpVars)}`);
 
-    // 3. Try sending a test email
-    let sendStatus = "skipped";
-    let sendError = null;
+        // Step 2: Create supabase client (same as the server action does)
+        log("Step 2: Creating Supabase client...");
+        const supabase = await createClient();
 
-    if (smtpStatus.startsWith("✅")) {
-        try {
-            const info = await transporter.sendMail({
-                from: `"Latino Coucou Beach" <${process.env.SMTP_USER}>`,
-                to: process.env.MANAGER_EMAIL || process.env.SMTP_USER,
-                subject: `🧪 Test Diagnostic Email - ${new Date().toLocaleString("fr-FR")}`,
-                html: `<h2>Diagnostic Email</h2><p>Cet email a été envoyé depuis la route <code>/api/debug-email</code> en production.</p><p>Timestamp: ${new Date().toISOString()}</p>`,
+        // Step 3: Get auth user
+        log("Step 3: Getting authenticated user...");
+        const { data: { user }, error: authErr } = await supabase.auth.getUser();
+        log(`Auth user: ${user ? user.email : "NOT LOGGED IN"}, error: ${authErr?.message || "none"}`);
+
+        // Step 4: Fetch any recent reservation
+        log("Step 4: Fetching most recent reservation...");
+        const { data: reservations, error: resErr } = await supabase
+            .from("reservations")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(5);
+
+        log(`Reservations query error: ${resErr?.message || "none"}`);
+        log(`Reservations found: ${reservations?.length || 0}`);
+
+        if (reservations && reservations.length > 0) {
+            const latest = reservations[0];
+            log(`Latest reservation: id=${latest.id}, guest=${latest.guest_name}, email=${latest.guest_email}, status=${latest.status}, package_id=${latest.package_id}`);
+
+            // Step 5: Fetch beach_installations
+            log("Step 5: Fetching beach installation for package...");
+            if (latest.package_id) {
+                const { data: installation, error: instErr } = await supabase
+                    .from("beach_installations")
+                    .select("id, title, description, price")
+                    .eq("id", latest.package_id)
+                    .single();
+
+                log(`Installation query error: ${instErr?.message || "none"}`);
+                log(`Installation found: ${installation ? `${installation.title} (${installation.price} DT)` : "NOT FOUND"}`);
+            } else {
+                log("No package_id on reservation, skipping installation lookup");
+            }
+
+            // Step 6: Try sending email
+            const targetEmail = testTarget || latest.guest_email;
+            log(`Step 6: Attempting to send confirmation email to: ${targetEmail}`);
+
+            const emailResult = await sendReservationConfirmationEmail({
+                guestName: latest.guest_name || "Test Guest",
+                guestEmail: targetEmail,
+                date: latest.reservation_date,
+                packageName: "Test Package",
+                adults: latest.adults_count || latest.guest_count || 2,
+                children: latest.children_4_12_count || 0,
+                totalPrice: latest.estimated_price || 100,
+                reservationId: latest.id,
             });
-            sendStatus = `✅ Sent! MessageId: ${info.messageId}`;
-        } catch (err: unknown) {
-            sendStatus = "❌ Send FAILED";
-            sendError = err instanceof Error ? err.message : String(err);
-        }
-    }
 
-    return NextResponse.json({
-        status: smtpStatus.startsWith("✅") && sendStatus.startsWith("✅") ? "OK" : "FAIL",
-        envCheck,
-        smtpStatus,
-        smtpError,
-        sendStatus,
-        sendError,
-        timestamp: new Date().toISOString(),
-    });
+            log(`Email result: ${JSON.stringify(emailResult)}`);
+        } else {
+            log("No reservations found in DB! Testing direct email send...");
+
+            const targetEmail = testTarget || process.env.MANAGER_EMAIL || "test@test.com";
+            log(`Sending test email to: ${targetEmail}`);
+
+            const emailResult = await sendReservationConfirmationEmail({
+                guestName: "Test Guest",
+                guestEmail: targetEmail,
+                date: new Date().toISOString(),
+                packageName: "Test Package",
+                adults: 2,
+                children: 0,
+                totalPrice: 100,
+            });
+
+            log(`Email result: ${JSON.stringify(emailResult)}`);
+        }
+
+        return NextResponse.json({ logs });
+    } catch (err: unknown) {
+        log(`FATAL ERROR: ${err instanceof Error ? err.message : String(err)}`);
+        log(`Stack: ${err instanceof Error ? err.stack : "N/A"}`);
+        return NextResponse.json({ logs, fatalError: true });
+    }
 }
