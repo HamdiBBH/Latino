@@ -158,7 +158,7 @@ export default function FloorPlanPage() {
     // Form state for new reservation
     const [packages, setPackages] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [newRes, setNewRes] = useState({ guest_name: "", guest_phone: "", package_id: "", guest_count: 2 });
+    const [newRes, setNewRes] = useState({ guest_name: "", guest_email: "", guest_phone: "", package_id: "", guest_count: 2 });
 
     // Initialize to the start of season if today is out of season
     const getInitialDate = (): Date => {
@@ -685,7 +685,7 @@ export default function FloorPlanPage() {
                                     package_id: newRes.package_id,
                                     guest_name: newRes.guest_name,
                                     guest_phone: newRes.guest_phone,
-                                    guest_email: "manager@reservation.local", // Paramètre requis
+                                    guest_email: newRes.guest_email.trim() || "",
                                     reservation_date: formatDateForQuery(selectedDate),
                                     time_slot: "full_day",
                                     guest_count: newRes.guest_count,
@@ -698,7 +698,7 @@ export default function FloorPlanPage() {
                                     await updateReservationStatus(res.data.id, "confirmed");
                                     await loadReservationsForDate(selectedDate);
                                     setShowAssignmentPanel(false);
-                                    setNewRes({ guest_name: "", guest_phone: "", package_id: "", guest_count: 2 });
+                                    setNewRes({ guest_name: "", guest_email: "", guest_phone: "", package_id: "", guest_count: 2 });
                                 } else {
                                     alert(res.error || "Erreur de création");
                                 }
@@ -737,6 +737,21 @@ export default function FloorPlanPage() {
                                 style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #D1D5DB" }}
                                 placeholder="ex: 50 123 456"
                             />
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.875rem", marginBottom: "0.5rem", fontWeight: 500 }}>
+                                Email du client
+                            </label>
+                            <input 
+                                type="email"
+                                value={newRes.guest_email}
+                                onChange={e => setNewRes({...newRes, guest_email: e.target.value})}
+                                style={{ width: "100%", padding: "0.75rem", borderRadius: "8px", border: "1px solid #D1D5DB" }}
+                                placeholder="ex: client@email.com (optionnel)"
+                            />
+                            <p style={{ fontSize: "0.7rem", color: "#9CA3AF", marginTop: "4px" }}>Si renseigné, un email de confirmation sera envoyé au client.</p>
                         </div>
 
                         {/* Package */}
