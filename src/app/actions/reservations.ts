@@ -218,14 +218,17 @@ export async function updateReservationStatus(
         return { success: false, error: error.message };
     }
 
+    // DB update succeeded — now try to send email (non-blocking)
+    let emailWarning: string | undefined;
+
     if (status === "confirmed") {
         console.log("=== DEBUT CONFIRMATION EMAIL ===");
         console.log("Fetching reservation ID:", id);
         const { reservation, error: fetchErr } = await getReservationWithInstallation(supabase, id);
 
         if (fetchErr) {
-             console.error("Error fetching reservation for email:", fetchErr);
-             return { success: false, error: "La réservation a été validée, mais ses détails n'ont pas pu être récupérés pour envoyer l'email." };
+            console.error("Error fetching reservation for email:", fetchErr);
+            emailWarning = "La réservation a été validée, mais ses détails n'ont pas pu être récupérés pour envoyer l'email.";
         } else if (reservation && reservation.guest_email) {
             console.log("Reservation retrieved successfully:", reservation.guest_email);
             const { sendReservationConfirmationEmail } = await import('@/lib/email');
@@ -235,23 +238,23 @@ export async function updateReservationStatus(
                     guestEmail: reservation.guest_email,
                     date: reservation.reservation_date,
                     packageName: reservation.packages?.name || "Forfait",
-                    // Utilisation des vrais champs ajoutés dans la DB
                     adults: reservation.adults_count || reservation.guest_count,
-                    children: reservation.children_4_12_count || 0, 
+                    children: reservation.children_4_12_count || 0,
                     totalPrice: reservation.estimated_price || 0,
                     reservationId: reservation.id,
                 });
                 console.log("Email Result:", emailResult);
                 if (!emailResult.success) {
-                    return { success: false, error: `La réservation a été validée, mais l'email de confirmation n'a pas pu être envoyé : ${emailResult.error}` };
+                    console.error("Email sending failed:", emailResult.error);
+                    emailWarning = `Email non envoyé : ${emailResult.error}`;
                 }
             } catch (err) {
-                console.error("Erreur catchée pendant l'envoi:", err);
-                return { success: false, error: "La réservation a été validée, mais l'email de confirmation n'a pas pu être envoyé." };
+                console.error("Erreur catchée pendant l'envoi de l'email de confirmation:", err);
+                emailWarning = "Email de confirmation non envoyé (erreur inattendue).";
             }
         } else {
-             console.warn("No guest_email found on reservation!");
-             return { success: false, error: "La réservation a été validée, mais aucun email client n'est renseigné." };
+            console.warn("No guest_email found on reservation!");
+            emailWarning = "Aucun email client renseigné sur cette réservation.";
         }
         console.log("=== FIN CONFIRMATION EMAIL ===");
     } else if (status === "declined" || status === "cancelled") {
@@ -280,7 +283,7 @@ export async function updateReservationStatus(
     }
 
     revalidatePath("/dashboard/reservations");
-    return { success: true };
+    return { success: true, emailWarning };
 }
 
 export async function confirmReservation(id: string, notes?: string) {

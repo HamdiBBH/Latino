@@ -137,6 +137,9 @@ export default function ReservationsPage() {
         if (result.success) {
             await loadReservations();
             setSelectedReservation(null);
+            if (result.emailWarning) {
+                alert("✅ Réservation confirmée !\n\n⚠️ Avertissement email : " + result.emailWarning);
+            }
         } else {
             alert("Erreur: " + result.error);
         }
