@@ -69,6 +69,7 @@ export function StatsBar() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6 }}
+                className="statsbar-grid"
                 style={{
                     maxWidth: "1000px",
                     margin: "0 auto",
@@ -76,11 +77,6 @@ export function StatsBar() {
                     borderRadius: "20px",
                     boxShadow: "0 10px 60px rgba(0, 0, 0, 0.15)",
                     padding: "2rem 3rem",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "2rem",
-                    flexWrap: "wrap",
                 }}
             >
                 {stats.map((stat, index) => {
@@ -91,9 +87,7 @@ export function StatsBar() {
                             style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "1rem",
-                                flex: "1 1 200px",
-                                justifyContent: "center",
+                                gap: "0.75rem",
                             }}
                         >
                             <div
@@ -127,6 +121,7 @@ export function StatsBar() {
                                         fontSize: "0.85rem",
                                         color: "#7A7A7A",
                                         margin: 0,
+                                        whiteSpace: "nowrap",
                                     }}
                                 >
                                     {stat.label}

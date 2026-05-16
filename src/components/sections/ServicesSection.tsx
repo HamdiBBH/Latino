@@ -23,7 +23,7 @@ const defaultServiceImages: Record<string, string> = {
     "Restaurant": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80",
     "Cocktails Exotiques": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600&q=80",
     "Plage Privée": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=80",
-    "DJ & Événements": "https://images.unsplash.com/photo-1571266028243-d220c6a8b0e7?w=600&q=80",
+    "Loisirs & Divertissement": "https://images.unsplash.com/photo-1571266028243-d220c6a8b0e7?w=600&q=80",
 };
 
 const inclusions = [
@@ -549,16 +549,47 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
 
                             {/* Modal Content */}
                             <div style={{ padding: "2rem" }}>
-                                <p
-                                    style={{
-                                        fontSize: "1.1rem",
-                                        lineHeight: 1.8,
-                                        color: "#555555",
-                                        marginBottom: "2rem",
-                                    }}
-                                >
-                                    {selectedService.description}
-                                </p>
+                                {selectedService.title.includes("Loisirs") ? (
+                                    <div style={{ marginBottom: "2.5rem" }}>
+                                        <p style={{ fontSize: "1.05rem", color: "#555555", marginBottom: "1.5rem", lineHeight: 1.6 }}>
+                                            Découvrez un éventail d'activités pour agrémenter votre journée. Entre sensations fortes et détente absolue, il y en a pour tous les goûts :
+                                        </p>
+                                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
+                                            {[
+                                                { title: "Balade en Mer", icon: "Sailboat", color: "#43B0A8", desc: "Explorez la côte" },
+                                                { title: "Jet Ski", icon: "Zap", color: "#E8A87C", desc: "Sensations fortes" },
+                                                { title: "Paddle", icon: "Waves", color: "#85DCB0", desc: "Glisse paisible" },
+                                                { title: "Billard", icon: "Target", color: "#D4A853", desc: "Détente entre amis" },
+                                                { title: "Piscine", icon: "Droplets", color: "#6CB4EE", desc: "Baignade rafraîchissante" },
+                                                { title: "Coins Photos", icon: "Camera", color: "#C78EC2", desc: "Décors instagrammables" }
+                                            ].map((act, i) => {
+                                                const ActIcon = (Icons as any)[act.icon] || Star;
+                                                return (
+                                                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px", backgroundColor: "#F9F5F0", borderRadius: "12px" }}>
+                                                        <div style={{ width: "40px", height: "40px", borderRadius: "10px", backgroundColor: act.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                                            <ActIcon style={{ width: 20, height: 20, color: "#FFFFFF" }} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 style={{ fontSize: "0.95rem", fontWeight: 600, color: "#222222", margin: "0 0 2px 0" }}>{act.title}</h4>
+                                                            <p style={{ fontSize: "0.8rem", color: "#7A7A7A", margin: 0 }}>{act.desc}</p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p
+                                        style={{
+                                            fontSize: "1.1rem",
+                                            lineHeight: 1.8,
+                                            color: "#555555",
+                                            marginBottom: "2rem",
+                                        }}
+                                    >
+                                        {selectedService.description}
+                                    </p>
+                                )}
 
                                 <div style={{ display: "flex", gap: "1rem" }}>
                                     <button

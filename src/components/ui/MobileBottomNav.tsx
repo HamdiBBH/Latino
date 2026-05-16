@@ -31,7 +31,7 @@ export function MobileBottomNav() {
     const phoneNumber = RESTAURANT_INFO.phone.replace(/[^0-9]/g, "");
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent("Bonjour ! J'aimerais avoir plus d'informations.")}`;
 
-    if (pathname?.startsWith("/login") || pathname?.startsWith("/dashboard")) {
+    if (pathname?.startsWith("/login") || pathname?.startsWith("/dashboard") || pathname?.startsWith("/reservation")) {
         return null;
     }
 
