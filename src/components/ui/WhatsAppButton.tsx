@@ -21,7 +21,7 @@ export function WhatsAppButton() {
     ];
 
     return (
-        <>
+        <div className="hidden-mobile">
             {/* Quick Actions Popup */}
             {isOpen && (
                 <div
@@ -180,6 +180,6 @@ export function WhatsAppButton() {
                     </svg>
                 )}
             </button>
-        </>
+        </div>
     );
 }

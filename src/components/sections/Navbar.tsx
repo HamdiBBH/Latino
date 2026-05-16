@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Logo from "@/components/Logo";
 
 const navLinks = [
@@ -18,35 +18,22 @@ export function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [activeSection, setActiveSection] = useState("home");
-    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50);
-
-            const sections = navLinks.map((link) => link.href.replace("#", ""));
-            for (const section of sections.reverse()) {
-                const element = document.getElementById(section);
-                if (element) {
-                    const rect = element.getBoundingClientRect();
-                    if (rect.top <= 150) {
-                        setActiveSection(section);
-                        break;
-                    }
+            const sections = navLinks.map((l) => l.href.replace("#", ""));
+            for (const section of [...sections].reverse()) {
+                const el = document.getElementById(section);
+                if (el && el.getBoundingClientRect().top <= 150) {
+                    setActiveSection(section);
+                    break;
                 }
             }
         };
-
         const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-            if (window.innerWidth >= 768) {
-                setIsMobileMenuOpen(false);
-            }
+            if (window.innerWidth >= 768) setIsMobileMenuOpen(false);
         };
-
-        // Initial check
-        handleResize();
-
         window.addEventListener("scroll", handleScroll);
         window.addEventListener("resize", handleResize);
         return () => {
@@ -57,9 +44,10 @@ export function Navbar() {
 
     const handleNavClick = (href: string) => {
         setIsMobileMenuOpen(false);
-        const element = document.getElementById(href.replace("#", ""));
-        element?.scrollIntoView({ behavior: "smooth" });
+        document.getElementById(href.replace("#", ""))?.scrollIntoView({ behavior: "smooth" });
     };
+
+    const linkColor = isScrolled ? "#222222" : "#FFFFFF";
 
     return (
         <header
@@ -70,180 +58,139 @@ export function Navbar() {
                 right: 0,
                 zIndex: 1000,
                 padding: isScrolled ? "1rem 0" : "1.5rem 0",
-                backgroundColor: isScrolled ? "rgba(255, 255, 255, 0.98)" : "transparent",
+                backgroundColor: isScrolled ? "rgba(255,255,255,0.98)" : "transparent",
                 backdropFilter: isScrolled ? "blur(10px)" : "none",
-                boxShadow: isScrolled ? "0 2px 8px rgba(0, 0, 0, 0.08)" : "none",
+                boxShadow: isScrolled ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
                 transition: "all 0.3s ease",
             }}
         >
             <div className="container">
-                <nav
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    {/* Logo */}
+                <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Logo isScrolled={isScrolled} />
 
-                    {/* Desktop Nav - Only show on desktop */}
-                    {!isMobile && (
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "2rem",
-                            }}
-                        >
-                            {navLinks.map((link) => (
-                                <button
-                                    key={link.href}
-                                    onClick={() => handleNavClick(link.href)}
-                                    style={{
-                                        fontSize: "0.9rem",
-                                        fontWeight: 500,
-                                        color: isScrolled ? "#222222" : "#FFFFFF",
-                                        background: "none",
-                                        border: "none",
-                                        cursor: "pointer",
-                                        padding: "5px 0",
-                                        position: "relative",
-                                        transition: "color 0.3s ease",
-                                        borderBottom: activeSection === link.href.replace("#", "") ? "2px solid #E8A87C" : "2px solid transparent",
-                                    }}
-                                >
-                                    {link.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Auth & CTA Buttons - Only show on desktop */}
-                    {!isMobile && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                            {/* Auth Icon */}
-                            <Link
-                                href="/login"
-                                aria-label="Se connecter"
+                    {/* ===== Desktop Nav Links ===== */}
+                    <div className="hidden-mobile" style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+                        {navLinks.map((link) => (
+                            <button
+                                key={link.href}
+                                onClick={() => handleNavClick(link.href)}
                                 style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: "44px",
-                                    height: "44px",
-                                    borderRadius: "50%",
-                                    backgroundColor: isScrolled ? "rgba(34, 34, 34, 0.1)" : "rgba(255, 255, 255, 0.2)",
-                                    color: isScrolled ? "#222222" : "#FFFFFF",
-                                    transition: "all 0.3s ease",
-                                    textDecoration: "none",
-                                }}
-                            >
-                                <User style={{ width: 20, height: 20 }} />
-                            </Link>
-
-                            {/* Reserve Button */}
-                            <Link
-                                href="/reservation"
-                                style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    padding: "15px 25px",
                                     fontSize: "0.9rem",
-                                    fontWeight: 600,
-                                    borderRadius: "100px",
-                                    backgroundColor: isScrolled ? "#222222" : "#E8A87C",
-                                    color: "#FFFFFF",
+                                    fontWeight: 500,
+                                    color: linkColor,
+                                    background: "none",
                                     border: "none",
                                     cursor: "pointer",
-                                    transition: "all 0.3s ease",
-                                    textDecoration: "none",
+                                    padding: "5px 0",
+                                    transition: "color 0.3s ease",
+                                    borderBottom: activeSection === link.href.replace("#", "") ? "2px solid #E8A87C" : "2px solid transparent",
                                 }}
                             >
-                                Réserver
-                            </Link>
-                        </div>
-                    )}
+                                {link.label}
+                            </button>
+                        ))}
+                    </div>
 
-                    {/* Mobile Menu Toggle - Only show on mobile */}
-                    {isMobile && (
-                        <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            aria-label={isMobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-                            aria-expanded={isMobileMenuOpen}
+                    {/* ===== Desktop Auth + CTA ===== */}
+                    <div className="hidden-mobile" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                        <Link
+                            href="/login"
+                            aria-label="Se connecter"
                             style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "5px",
-                                padding: "10px",
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 44,
+                                height: 44,
+                                borderRadius: "50%",
+                                backgroundColor: isScrolled ? "rgba(34,34,34,0.1)" : "rgba(255,255,255,0.2)",
+                                color: linkColor,
+                                textDecoration: "none",
+                                transition: "all 0.3s ease",
                             }}
                         >
-                            {isMobileMenuOpen ? (
-                                <X style={{ width: 24, height: 24, color: isScrolled ? "#222222" : "#FFFFFF" }} />
-                            ) : (
-                                <Menu style={{ width: 24, height: 24, color: isScrolled ? "#222222" : "#FFFFFF" }} />
-                            )}
-                        </button>
-                    )}
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                        </Link>
+                        <Link
+                            href="/reservation"
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "15px 25px",
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                borderRadius: 100,
+                                backgroundColor: isScrolled ? "#222222" : "#E8A87C",
+                                color: "#FFFFFF",
+                                textDecoration: "none",
+                                transition: "all 0.3s ease",
+                            }}
+                        >
+                            Réserver
+                        </Link>
+                    </div>
+
+                    {/* ===== Mobile Burger ===== */}
+                    <button
+                        className="hidden-desktop"
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        aria-label={isMobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: 10,
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {isMobileMenuOpen
+                            ? <X size={28} color={linkColor} />
+                            : <Menu size={28} color={linkColor} />
+                        }
+                    </button>
                 </nav>
 
-                {/* Mobile Menu */}
-                {isMobile && isMobileMenuOpen && (
+                {/* ===== Mobile Dropdown ===== */}
+                {isMobileMenuOpen && (
                     <div
+                        className="hidden-desktop"
                         style={{
                             position: "absolute",
                             top: "100%",
                             left: 0,
                             right: 0,
                             backgroundColor: "#FFFFFF",
-                            padding: "2rem 1.5rem",
-                            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
+                            padding: "1.5rem",
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
                         }}
                     >
-                        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
                             {navLinks.map((link) => (
                                 <button
                                     key={link.href}
                                     onClick={() => handleNavClick(link.href)}
                                     style={{
-                                        fontSize: "1rem",
+                                        fontSize: "1.1rem",
                                         fontWeight: 500,
                                         color: "#222222",
                                         background: "none",
                                         border: "none",
+                                        borderBottom: "1px solid #F0EDE9",
                                         cursor: "pointer",
                                         textAlign: "left",
-                                        padding: "0.5rem 0",
+                                        padding: "0.875rem 0",
+                                        width: "100%",
                                     }}
                                 >
                                     {link.label}
                                 </button>
                             ))}
-                            <Link
-                                href="/reservation"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                                style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    padding: "15px 25px",
-                                    fontSize: "1rem",
-                                    fontWeight: 600,
-                                    borderRadius: "100px",
-                                    backgroundColor: "#222222",
-                                    color: "#FFFFFF",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    marginTop: "1rem",
-                                    textDecoration: "none",
-                                }}
-                            >
-                                Réserver
-                            </Link>
                         </div>
                     </div>
                 )}

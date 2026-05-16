@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import { RESTAURANT_INFO } from "@/lib/config";
+import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -128,7 +129,10 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-primary antialiased" suppressHydrationWarning>{children}</body>
+      <body className="font-primary antialiased" suppressHydrationWarning>
+        {children}
+        <MobileBottomNav />
+      </body>
     </html>
   );
 }
