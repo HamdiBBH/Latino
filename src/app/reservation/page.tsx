@@ -31,6 +31,7 @@ import {
     isValidReservationPhone,
     MAX_RESERVATION_GUESTS,
 } from "@/lib/reservation-domain";
+import PhoneInput from "react-phone-number-input";
 
 interface Package {
     id: string;
@@ -287,7 +288,7 @@ function ReservationContent() {
             </div>
 
             {/* Content */}
-            <main style={{ maxWidth: "900px", margin: "0 auto", padding: "clamp(1.5rem, 5vw, 2rem)" }}>
+            <main style={{ maxWidth: "900px", margin: "0 auto", padding: "clamp(1.5rem, 5vw, 2rem) clamp(1.5rem, 5vw, 2rem) 140px" }}>
                 {/* Step 3: Package */}
                 {step === 3 && (
                     <div>
@@ -595,18 +596,15 @@ function ReservationContent() {
                                     <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.5rem", fontWeight: 500 }}>
                                         <Phone style={{ width: 18, height: 18, color: "#7A7A7A" }} /> Téléphone *
                                     </label>
-                                    <input
-                                        type="tel"
-                                        value={guestPhone}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            if (/^[\d\s+()-]*$/.test(val)) {
-                                                setGuestPhone(val);
-                                            }
-                                        }}
-                                        placeholder="+216 XX XXX XXX"
-                                        style={{ width: "100%", padding: "1rem", border: "2px solid #E5E7EB", borderRadius: "12px", fontSize: "1rem" }}
-                                    />
+                                    <div className="phone-input-wrapper">
+                                        <PhoneInput
+                                            international
+                                            defaultCountry="TN"
+                                            value={guestPhone}
+                                            onChange={(val) => setGuestPhone(val || "")}
+                                            countrySelectProps={{ unicodeFlags: true }}
+                                        />
+                                    </div>
                                     {guestPhone.trim() !== "" && !isValidPhone(guestPhone) && (
                                         <p style={{ color: "#EF4444", fontSize: "0.875rem", marginTop: "4px" }}>
                                             Numéro de téléphone invalide.
@@ -690,8 +688,28 @@ function ReservationContent() {
                     </div>
                 )}
 
-                {/* Navigation */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: "3rem" }}>
+                {/* Sticky Navigation */}
+                <div style={{
+                    position: "fixed",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: "rgba(255, 255, 255, 0.85)",
+                    backdropFilter: "blur(16px)",
+                    WebkitBackdropFilter: "blur(16px)",
+                    borderTop: "1px solid rgba(0, 0, 0, 0.06)",
+                    padding: "1rem clamp(1rem, 5vw, 2rem)",
+                    paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
+                    zIndex: 100,
+                    boxShadow: "0 -8px 32px rgba(0, 0, 0, 0.04)"
+                }}>
+                    <div style={{
+                        maxWidth: "900px",
+                        margin: "0 auto",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                    }}>
                     {step > 1 ? (
                         <button
                             onClick={() => setStep(step - 1)}
@@ -732,6 +750,7 @@ function ReservationContent() {
                             {submitting ? "Envoi en cours..." : "Confirmer ma demande"}
                         </button>
                     )}
+                </div>
                 </div>
             </main>
         </div>
