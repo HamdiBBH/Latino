@@ -67,7 +67,7 @@ export default function ClientDashboard({ userName, reservation }: ClientDashboa
         const fetchWeather = async () => {
             try {
                 const res = await fetch(
-                    "https://api.open-meteo.com/v1/forecast?latitude=37.14232&longitude=10.21041&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=uv_index_max,sunset&timezone=Africa%2FTunis",
+                    "/api/weather",
                     { signal: controller.signal }
                 );
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
