@@ -79,6 +79,20 @@ export default async function AdminDashboard() {
 
     // ===== CLIENT DASHBOARD =====
     if (userRole === "CLIENT") {
+        const { data: reservations } = await supabase
+            .from("reservations")
+            .select("*, beach_installations!reservations_package_id_fkey(title)")
+            .eq("guest_email", user.email)
+            .in("status", ["pending", "confirmed"])
+            .gte("reservation_date", new Date().toISOString().split("T")[0])
+            .order("reservation_date", { ascending: true })
+            .limit(1);
+            
+        const nextReservation = reservations?.[0];
+        if (nextReservation) {
+            nextReservation.packages = { name: nextReservation.beach_installations?.title || "Forfait" };
+        }
+
         return (
             <div>
                 <div style={{ marginBottom: "2rem" }}>
@@ -94,7 +108,7 @@ export default async function AdminDashboard() {
                 </div>
                 <ClientDashboard
                     userName={profile?.full_name || "cher client"}
-                    hasReservation={true}
+                    reservation={nextReservation}
                 />
             </div>
         );

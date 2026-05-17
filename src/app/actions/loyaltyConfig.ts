@@ -6,6 +6,9 @@ import { type LoyaltyConfig } from "@/lib/loyalty-utils";
 
 const DEFAULT_LOYALTY_CONFIG: LoyaltyConfig = {
     pointsPerVisit: 100,
+    enableReferral: false,
+    referralRuleText: "Gagnez 150 points pour chaque ami parrainé !",
+    referralRewardPoints: 150,
     tiers: [
         {
             id: "bronze",

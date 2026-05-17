@@ -23,6 +23,9 @@ export function getTierForPoints(points: number, tiers: LoyaltyTierConfig[]): Lo
 // Full loyalty program config (stored in app_settings)
 export interface LoyaltyConfig {
     pointsPerVisit: number;
+    enableReferral?: boolean;
+    referralRuleText?: string;
+    referralRewardPoints?: number;
     tiers: LoyaltyTierConfig[];
 }
 

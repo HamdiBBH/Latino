@@ -49,12 +49,14 @@ export default function LoyaltyPage() {
     const [activeTab, setActiveTab] = useState<"overview" | "badges" | "rewards" | "history">("overview");
     const [tiers, setTiers] = useState<LoyaltyTierConfig[]>([]);
     const [pointsPerVisit, setPointsPerVisit] = useState(100);
+    const [config, setConfig] = useState<any>(null);
     const [loadingConfig, setLoadingConfig] = useState(true);
 
     useEffect(() => {
         getLoyaltyConfig().then((cfg) => {
             setTiers(cfg.tiers);
             setPointsPerVisit(cfg.pointsPerVisit);
+            setConfig(cfg);
             setLoadingConfig(false);
         });
     }, []);
@@ -273,48 +275,50 @@ export default function LoyaltyPage() {
                     </div>
 
                     {/* Referral Code */}
-                    <div
-                        style={{
-                            background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                            borderRadius: "16px",
-                            padding: "1.5rem",
-                            color: "#FFF",
-                        }}
-                    >
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
-                            <Gift style={{ width: 24, height: 24 }} />
-                            <h3 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>Parrainez vos amis</h3>
-                        </div>
-                        <p style={{ fontSize: "0.875rem", opacity: 0.9, marginBottom: "1rem" }}>
-                            Gagnez 150 points pour chaque ami parrainé !
-                        </p>
+                    {config?.enableReferral && (
                         <div
                             style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                padding: "12px 16px",
-                                backgroundColor: "rgba(255,255,255,0.2)",
-                                borderRadius: "12px",
+                                background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+                                borderRadius: "16px",
+                                padding: "1.5rem",
+                                color: "#FFF",
                             }}
                         >
-                            <span style={{ fontWeight: 700, letterSpacing: "2px" }}>{userLoyalty.referralCode}</span>
-                            <button
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
+                                <Gift style={{ width: 24, height: 24 }} />
+                                <h3 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>Parrainez vos amis</h3>
+                            </div>
+                            <p style={{ fontSize: "0.875rem", opacity: 0.9, marginBottom: "1rem" }}>
+                                {config?.referralRuleText || "Gagnez des points en parrainant vos amis !"}
+                            </p>
+                            <div
                                 style={{
-                                    padding: "6px 12px",
-                                    backgroundColor: "#FFF",
-                                    color: "#6366F1",
-                                    border: "none",
-                                    borderRadius: "8px",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 600,
-                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "12px 16px",
+                                    backgroundColor: "rgba(255,255,255,0.2)",
+                                    borderRadius: "12px",
                                 }}
                             >
-                                Copier
-                            </button>
+                                <span style={{ fontWeight: 700, letterSpacing: "2px" }}>{userLoyalty.referralCode}</span>
+                                <button
+                                    style={{
+                                        padding: "6px 12px",
+                                        backgroundColor: "#FFF",
+                                        color: "#6366F1",
+                                        border: "none",
+                                        borderRadius: "8px",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    Copier
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
 

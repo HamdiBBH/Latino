@@ -15,27 +15,31 @@ import {
     ArrowRight,
     Gift,
     Bell,
+    PlusCircle,
 } from "lucide-react";
 
-// Mock weather data (in real app, fetch from API)
-const mockWeather = {
-    temperature: 28,
-    condition: "Ensoleillé",
-    uv: 8,
-    humidity: 65,
-    wind: 12,
-    seaTemp: 24,
-    sunset: "19:45",
+// Weather condition mapping
+const getWeatherCondition = (code: number) => {
+    if (code === 0) return "Ensoleillé";
+    if (code <= 3) return "Nuageux";
+    if (code <= 48) return "Brouillard";
+    if (code <= 67) return "Pluvieux";
+    if (code <= 77) return "Neige";
+    if (code <= 82) return "Averses";
+    if (code <= 99) return "Orage";
+    return "Inconnu";
 };
 
 // Mock client reservation data
+const nextResDate = new Date();
+nextResDate.setDate(nextResDate.getDate() + 7);
 const mockReservation = {
-    date: new Date().toISOString().split("T")[0],
+    date: nextResDate.toISOString().split("T")[0],
     zone: "Cabane VIP",
     zoneId: "VIP1",
     guests: 4,
     arrivalTime: "09:30",
-    status: "arrived", // waiting, arrived, departed
+    status: "waiting", // waiting, arrived, departed
     packageName: "Pack VIP Prestige",
 };
 
@@ -50,11 +54,38 @@ const quickActions = [
 
 interface ClientDashboardProps {
     userName: string;
-    hasReservation?: boolean;
+    reservation?: any;
 }
 
-export default function ClientDashboard({ userName, hasReservation = true }: ClientDashboardProps) {
+export default function ClientDashboard({ userName, reservation }: ClientDashboardProps) {
     const [, setTick] = useState(0);
+    const [weatherData, setWeatherData] = useState<any>(null);
+
+    // Fetch weather data
+    useEffect(() => {
+        const fetchWeather = async () => {
+            try {
+                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.14232&longitude=10.21041&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=uv_index_max,sunset&timezone=Africa%2FTunis");
+                const data = await res.json();
+                
+                const current = data.current;
+                const daily = data.daily;
+                
+                setWeatherData({
+                    temperature: Math.round(current.temperature_2m),
+                    condition: getWeatherCondition(current.weather_code),
+                    uv: daily.uv_index_max[0] ? Math.round(daily.uv_index_max[0]) : 0,
+                    humidity: Math.round(current.relative_humidity_2m),
+                    wind: Math.round(current.wind_speed_10m),
+                    seaTemp: 24, // Hardcoded approx
+                    sunset: new Date(daily.sunset[0]).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+                });
+            } catch (error) {
+                console.error("Failed to fetch weather", error);
+            }
+        };
+        fetchWeather();
+    }, []);
 
     // Update time every minute
     useEffect(() => {
@@ -68,7 +99,7 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
     const timeString = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
     // If no reservation today
-    if (!hasReservation) {
+    if (!reservation) {
         return (
             <div style={{ padding: "1rem" }}>
                 <NoReservationCard userName={userName} />
@@ -125,21 +156,21 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                         🏖️
                     </div>
                     <div style={{ flex: 1 }}>
-                        <p style={{ fontWeight: 600, margin: 0 }}>{mockReservation.zone} • {mockReservation.zoneId}</p>
+                        <p style={{ fontWeight: 600, margin: 0 }}>Réservation #{reservation.id?.substring(0,6)}</p>
                         <p style={{ fontSize: "0.75rem", opacity: 0.9, margin: "2px 0 0 0", textTransform: "capitalize" }}>
-                            {new Date(mockReservation.date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} • {mockReservation.packageName} • {mockReservation.guests} personnes
+                            {new Date(reservation.reservation_date).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })} • {reservation.packages?.name || "Forfait"} • {reservation.guest_count} personnes
                         </p>
                     </div>
                     <div
                         style={{
                             padding: "4px 10px",
-                            backgroundColor: mockReservation.status === "arrived" ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.3)",
+                            backgroundColor: reservation.status === "confirmed" ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.3)",
                             borderRadius: "100px",
                             fontSize: "0.75rem",
                             fontWeight: 500,
                         }}
                     >
-                        {mockReservation.status === "arrived" ? "✓ Sur place" : "En attente"}
+                        {reservation.status === "confirmed" ? "✓ Confirmée" : "En attente"}
                     </div>
                 </div>
             </div>
@@ -162,34 +193,42 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                     <span style={{ fontSize: "0.75rem", color: "#6B7280" }}>Mise à jour {timeString}</span>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
-                    <div style={{ fontSize: "3rem", fontWeight: 700, color: "#222" }}>{mockWeather.temperature}°</div>
-                    <div>
-                        <p style={{ fontWeight: 500, color: "#222", margin: 0 }}>{mockWeather.condition}</p>
-                        <p style={{ fontSize: "0.75rem", color: "#6B7280", margin: "2px 0 0 0" }}>
-                            Coucher du soleil: {mockWeather.sunset}
-                        </p>
-                    </div>
-                </div>
+                {weatherData ? (
+                    <>
+                        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
+                            <div style={{ fontSize: "3rem", fontWeight: 700, color: "#222" }}>{weatherData.temperature}°</div>
+                            <div>
+                                <p style={{ fontWeight: 500, color: "#222", margin: 0 }}>{weatherData.condition}</p>
+                                <p style={{ fontSize: "0.75rem", color: "#6B7280", margin: "2px 0 0 0" }}>
+                                    Coucher du soleil: {weatherData.sunset}
+                                </p>
+                            </div>
+                        </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
-                    <div style={{ textAlign: "center", padding: "8px", backgroundColor: "#FEF3C7", borderRadius: "8px" }}>
-                        <Thermometer style={{ width: 16, height: 16, color: "#F59E0B", margin: "0 auto 4px" }} />
-                        <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#92400E", margin: 0 }}>UV {mockWeather.uv}</p>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
+                            <div style={{ textAlign: "center", padding: "8px", backgroundColor: "#FEF3C7", borderRadius: "8px" }}>
+                                <Thermometer style={{ width: 16, height: 16, color: "#F59E0B", margin: "0 auto 4px" }} />
+                                <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#92400E", margin: 0 }}>UV {weatherData.uv}</p>
+                            </div>
+                            <div style={{ textAlign: "center", padding: "8px", backgroundColor: "#DBEAFE", borderRadius: "8px" }}>
+                                <Droplets style={{ width: 16, height: 16, color: "#3B82F6", margin: "0 auto 4px" }} />
+                                <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#1E40AF", margin: 0 }}>{weatherData.humidity}%</p>
+                            </div>
+                            <div style={{ textAlign: "center", padding: "8px", backgroundColor: "#E0E7FF", borderRadius: "8px" }}>
+                                <Wind style={{ width: 16, height: 16, color: "#6366F1", margin: "0 auto 4px" }} />
+                                <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4338CA", margin: 0 }}>{weatherData.wind} km/h</p>
+                            </div>
+                            <div style={{ textAlign: "center", padding: "8px", backgroundColor: "#D1FAE5", borderRadius: "8px" }}>
+                                <span style={{ fontSize: "0.75rem", display: "block", marginBottom: "4px" }}>🌊</span>
+                                <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#166534", margin: 0 }}>{weatherData.seaTemp}°C</p>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div style={{ padding: "2rem", textAlign: "center", color: "#6B7280" }}>
+                        Chargement de la météo...
                     </div>
-                    <div style={{ textAlign: "center", padding: "8px", backgroundColor: "#DBEAFE", borderRadius: "8px" }}>
-                        <Droplets style={{ width: 16, height: 16, color: "#3B82F6", margin: "0 auto 4px" }} />
-                        <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#1E40AF", margin: 0 }}>{mockWeather.humidity}%</p>
-                    </div>
-                    <div style={{ textAlign: "center", padding: "8px", backgroundColor: "#E0E7FF", borderRadius: "8px" }}>
-                        <Wind style={{ width: 16, height: 16, color: "#6366F1", margin: "0 auto 4px" }} />
-                        <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#4338CA", margin: 0 }}>{mockWeather.wind} km/h</p>
-                    </div>
-                    <div style={{ textAlign: "center", padding: "8px", backgroundColor: "#D1FAE5", borderRadius: "8px" }}>
-                        <span style={{ fontSize: "0.75rem", display: "block", marginBottom: "4px" }}>🌊</span>
-                        <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#166534", margin: 0 }}>{mockWeather.seaTemp}°C</p>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* Quick Actions Grid */}
@@ -262,10 +301,32 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                 </div>
             </div>
 
-            {/* Special Offer Banner */}
-            <div
+            {/* New Reservation Button */}
+            <Link
+                href="/#reservation"
                 style={{
-                    background: "linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    padding: "1rem",
+                    backgroundColor: "#222",
+                    color: "#FFF",
+                    borderRadius: "16px",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    marginBottom: "1.5rem",
+                }}
+            >
+                <PlusCircle style={{ width: 20, height: 20 }} />
+                Créer une nouvelle réservation
+            </Link>
+
+            {/* Special Offer Banner */}
+            {false && (
+                <div
+                    style={{
+                        background: "linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%)",
                     borderRadius: "16px",
                     padding: "1rem",
                     marginBottom: "1.5rem",
@@ -310,10 +371,12 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                     Voir le menu
                 </Link>
             </div>
+            )}
 
             {/* Notifications Preview */}
-            <div
-                style={{
+            {false && (
+                <div
+                    style={{
                     backgroundColor: "#FFF",
                     borderRadius: "16px",
                     padding: "1rem",
@@ -349,6 +412,7 @@ export default function ClientDashboard({ userName, hasReservation = true }: Cli
                     </div>
                 </div>
             </div>
+            )}
         </div>
     );
 }

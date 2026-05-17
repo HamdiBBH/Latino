@@ -205,6 +205,86 @@ export default function LoyaltyCMSPage() {
                 </div>
             </div>
 
+            {/* Referral Program */}
+            <div
+                style={{
+                    backgroundColor: "#FFF",
+                    borderRadius: "20px",
+                    padding: "1.5rem 2rem",
+                    marginBottom: "2rem",
+                    border: "1px solid #E5E7EB",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                }}
+            >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.25rem", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ width: 44, height: 44, borderRadius: "12px", backgroundColor: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Gift style={{ width: 22, height: 22, color: "#6366F1" }} />
+                        </div>
+                        <div>
+                            <h2 style={{ fontWeight: 700, color: "#222", fontSize: "1.1rem" }}>Programme de parrainage</h2>
+                            <p style={{ fontSize: "0.8rem", color: "#9CA3AF" }}>Activer le parrainage et définir la règle</p>
+                        </div>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                        <div style={{ position: "relative" }}>
+                            <input
+                                type="checkbox"
+                                checked={config.enableReferral || false}
+                                onChange={(e) => setConfig({ ...config, enableReferral: e.target.checked })}
+                                style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+                            />
+                            <div style={{
+                                width: "44px", height: "24px", 
+                                backgroundColor: config.enableReferral ? "#22C55E" : "#E5E7EB", 
+                                borderRadius: "9999px",
+                                transition: "background-color 0.2s"
+                            }}>
+                                <div style={{
+                                    position: "absolute", top: "2px", left: config.enableReferral ? "22px" : "2px",
+                                    width: "20px", height: "20px", backgroundColor: "#FFF", borderRadius: "50%",
+                                    transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+                                }} />
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                
+                {config.enableReferral && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.8rem", color: "#6B7280", fontWeight: 500, marginBottom: "6px" }}>
+                                Phrase d'accroche (Règle)
+                            </label>
+                            <input
+                                type="text"
+                                value={config.referralRuleText || "Gagnez 150 points pour chaque ami parrainé !"}
+                                onChange={(e) => setConfig({ ...config, referralRuleText: e.target.value })}
+                                style={{
+                                    width: "100%", padding: "10px 14px", border: "1px solid #E5E7EB", 
+                                    borderRadius: "10px", fontSize: "0.95rem", outline: "none"
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: "block", fontSize: "0.8rem", color: "#6B7280", fontWeight: 500, marginBottom: "6px" }}>
+                                Points de récompense par parrainage
+                            </label>
+                            <input
+                                type="number"
+                                min={0}
+                                value={config.referralRewardPoints || 150}
+                                onChange={(e) => setConfig({ ...config, referralRewardPoints: parseInt(e.target.value) || 0 })}
+                                style={{
+                                    width: "120px", padding: "10px 14px", border: "1px solid #E5E7EB", 
+                                    borderRadius: "10px", fontSize: "0.95rem", outline: "none"
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Tiers */}
             <div style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "#222" }}>Paliers de fidélité</h2>

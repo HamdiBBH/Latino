@@ -233,13 +233,27 @@ export async function updateReservationStatus(
             console.log("Reservation retrieved successfully:", reservation.guest_email);
             const { sendReservationConfirmationEmail } = await import('@/lib/email');
             try {
+                let adults = reservation.adults_count;
+                let children = reservation.children_4_12_count || 0;
+
+                if (!adults) {
+                    adults = reservation.guest_count;
+                    if (reservation.special_request) {
+                        const adultsMatch = reservation.special_request.match(/Adultes:\s*(\d+)/);
+                        if (adultsMatch) adults = parseInt(adultsMatch[1], 10);
+                        
+                        const childrenMatch = reservation.special_request.match(/Enfants 4-12:\s*(\d+)/);
+                        if (childrenMatch) children = parseInt(childrenMatch[1], 10);
+                    }
+                }
+
                 const emailResult = await sendReservationConfirmationEmail({
                     guestName: reservation.guest_name,
                     guestEmail: reservation.guest_email,
                     date: reservation.reservation_date,
                     packageName: reservation.packages?.name || "Forfait",
-                    adults: reservation.adults_count || reservation.guest_count,
-                    children: reservation.children_4_12_count || 0,
+                    adults,
+                    children,
                     totalPrice: reservation.estimated_price || 0,
                     reservationId: reservation.id,
                 });
@@ -264,13 +278,27 @@ export async function updateReservationStatus(
         if (!fetchErr && reservation && reservation.guest_email) {
             const { sendReservationRejectionEmail } = await import('@/lib/email');
             try {
+                let adults = reservation.adults_count;
+                let children = reservation.children_4_12_count || 0;
+
+                if (!adults) {
+                    adults = reservation.guest_count;
+                    if (reservation.special_request) {
+                        const adultsMatch = reservation.special_request.match(/Adultes:\s*(\d+)/);
+                        if (adultsMatch) adults = parseInt(adultsMatch[1], 10);
+                        
+                        const childrenMatch = reservation.special_request.match(/Enfants 4-12:\s*(\d+)/);
+                        if (childrenMatch) children = parseInt(childrenMatch[1], 10);
+                    }
+                }
+
                 await sendReservationRejectionEmail({
                     guestName: reservation.guest_name,
                     guestEmail: reservation.guest_email,
                     date: reservation.reservation_date,
                     packageName: reservation.packages?.name || "Forfait",
-                    adults: reservation.adults_count || reservation.guest_count,
-                    children: reservation.children_4_12_count || 0,
+                    adults,
+                    children,
                     totalPrice: reservation.estimated_price || 0,
                     reservationId: reservation.id,
                 });
@@ -329,13 +357,27 @@ export async function updateReservationDetails(
     if (!fetchErr && reservation && reservation.guest_email) {
         const { sendReservationModificationEmail } = await import('@/lib/email');
         try {
+            let adults = reservation.adults_count;
+            let children = reservation.children_4_12_count || 0;
+
+            if (!adults) {
+                adults = reservation.guest_count;
+                if (reservation.special_request) {
+                    const adultsMatch = reservation.special_request.match(/Adultes:\s*(\d+)/);
+                    if (adultsMatch) adults = parseInt(adultsMatch[1], 10);
+                    
+                    const childrenMatch = reservation.special_request.match(/Enfants 4-12:\s*(\d+)/);
+                    if (childrenMatch) children = parseInt(childrenMatch[1], 10);
+                }
+            }
+
             await sendReservationModificationEmail({
                 guestName: reservation.guest_name,
                 guestEmail: reservation.guest_email,
                 date: reservation.reservation_date,
                 packageName: reservation.packages?.name || "Forfait",
-                adults: reservation.adults_count || reservation.guest_count,
-                children: reservation.children_4_12_count || 0,
+                adults,
+                children,
                 totalPrice: reservation.estimated_price || 0,
                 reservationId: reservation.id,
             });
@@ -414,6 +456,8 @@ export async function createReservation(data: {
     reservation_date: string;
     time_slot: string;
     guest_count: number;
+    adults_count?: number;
+    children_4_12_count?: number;
     special_request?: string;
     estimated_price: number;
     autoConfirmEnabled?: boolean;
@@ -443,6 +487,8 @@ export async function createReservation(data: {
             reservation_date: data.reservation_date,
             time_slot: data.time_slot,
             guest_count: data.guest_count,
+            adults_count: data.adults_count ?? data.guest_count,
+            children_4_12_count: data.children_4_12_count ?? 0,
             special_request: data.special_request || null,
             estimated_price: data.estimated_price,
             status: shouldAutoConfirm ? "confirmed" : "pending",
