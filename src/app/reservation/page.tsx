@@ -83,8 +83,31 @@ function ReservationContent() {
     const [specialRequest, setSpecialRequest] = useState("");
 
     useEffect(() => {
-        Promise.all([loadPackages(), loadConfig()]);
+        Promise.all([loadPackages(), loadConfig(), loadUserProfile()]);
     }, []);
+
+    const loadUserProfile = async () => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Set email from auth
+        if (user.email && !guestEmail) {
+            setGuestEmail(user.email);
+        }
+
+        // Fetch profile for name and phone
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, phone")
+            .eq("id", user.id)
+            .single();
+
+        if (profile) {
+            if (profile.full_name && !guestName) setGuestName(profile.full_name);
+            if (profile.phone && !guestPhone) setGuestPhone(profile.phone);
+        }
+    };
 
     const loadConfig = async () => {
         const data = await getReservationConfig();
