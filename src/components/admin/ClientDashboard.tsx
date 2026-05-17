@@ -63,9 +63,14 @@ export default function ClientDashboard({ userName, reservation }: ClientDashboa
 
     // Fetch weather data
     useEffect(() => {
+        const controller = new AbortController();
         const fetchWeather = async () => {
             try {
-                const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=37.14232&longitude=10.21041&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=uv_index_max,sunset&timezone=Africa%2FTunis");
+                const res = await fetch(
+                    "https://api.open-meteo.com/v1/forecast?latitude=37.14232&longitude=10.21041&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=uv_index_max,sunset&timezone=Africa%2FTunis",
+                    { signal: controller.signal }
+                );
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 
                 const current = data.current;
@@ -77,14 +82,25 @@ export default function ClientDashboard({ userName, reservation }: ClientDashboa
                     uv: daily.uv_index_max[0] ? Math.round(daily.uv_index_max[0]) : 0,
                     humidity: Math.round(current.relative_humidity_2m),
                     wind: Math.round(current.wind_speed_10m),
-                    seaTemp: 24, // Hardcoded approx
+                    seaTemp: 24,
                     sunset: new Date(daily.sunset[0]).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
                 });
-            } catch (error) {
-                console.error("Failed to fetch weather", error);
+            } catch (error: any) {
+                if (error?.name === "AbortError") return;
+                console.warn("Météo indisponible, affichage des données par défaut");
+                setWeatherData({
+                    temperature: "--",
+                    condition: "Indisponible",
+                    uv: "--",
+                    humidity: "--",
+                    wind: "--",
+                    seaTemp: "--",
+                    sunset: "--:--",
+                });
             }
         };
         fetchWeather();
+        return () => controller.abort();
     }, []);
 
     // Update time every minute
