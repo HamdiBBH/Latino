@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import { createClient } from "@/lib/supabase/client";
 import {
     CheckCircle2,
     Clock,
@@ -15,6 +16,7 @@ import {
     ArrowRight,
     Sparkles,
     Home,
+    LayoutDashboard,
 } from "lucide-react";
 
 interface Reservation {
@@ -44,10 +46,18 @@ export default function ConfirmationPage() {
     const params = useParams();
     const [reservation, setReservation] = useState<Reservation | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     useEffect(() => {
         loadReservation();
+        checkAuth();
     }, []);
+
+    const checkAuth = async () => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsLoggedIn(!!user);
+    };
 
     const loadReservation = async () => {
         const reservationId = String(params.id);
@@ -219,29 +229,54 @@ export default function ConfirmationPage() {
                     </div>
                 </div>
 
-                {/* Account CTA */}
-                <div style={{
-                    backgroundColor: "#E8A87C15", border: "1px solid #E8A87C30",
-                    borderRadius: "16px", padding: "2rem", textAlign: "center", marginBottom: "2rem"
-                }}>
-                    <Sparkles style={{ width: 32, height: 32, color: "#E8A87C", margin: "0 auto 1rem" }} />
-                    <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#222", marginBottom: "0.5rem" }}>
-                        Créez votre compte et gagnez 50 points !
-                    </h3>
-                    <p style={{ color: "#7A7A7A", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-                        Suivez votre réservation en temps réel, accédez à vos souvenirs et bénéficiez d'offres exclusives.
-                    </p>
-                    <Link
-                        href={`/register?email=${encodeURIComponent(reservation.guest_email)}&name=${encodeURIComponent(reservation.guest_name)}`}
-                        style={{
-                            display: "inline-flex", alignItems: "center", gap: "8px",
-                            padding: "1rem 2rem", backgroundColor: "#E8A87C", color: "#FFF",
-                            borderRadius: "12px", textDecoration: "none", fontWeight: 600
-                        }}
-                    >
-                        Créer mon compte <ArrowRight style={{ width: 18, height: 18 }} />
-                    </Link>
-                </div>
+                {/* Account CTA or Dashboard CTA */}
+                {isLoggedIn ? (
+                    <div style={{
+                        backgroundColor: "#E8A87C15", border: "1px solid #E8A87C30",
+                        borderRadius: "16px", padding: "2rem", textAlign: "center", marginBottom: "2rem"
+                    }}>
+                        <LayoutDashboard style={{ width: 32, height: 32, color: "#E8A87C", margin: "0 auto 1rem" }} />
+                        <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#222", marginBottom: "0.5rem" }}>
+                            Suivez votre réservation
+                        </h3>
+                        <p style={{ color: "#7A7A7A", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+                            Retrouvez vos réservations, votre programme fidélité et vos souvenirs depuis votre espace personnel.
+                        </p>
+                        <Link
+                            href="/dashboard"
+                            style={{
+                                display: "inline-flex", alignItems: "center", gap: "8px",
+                                padding: "1rem 2rem", backgroundColor: "#E8A87C", color: "#FFF",
+                                borderRadius: "12px", textDecoration: "none", fontWeight: 600
+                            }}
+                        >
+                            Aller au dashboard <ArrowRight style={{ width: 18, height: 18 }} />
+                        </Link>
+                    </div>
+                ) : (
+                    <div style={{
+                        backgroundColor: "#E8A87C15", border: "1px solid #E8A87C30",
+                        borderRadius: "16px", padding: "2rem", textAlign: "center", marginBottom: "2rem"
+                    }}>
+                        <Sparkles style={{ width: 32, height: 32, color: "#E8A87C", margin: "0 auto 1rem" }} />
+                        <h3 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#222", marginBottom: "0.5rem" }}>
+                            Créez votre compte et gagnez 50 points !
+                        </h3>
+                        <p style={{ color: "#7A7A7A", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+                            Suivez votre réservation en temps réel, accédez à vos souvenirs et bénéficiez d&apos;offres exclusives.
+                        </p>
+                        <Link
+                            href={`/register?email=${encodeURIComponent(reservation.guest_email)}&name=${encodeURIComponent(reservation.guest_name)}`}
+                            style={{
+                                display: "inline-flex", alignItems: "center", gap: "8px",
+                                padding: "1rem 2rem", backgroundColor: "#E8A87C", color: "#FFF",
+                                borderRadius: "12px", textDecoration: "none", fontWeight: 600
+                            }}
+                        >
+                            Créer mon compte <ArrowRight style={{ width: 18, height: 18 }} />
+                        </Link>
+                    </div>
+                )}
 
                 {/* Back to Home */}
                 <div style={{ textAlign: "center" }}>
