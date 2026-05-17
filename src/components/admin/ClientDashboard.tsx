@@ -303,7 +303,7 @@ export default function ClientDashboard({ userName, reservation }: ClientDashboa
 
             {/* New Reservation Button */}
             <Link
-                href="/#reservation"
+                href="/reservation"
                 style={{
                     display: "flex",
                     alignItems: "center",
@@ -444,7 +444,7 @@ function NoReservationCard({ userName }: { userName: string }) {
                 Réservez votre journée au paradis !
             </p>
             <Link
-                href="/#reservation"
+                href="/reservation"
                 style={{
                     display: "inline-flex",
                     alignItems: "center",
