@@ -62,7 +62,7 @@ export function ReelsSection({ reels = [] }: ReelsSectionProps) {
         <section
             ref={ref}
             style={{
-                padding: "7rem 0",
+                padding: "var(--section-padding-lg) 0",
                 backgroundColor: "#FFFFFF",
                 overflow: "hidden",
             }}
@@ -77,7 +77,7 @@ export function ReelsSection({ reels = [] }: ReelsSectionProps) {
                 >
                     <h2
                         style={{
-                            fontSize: "3.5rem",
+                            fontSize: "var(--font-size-section-title-lg)",
                             color: "#222222",
                             lineHeight: 1.2,
                         }}

@@ -45,7 +45,7 @@ export function ContactSection() {
             id="contact"
             ref={ref}
             style={{
-                padding: "7rem 0",
+                padding: "var(--section-padding-lg) 0",
                 backgroundColor: "#FFFFFF",
             }}
         >
@@ -73,7 +73,7 @@ export function ContactSection() {
                         </span>
                         <h2
                             style={{
-                                fontSize: "3rem",
+                                fontSize: "var(--font-size-section-title-md)",
                                 color: "#222222",
                                 marginBottom: "1.5rem",
                                 lineHeight: 1.2,
@@ -234,7 +234,7 @@ export function ContactSection() {
                 .contact-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-                    gap: 4rem;
+                    gap: var(--section-grid-gap-lg);
                     align-items: start;
                 }
                 .contact-map-container {

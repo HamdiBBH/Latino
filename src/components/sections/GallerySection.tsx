@@ -21,7 +21,7 @@ interface GallerySectionProps {
 export function GallerySection({ images = [] }: GallerySectionProps) {
     const displayImages = images;
     const [selectedImageId, setSelectedImageId] = useState<string | number | null>(null);
-    const [visibleCount, setVisibleCount] = useState(8); // Start with ~3 visual rows
+    const [visibleCount, setVisibleCount] = useState(9); // Start with 9 to perfectly fill the Bento grid
     const [activeCategory, setActiveCategory] = useState("Tout");
 
     const ref = useRef(null);
@@ -37,7 +37,7 @@ export function GallerySection({ images = [] }: GallerySectionProps) {
 
     // Reset visible count when category changes
     useEffect(() => {
-        setVisibleCount(8);
+        setVisibleCount(9);
     }, [activeCategory]);
 
     // Function to determine bento size based on index (Deterministic pattern)
@@ -110,7 +110,7 @@ export function GallerySection({ images = [] }: GallerySectionProps) {
             id="gallery"
             ref={ref}
             style={{
-                padding: "7rem 0",
+                padding: "var(--section-padding-lg) 0",
                 backgroundColor: "#222222",
             }}
         >
@@ -137,7 +137,7 @@ export function GallerySection({ images = [] }: GallerySectionProps) {
                     </span>
                     <h2
                         style={{
-                            fontSize: "3.5rem",
+                            fontSize: "var(--font-size-section-title-lg)",
                             color: "#FFFFFF",
                             lineHeight: 1.2,
                         }}

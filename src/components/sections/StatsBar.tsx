@@ -57,12 +57,12 @@ export function StatsBar() {
     return (
         <div
             ref={ref}
+            className="statsbar-container"
             style={{
                 position: "relative",
                 zIndex: 20,
                 marginTop: "-60px",
                 marginBottom: "-60px",
-                padding: "0 2rem",
             }}
         >
             <motion.div
@@ -76,7 +76,6 @@ export function StatsBar() {
                     background: "#FFFFFF",
                     borderRadius: "20px",
                     boxShadow: "0 10px 60px rgba(0, 0, 0, 0.15)",
-                    padding: "2rem 3rem",
                 }}
             >
                 {stats.map((stat, index) => {
@@ -84,46 +83,16 @@ export function StatsBar() {
                     return (
                         <div
                             key={index}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.75rem",
-                            }}
+                            className="statsbar-item"
                         >
-                            <div
-                                style={{
-                                    width: "50px",
-                                    height: "50px",
-                                    borderRadius: "50%",
-                                    backgroundColor: "#1A1A1A",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    flexShrink: 0,
-                                }}
-                            >
-                                <Icon style={{ width: 24, height: 24, color: "#FFFFFF" }} />
+                            <div className="statsbar-icon-wrapper">
+                                <Icon style={{ width: "var(--statsbar-icon-size)", height: "var(--statsbar-icon-size)", color: "#FFFFFF" }} />
                             </div>
-                            <div>
-                                <p
-                                    style={{
-                                        fontSize: "1.8rem",
-                                        fontWeight: 700,
-                                        color: "#1A1A1A",
-                                        margin: 0,
-                                        lineHeight: 1.2,
-                                    }}
-                                >
+                            <div className="statsbar-text">
+                                <p className="statsbar-value">
                                     {formatValue(index)}
                                 </p>
-                                <p
-                                    style={{
-                                        fontSize: "0.85rem",
-                                        color: "#7A7A7A",
-                                        margin: 0,
-                                        whiteSpace: "nowrap",
-                                    }}
-                                >
+                                <p className="statsbar-label">
                                     {stat.label}
                                 </p>
                             </div>

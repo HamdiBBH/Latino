@@ -21,7 +21,7 @@ export function PartnersSection() {
         <section
             ref={ref}
             style={{
-                padding: "5rem 0",
+                padding: "var(--section-padding-sm) 0",
                 backgroundColor: "#F9F5F0",
             }}
         >
@@ -48,7 +48,7 @@ export function PartnersSection() {
                     </span>
                     <h2
                         style={{
-                            fontSize: "3.5rem",
+                            fontSize: "var(--font-size-section-title-lg)",
                             color: "#222222",
                             lineHeight: 1.2,
                         }}

@@ -31,7 +31,7 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
             id="about"
             ref={ref}
             style={{
-                padding: "100px 0 7rem 0",
+                padding: "var(--section-padding-about-top) 0 var(--section-padding-lg) 0",
                 backgroundColor: "#F9F5F0",
                 overflow: "hidden",
             }}
@@ -41,7 +41,7 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
                     style={{
                         display: "grid",
                         gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))",
-                        gap: "5rem",
+                        gap: "var(--section-grid-gap-xl)",
                         alignItems: "center",
                     }}
                 >
@@ -66,7 +66,7 @@ export function AboutSection({ images = [] }: AboutSectionProps) {
                         </span>
                         <h2
                             style={{
-                                fontSize: "3.5rem",
+                                fontSize: "var(--font-size-section-title-lg)",
                                 marginBottom: "1.5rem",
                                 color: "#222222",
                                 lineHeight: 1.2,

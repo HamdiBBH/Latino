@@ -112,7 +112,7 @@ export function TestimonialsSection() {
             ref={ref}
             style={{
                 position: "relative",
-                padding: "7rem 0",
+                padding: "var(--section-padding-lg) 0",
                 overflow: "hidden",
                 backgroundColor: "#0A0A0A",
             }}
@@ -170,7 +170,7 @@ export function TestimonialsSection() {
                     >
                         <h2
                             style={{
-                                fontSize: "3rem",
+                                fontSize: "var(--font-size-section-title-md)",
                                 lineHeight: 1.2,
                                 color: "#FFFFFF",
                             }}

@@ -69,7 +69,7 @@ export function PackagesSection() {
 
     if (loading) {
         return (
-            <section style={{ padding: "7rem 0", backgroundColor: "#F9F5F0" }}>
+            <section style={{ padding: "var(--section-padding-lg) 0", backgroundColor: "#F9F5F0" }}>
                 <div className="container" style={{ textAlign: "center" }}>
                     <p>Chargement des forfaits...</p>
                 </div>
@@ -84,7 +84,7 @@ export function PackagesSection() {
             id="packages"
             ref={ref}
             style={{
-                padding: "7rem 0",
+                padding: "var(--section-padding-lg) 0",
                 backgroundColor: "#F9F5F0",
             }}
         >
@@ -93,7 +93,7 @@ export function PackagesSection() {
                     style={{
                         display: "grid",
                         gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-                        gap: "4rem",
+                        gap: "var(--section-grid-gap-lg)",
                         alignItems: "start",
                     }}
                 >
@@ -181,7 +181,7 @@ export function PackagesSection() {
                         </span>
                         <h2
                             style={{
-                                fontSize: "3rem",
+                                fontSize: "var(--font-size-section-title-md)",
                                 color: "#222222",
                                 marginBottom: "1.5rem",
                                 lineHeight: 1.2,

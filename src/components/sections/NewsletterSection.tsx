@@ -33,7 +33,7 @@ export function NewsletterSection() {
         <section
             ref={ref}
             style={{
-                padding: "5rem 0",
+                padding: "var(--section-padding-sm) 0",
                 backgroundColor: "#F9F5F0",
             }}
         >

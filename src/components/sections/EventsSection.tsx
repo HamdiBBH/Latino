@@ -57,8 +57,9 @@ export function EventsSection() {
         <section
             id="events"
             ref={ref}
+            className="events-section"
             style={{
-                padding: "7rem 0",
+                padding: "var(--section-padding-lg) 0",
                 backgroundColor: "#FFFFFF",
             }}
         >
@@ -88,7 +89,7 @@ export function EventsSection() {
                     </span>
                     <h2
                         style={{
-                            fontSize: "3.5rem",
+                            fontSize: "var(--font-size-section-title-lg)",
                             lineHeight: 1.2,
                         }}
                     >

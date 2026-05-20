@@ -16,7 +16,7 @@ export function MapSection() {
             id="map"
             ref={ref}
             style={{
-                padding: "5rem 0",
+                padding: "var(--section-padding-sm) 0",
                 backgroundColor: "#FFFFFF",
             }}
         >
@@ -52,7 +52,7 @@ export function MapSection() {
                         </span>
                         <h2
                             style={{
-                                fontSize: "2.5rem",
+                                fontSize: "var(--font-size-section-title-sm)",
                                 color: "#222222",
                                 marginBottom: "1.5rem",
                                 lineHeight: 1.2,

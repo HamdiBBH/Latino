@@ -90,7 +90,7 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
             id="services"
             ref={ref}
             style={{
-                padding: "7rem 0",
+                padding: "var(--section-padding-lg) 0",
                 backgroundColor: "#FFFFFF",
                 overflow: "hidden",
             }}
@@ -154,7 +154,7 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                     >
                         <h2
                             style={{
-                                fontSize: "2.8rem",
+                                fontSize: "var(--font-size-section-title-services)",
                                 color: "#222222",
                                 marginBottom: "1.5rem",
                                 lineHeight: 1.2,
@@ -257,7 +257,7 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                     </span>
                     <h3
                         style={{
-                            fontSize: "2rem",
+                            fontSize: "var(--font-size-section-title-xs)",
                             fontWeight: 600,
                             color: "#222222",
                         }}
@@ -669,8 +669,8 @@ export function ServicesSection({ experienceImages = [] }: { experienceImages?: 
                 .experience-grid {
                     display: grid;
                     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-                    gap: 4rem;
-                    margin-bottom: 5rem;
+                    gap: var(--section-grid-gap-lg);
+                    margin-bottom: var(--section-padding-sm);
                     align-items: center;
                     min-width: 0;
                 }

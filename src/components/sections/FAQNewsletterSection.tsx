@@ -62,7 +62,7 @@ export function FAQNewsletterSection() {
             id="faq"
             ref={ref}
             style={{
-                padding: "6rem 0",
+                padding: "var(--section-padding-md) 0",
                 backgroundColor: "#F9F5F0",
             }}
         >
@@ -71,7 +71,7 @@ export function FAQNewsletterSection() {
                     style={{
                         display: "grid",
                         gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-                        gap: "4rem",
+                        gap: "var(--section-grid-gap-lg)",
                         alignItems: "start",
                     }}
                 >

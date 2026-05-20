@@ -44,7 +44,7 @@ export function CTASection({ packages = [] }: CTASectionProps) {
             ref={ref}
             style={{
                 position: "relative",
-                padding: "8rem 0",
+                padding: "var(--section-padding-xl) 0",
                 overflow: "hidden",
             }}
         >
@@ -91,7 +91,7 @@ export function CTASection({ packages = [] }: CTASectionProps) {
                         </span>
                         <h2
                             style={{
-                                fontSize: "3rem",
+                                fontSize: "var(--font-size-section-title-md)",
                                 color: "#FFFFFF",
                                 marginBottom: "1.5rem",
                                 lineHeight: 1.2,

@@ -31,6 +31,13 @@
   --font-primary: 'Outfit', sans-serif;
   --font-size-base: 1.1rem;
 
+  /* Heading Sizes - untouched on desktop, responsive on mobile */
+  --font-size-section-title-lg: 3.5rem;
+  --font-size-section-title-md: 3rem;
+  --font-size-section-title-services: 2.8rem;
+  --font-size-section-title-sm: 2.5rem;
+  --font-size-section-title-xs: 2rem;
+
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
@@ -38,6 +45,16 @@
   --spacing-xl: 3rem;
   --spacing-2xl: 5rem;
   --spacing-3xl: 7rem;
+
+  /* Section Spacing - untouched on desktop, compact on mobile */
+  --section-padding-xl: 8rem;
+  --section-padding-lg: 7rem;
+  --section-padding-md: 6rem;
+  --section-padding-sm: 5rem;
+  --section-padding-about-top: 100px;
+  
+  --section-grid-gap-xl: 5rem;
+  --section-grid-gap-lg: 4rem;
 
   --container-width: 1280px;
   --container-padding: 1.5rem;
@@ -59,6 +76,25 @@
   --z-header: 1000;
   --z-overlay: 100;
   --z-modal: 2000;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --font-size-section-title-lg: 2rem;
+    --font-size-section-title-md: 1.75rem;
+    --font-size-section-title-services: 1.75rem;
+    --font-size-section-title-sm: 1.5rem;
+    --font-size-section-title-xs: 1.3rem;
+
+    --section-padding-xl: 4rem;
+    --section-padding-lg: 3.5rem;
+    --section-padding-md: 3rem;
+    --section-padding-sm: 2.5rem;
+    --section-padding-about-top: 50px;
+    
+    --section-grid-gap-xl: 2.5rem;
+    --section-grid-gap-lg: 2rem;
+  }
 }
 
 /* ==========================================
@@ -214,13 +250,25 @@ h6 {
 
 
 /* ==========================================
-   StatsBar Grid
+   StatsBar Styling
    ========================================== */
+.statsbar-container {
+  padding: 0 1rem;
+}
+
+@media (min-width: 769px) {
+  .statsbar-container {
+    padding: 0 2rem;
+  }
+}
+
 .statsbar-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem 1rem;
+  gap: 1.25rem 0.75rem;
   justify-items: start;
+  padding: 1.5rem 1rem;
+  --statsbar-icon-size: 20px;
 }
 
 @media (min-width: 769px) {
@@ -228,6 +276,85 @@ h6 {
     grid-template-columns: repeat(4, 1fr);
     gap: 2rem;
     justify-items: center;
+    padding: 2rem 3rem;
+    --statsbar-icon-size: 24px;
+  }
+}
+
+.statsbar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .statsbar-item {
+    gap: 0.5rem;
+  }
+}
+
+.statsbar-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #1A1A1A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+@media (min-width: 769px) {
+  .statsbar-icon-wrapper {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+.statsbar-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.statsbar-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin: 0;
+  line-height: 1.2;
+}
+
+@media (min-width: 769px) {
+  .statsbar-value {
+    font-size: 1.8rem;
+  }
+}
+
+.statsbar-label {
+  font-size: 0.75rem;
+  color: #7A7A7A;
+  margin: 0;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+
+@media (min-width: 769px) {
+  .statsbar-label {
+    font-size: 0.85rem;
+  }
+}
+
+/* ==========================================
+   Events Section Spacing Adjustment
+   ========================================== */
+@media (max-width: 768px) {
+  .events-section {
+    /* Keep 7rem (112px) padding-top on mobile to clear the -60px overflow of StatsBar, leaving 52px net visual space */
+    padding-top: 7rem !important;
   }
 }
 

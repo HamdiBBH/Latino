@@ -53,7 +53,7 @@ export function FAQSection() {
             id="faq"
             ref={ref}
             style={{
-                padding: "7rem 0",
+                padding: "var(--section-padding-lg) 0",
                 backgroundColor: "#F9F5F0",
             }}
         >
@@ -83,7 +83,7 @@ export function FAQSection() {
                     </span>
                     <h2
                         style={{
-                            fontSize: "3rem",
+                            fontSize: "var(--font-size-section-title-md)",
                             color: "#222222",
                             marginBottom: "1rem",
                             lineHeight: 1.2,
