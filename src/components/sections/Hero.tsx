@@ -219,7 +219,6 @@ export function Hero({
                 </div>
             </div>
 
-            {/* Scroll Indicator */}
             <motion.a
                 href="#about"
                 aria-label="Défiler vers la section À propos"
@@ -244,7 +243,6 @@ export function Hero({
                     textDecoration: "none",
                 }}
             >
-                <span>Scroll</span>
                 <ChevronDown style={{ width: 20, height: 20 }} aria-hidden="true" />
             </motion.a>
         </section>
