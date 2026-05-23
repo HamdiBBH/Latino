@@ -1,5 +1,5 @@
 import React from "react";
-import { getSections, getPublicGalleryImages, getPublicReels, getMedia, getContentBySection, getPackages } from "@/app/actions/cms";
+import { getSections, getPublicGalleryImages, getPublicReels, getMedia, getContentBySection, getPackages, getPublicHeroSlides } from "@/app/actions/cms";
 import { Navbar } from "@/components/sections/Navbar";
 import { Hero } from "@/components/sections/Hero";
 import { BookingBar } from "@/components/sections/BookingBar";
@@ -47,7 +47,7 @@ export default async function HomePage() {
   const galleryImagesRaw = await getPublicGalleryImages();
   const reelsData = await getPublicReels();
   const aboutMedia = await getMedia("about");
-  const heroMedia = await getMedia("hero");
+  const heroSlides = await getPublicHeroSlides();
   const experienceMedia = await getMedia("experience");
   const heroContent = await getContentBySection("hero");
   const packagesData = await getPackages();
@@ -160,7 +160,7 @@ export default async function HomePage() {
     <main className="min-h-screen" style={{ width: "100%", maxWidth: "100vw", overflowX: "hidden" }}>
       <Navbar />
       <Hero
-        images={heroMedia}
+        slides={heroSlides}
         titleLight={heroText.titleLight}
         titleBold={heroText.titleBold}
         subtitle={heroText.subtitle}

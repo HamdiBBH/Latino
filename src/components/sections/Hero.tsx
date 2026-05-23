@@ -25,8 +25,16 @@ interface MediaImage {
     alt_text?: string;
 }
 
+interface HeroSlide {
+    id: string;
+    site_media?: { url: string; alt_text?: string | null } | null;
+    mobile_media?: { url: string; alt_text?: string | null } | null;
+    alt_text?: string | null;
+}
+
 interface HeroProps {
     images?: MediaImage[];
+    slides?: HeroSlide[];
     titleLight?: string;
     titleBold?: string;
     subtitle?: string;
@@ -34,23 +42,42 @@ interface HeroProps {
 
 export function Hero({
     images = [],
+    slides = [],
     titleLight = "Bienvenue au",
     titleBold = "Latino Coucou Beach.",
     subtitle = "L'expérience beach club ultime sur l'île de Kuriat",
 }: HeroProps) {
     const [currentSlide, setCurrentSlide] = useState(0);
 
-    // Use CMS images if available, otherwise fallback
-    const slides = images.length > 0
-        ? images.map(img => ({ url: img.url, alt: img.alt_text || "Latino Coucou Beach" }))
-        : FALLBACK_SLIDES;
+    // Format slides to include both desktop and mobile versions
+    const formattedSlides = slides.length > 0
+        ? slides.map(slide => ({
+            id: slide.id,
+            desktopUrl: slide.site_media?.url || "",
+            mobileUrl: slide.mobile_media?.url || slide.site_media?.url || "",
+            alt: slide.alt_text || slide.site_media?.alt_text || "Latino Coucou Beach",
+          }))
+        : images.length > 0
+            ? images.map((img, i) => ({
+                id: `img-${i}`,
+                desktopUrl: img.url,
+                mobileUrl: img.url,
+                alt: img.alt_text || "Latino Coucou Beach",
+              }))
+            : FALLBACK_SLIDES.map((slide, i) => ({
+                id: `fallback-${i}`,
+                desktopUrl: slide.url,
+                mobileUrl: slide.url,
+                alt: slide.alt,
+              }));
 
     useEffect(() => {
+        if (formattedSlides.length <= 1) return;
         const interval = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % slides.length);
+            setCurrentSlide((prev) => (prev + 1) % formattedSlides.length);
         }, 6000);
         return () => clearInterval(interval);
-    }, [slides.length]);
+    }, [formattedSlides.length]);
 
     return (
         <section
@@ -71,25 +98,45 @@ export function Hero({
             <div
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
                 role="img"
-                aria-label={slides[currentSlide]?.alt || "Photo du beach club"}
+                aria-label={formattedSlides[currentSlide]?.alt || "Photo du beach club"}
             >
-                {slides.map((slide, index) => (
+                {formattedSlides.map((slide, index) => (
                     <div
-                        key={slide.url}
+                        key={slide.id}
                         style={{
                             position: "absolute",
                             top: 0,
                             left: 0,
                             width: "100%",
                             height: "100%",
-                            backgroundImage: `url(${slide.url})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center",
                             opacity: index === currentSlide ? 1 : 0,
                             transition: "opacity 1s ease",
                         }}
                         aria-hidden={index !== currentSlide}
-                    />
+                    >
+                        {/* Desktop Image */}
+                        <div
+                            className="hidden-mobile"
+                            style={{
+                                width: "100%",
+                                height: "100%",
+                                backgroundImage: `url(${slide.desktopUrl})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                            }}
+                        />
+                        {/* Mobile Image */}
+                        <div
+                            className="hidden-desktop"
+                            style={{
+                                width: "100%",
+                                height: "100%",
+                                backgroundImage: `url(${slide.mobileUrl})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                            }}
+                        />
+                    </div>
                 ))}
             </div>
 

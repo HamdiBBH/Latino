@@ -1047,7 +1047,8 @@ export async function getDashboardStats() {
         events: 0,
         services: 0,
         packages: 0,
-        testimonials: 0
+        testimonials: 0,
+        slider: 0
     };
 
     // Parallel requests for performance
@@ -1060,7 +1061,8 @@ export async function getDashboardStats() {
         supabase.from("events").select("*", { count: "exact", head: true }),
         supabase.from("services").select("*", { count: "exact", head: true }),
         supabase.from("packages").select("*", { count: "exact", head: true }),
-        supabase.from("testimonials").select("*", { count: "exact", head: true })
+        supabase.from("testimonials").select("*", { count: "exact", head: true }),
+        supabase.from("hero_slides").select("*", { count: "exact", head: true }).eq("is_active", true),
     ]);
 
     stats.sections = results[0].count || 0;
@@ -1072,6 +1074,7 @@ export async function getDashboardStats() {
     stats.services = results[6].count || 0;
     stats.packages = results[7].count || 0;
     stats.testimonials = results[8].count || 0;
+    stats.slider = results[9].count || 0;
 
     return stats;
 }
@@ -1165,5 +1168,164 @@ export async function deleteBeachInstallation(id: string) {
     }
 
     revalidatePath("/dashboard/cms/installations");
+    return { success: true };
+}
+
+// ============================================
+// HERO SLIDES (DESKTOP + MOBILE)
+// ============================================
+
+export interface HeroSlide {
+    id: string;
+    media_id: string | null;
+    mobile_media_id: string | null;
+    display_order: number;
+    is_active: boolean;
+    alt_text: string | null;
+    created_at: string;
+    updated_at: string;
+    site_media?: { id: string; url: string; filename: string; alt_text: string | null } | null;
+    mobile_media?: { id: string; url: string; filename: string; alt_text: string | null } | null;
+}
+
+/** Lecture publique des slides actives (pour le Hero du site) */
+export async function getPublicHeroSlides() {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("hero_slides")
+        .select(`
+            *,
+            site_media!hero_slides_media_id_fkey(id, url, filename, alt_text),
+            mobile_media:site_media!hero_slides_mobile_media_id_fkey(id, url, filename, alt_text)
+        `)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+
+    if (error) {
+        console.error("Error fetching public hero slides:", error);
+        return [];
+    }
+    return data as HeroSlide[];
+}
+
+/** Lecture complète pour le CMS (inclut les slides masquées) */
+export async function getHeroSlides() {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("hero_slides")
+        .select(`
+            *,
+            site_media!hero_slides_media_id_fkey(id, url, filename, alt_text),
+            mobile_media:site_media!hero_slides_mobile_media_id_fkey(id, url, filename, alt_text)
+        `)
+        .order("display_order", { ascending: true });
+
+    if (error) {
+        console.error("Error fetching hero slides:", error);
+        return [];
+    }
+    return data as HeroSlide[];
+}
+
+/** Créer une nouvelle slide */
+export async function createHeroSlide(slide: {
+    media_id: string;
+    mobile_media_id?: string | null;
+    alt_text?: string | null;
+}) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
+    const supabase = await createClient();
+
+    const { data: existing } = await supabase
+        .from("hero_slides")
+        .select("display_order")
+        .order("display_order", { ascending: false })
+        .limit(1);
+
+    const nextOrder = existing && existing.length > 0 ? existing[0].display_order + 1 : 1;
+
+    const { data, error } = await supabase
+        .from("hero_slides")
+        .insert({ ...slide, display_order: nextOrder })
+        .select()
+        .single();
+
+    if (error) {
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/cms/slider");
+    revalidatePath("/");
+    return { success: true, data };
+}
+
+/** Mettre à jour une slide */
+export async function updateHeroSlide(id: string, updates: {
+    media_id?: string | null;
+    mobile_media_id?: string | null;
+    alt_text?: string | null;
+    is_active?: boolean;
+    display_order?: number;
+}) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
+    const supabase = await createClient();
+    const { error } = await supabase
+        .from("hero_slides")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+    if (error) {
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/cms/slider");
+    revalidatePath("/");
+    return { success: true };
+}
+
+/** Supprimer une slide */
+export async function deleteHeroSlide(id: string) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
+    const supabase = await createClient();
+    const { error } = await supabase
+        .from("hero_slides")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/cms/slider");
+    revalidatePath("/");
+    return { success: true };
+}
+
+/** Réordonner toutes les slides */
+export async function reorderHeroSlides(slides: { id: string; display_order: number }[]) {
+    const auth = await requireCmsAccess();
+    if (!auth.authorized) return auth.response;
+
+    const supabase = await createClient();
+
+    for (const slide of slides) {
+        const { error } = await supabase
+            .from("hero_slides")
+            .update({ display_order: slide.display_order, updated_at: new Date().toISOString() })
+            .eq("id", slide.id);
+
+        if (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    revalidatePath("/dashboard/cms/slider");
+    revalidatePath("/");
     return { success: true };
 }

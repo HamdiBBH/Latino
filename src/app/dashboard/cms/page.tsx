@@ -17,7 +17,8 @@ import {
     Sparkles,
     CreditCard,
     Umbrella,
-    Trophy
+    Trophy,
+    SlidersHorizontal
 } from "lucide-react";
 import { getDashboardStats } from "@/app/actions/cms";
 
@@ -32,6 +33,15 @@ interface CMSModule {
 }
 
 const initialCmsModules: CMSModule[] = [
+    {
+        id: "slider",
+        title: "Slider Hero",
+        description: "Gérer les images du slider : version desktop (paysage) et mobile (portrait)",
+        icon: SlidersHorizontal,
+        href: "/dashboard/cms/slider",
+        color: "#E8A87C",
+        stats: { label: "Slides actives", value: "-" },
+    },
     {
         id: "sections",
         title: "Sections",

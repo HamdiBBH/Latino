@@ -1,12 +1,16 @@
 import nodemailer from "nodemailer";
 
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+
+const port = parseInt(process.env.SMTP_PORT || "465");
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: port,
+    secure: process.env.SMTP_SECURE === "true" || port === 465,
     auth: {
-        user: "Latinocoucou.contact@gmail.com",
-        pass: "iivowtjocursxolk",
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
     },
 });
 
@@ -22,8 +26,8 @@ try {
 
 try {
     const info = await transporter.sendMail({
-        from: '"Latino Coucou Beach" <Latinocoucou.contact@gmail.com>',
-        to: "Latinocoucou.contact@gmail.com",
+        from: `"Latino Coucou Beach" <${process.env.SMTP_USER}>`,
+        to: process.env.SMTP_USER,
         subject: "🧪 Test Email - " + new Date().toLocaleString("fr-FR"),
         html: "<h1>Test</h1><p>Si vous recevez cet email, SMTP fonctionne correctement.</p>",
     });
