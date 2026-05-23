@@ -259,6 +259,38 @@ export function PackagesSection() {
                             Réserver maintenant
                             <ArrowRight style={{ width: 20, height: 20 }} />
                         </button>
+
+                        {/* Member discount badge */}
+                        <div
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                marginTop: "1.25rem",
+                                padding: "12px 20px",
+                                borderRadius: "14px",
+                                backgroundColor: "rgba(232,168,124,0.1)",
+                                border: "1px solid rgba(232,168,124,0.25)",
+                            }}
+                        >
+                            <span style={{ fontSize: "1.2rem" }}>👤</span>
+                            <p style={{ fontSize: "0.9rem", color: "#7A7A7A", margin: 0, lineHeight: 1.4 }}>
+                                <strong style={{ color: "#222222" }}>Membres : -10%</strong> sur tous les forfaits.{" "}
+                                <a
+                                    href="/register"
+                                    style={{
+                                        color: "#E8A87C",
+                                        fontWeight: 600,
+                                        textDecoration: "none",
+                                        borderBottom: "1px solid #E8A87C",
+                                        paddingBottom: "1px",
+                                        transition: "opacity 0.2s ease",
+                                    }}
+                                >
+                                    Créer un compte gratuit →
+                                </a>
+                            </p>
+                        </div>
                     </motion.div>
                 </div>
             </div>

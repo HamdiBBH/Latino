@@ -20,6 +20,8 @@ import { MapSection } from "@/components/sections/MapSection";
 import { StatsBar } from "@/components/sections/StatsBar";
 import { Footer } from "@/components/sections/Footer";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { MemberBenefitsSection } from "@/components/sections/MemberBenefitsSection";
+import { MembershipModal } from "@/components/modals/MembershipModal";
 
 const SECTION_COMPONENTS: Record<string, React.ComponentType<any>> = {
   about: AboutSection,
@@ -92,6 +94,7 @@ export default async function HomePage() {
           <PartnersSection />
           <CTASection packages={packagesData} />
           <FAQNewsletterSection />
+          <MemberBenefitsSection />
           <ContactSection />
         </>
       );
@@ -108,6 +111,19 @@ export default async function HomePage() {
 
         if (section.name === "gallery") {
           return <Component key={section.id} images={galleryImages} />;
+        }
+
+        if (section.name === "packages") {
+          return <Component key={section.id} />;
+        }
+
+        if (section.name === "contact") {
+          return (
+            <React.Fragment key={section.id}>
+              <MemberBenefitsSection />
+              <Component />
+            </React.Fragment>
+          );
         }
 
         if (section.name === "reels") {
@@ -155,6 +171,7 @@ export default async function HomePage() {
 
       <Footer />
       <WhatsAppButton />
+      <MembershipModal />
     </main>
   );
 }

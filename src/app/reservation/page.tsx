@@ -22,6 +22,8 @@ import {
     MessageSquare,
     Sparkles,
     CheckCircle2,
+    Gift,
+    UserPlus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -268,10 +270,39 @@ function ReservationContent() {
 
             {/* Progress Bar */}
             <div style={{ backgroundColor: "#FFFFFF", padding: "1.5rem clamp(1rem, 4vw, 2rem)", overflow: "hidden" }}>
-                <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ maxWidth: "800px", margin: "0 auto", position: "relative" }}>
+                    {/* Background Progress Line */}
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "20px",
+                            left: "10%",
+                            right: "10%",
+                            height: "4px",
+                            backgroundColor: "#E5E7EB",
+                            zIndex: 1,
+                            transform: "translateY(-50%)",
+                        }}
+                    />
+
+                    {/* Active Progress Line */}
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "20px",
+                            left: "10%",
+                            width: `${(step - 1) * 20}%`,
+                            height: "4px",
+                            backgroundColor: "#E8A87C",
+                            zIndex: 2,
+                            transform: "translateY(-50%)",
+                            transition: "width 0.3s ease",
+                        }}
+                    />
+
+                    <div style={{ display: "flex", justifyContent: "space-between", position: "relative", zIndex: 3 }}>
                         {[1, 2, 3, 4, 5].map((s) => (
-                            <div key={s} style={{ display: "flex", alignItems: "center" }}>
+                            <div key={s} style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
                                 <div
                                     style={{
                                         width: 40,
@@ -283,29 +314,30 @@ function ReservationContent() {
                                         alignItems: "center",
                                         justifyContent: "center",
                                         fontWeight: 600,
+                                        flexShrink: 0,
+                                        border: "4px solid #FFFFFF",
+                                        boxSizing: "border-box",
                                     }}
                                 >
                                     {s < step ? <Check style={{ width: 20, height: 20 }} /> : s}
                                 </div>
-                                {s < 5 && (
-                                    <div
-                                        style={{
-                                            width: "clamp(24px, 8vw, 80px)",
-                                            height: "4px",
-                                            backgroundColor: s < step ? "#E8A87C" : "#E5E7EB",
-                                            marginLeft: "8px",
-                                        }}
-                                    />
-                                )}
+                                <span
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        color: step >= s ? "#E8A87C" : "#7A7A7A",
+                                        marginTop: "8px",
+                                        textAlign: "center",
+                                        fontWeight: step === s ? 600 : 400,
+                                    }}
+                                >
+                                    {s === 1 && "Personnes"}
+                                    {s === 2 && "Date"}
+                                    {s === 3 && "Forfait"}
+                                    {s === 4 && "Contact"}
+                                    {s === 5 && "Récap"}
+                                </span>
                             </div>
                         ))}
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px" }}>
-                        <span style={{ fontSize: "0.75rem", color: step >= 1 ? "#E8A87C" : "#7A7A7A" }}>Personnes</span>
-                        <span style={{ fontSize: "0.75rem", color: step >= 2 ? "#E8A87C" : "#7A7A7A" }}>Date</span>
-                        <span style={{ fontSize: "0.75rem", color: step >= 3 ? "#E8A87C" : "#7A7A7A" }}>Forfait</span>
-                        <span style={{ fontSize: "0.75rem", color: step >= 4 ? "#E8A87C" : "#7A7A7A" }}>Contact</span>
-                        <span style={{ fontSize: "0.75rem", color: step >= 5 ? "#E8A87C" : "#7A7A7A" }}>Récap</span>
                     </div>
                 </div>
             </div>
@@ -706,6 +738,73 @@ function ReservationContent() {
                                 <p style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>
                                     Gâteau personnalisé, décoration anniversaire, menu VIP... Mentionnez vos souhaits dans la demande spéciale.
                                 </p>
+                            </div>
+                        </div>
+
+                        {/* ===== Member Promo Card ===== */}
+                        <div style={{
+                            marginTop: "1.5rem",
+                            borderRadius: "16px",
+                            overflow: "hidden",
+                            background: "linear-gradient(135deg, #0A1628 0%, #0F2040 100%)",
+                            border: "1px solid rgba(232,168,124,0.2)",
+                            display: "flex",
+                            alignItems: "stretch",
+                        }}>
+                            {/* Color accent bar */}
+                            <div style={{
+                                width: "6px",
+                                background: "linear-gradient(180deg, #E8A87C, #D4905A)",
+                                flexShrink: 0,
+                            }} />
+                            <div style={{
+                                padding: "1.5rem",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "1.25rem",
+                                flex: 1,
+                                flexWrap: "wrap",
+                            }}>
+                                {/* Icon */}
+                                <div style={{
+                                    width: 52, height: 52, borderRadius: "14px",
+                                    background: "linear-gradient(135deg, #E8A87C, #D4905A)",
+                                    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                                    boxShadow: "0 6px 20px rgba(232,168,124,0.3)",
+                                }}>
+                                    <Gift style={{ width: 26, height: 26, color: "#fff" }} />
+                                </div>
+                                {/* Text */}
+                                <div style={{ flex: 1, minWidth: "180px" }}>
+                                    <p style={{ fontSize: "1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 4px" }}>
+                                        🌴 Envie de -10% sur vos prochaines réservations ?
+                                    </p>
+                                    <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", margin: 0, lineHeight: 1.5 }}>
+                                        Créez votre compte gratuitement et profitez d&apos;avantages exclusifs dès maintenant.
+                                    </p>
+                                </div>
+                                {/* CTA */}
+                                <Link
+                                    href="/register"
+                                    style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        padding: "12px 22px",
+                                        borderRadius: "10px",
+                                        background: "linear-gradient(135deg, #E8A87C, #D4905A)",
+                                        color: "#FFFFFF",
+                                        fontSize: "0.875rem",
+                                        fontWeight: 700,
+                                        textDecoration: "none",
+                                        flexShrink: 0,
+                                        boxShadow: "0 4px 14px rgba(232,168,124,0.35)",
+                                        letterSpacing: "0.2px",
+                                    }}
+                                >
+                                    <UserPlus style={{ width: 16, height: 16 }} />
+                                    Créer mon compte
+                                </Link>
                             </div>
                         </div>
                     </div>
