@@ -8,38 +8,38 @@ import Link from "next/link";
 const benefits = [
     {
         icon: Tag,
-        title: "-10% sur tous les forfaits",
-        description: "Les membres bénéficient d'une réduction exclusive de 10% sur l'ensemble de nos forfaits et installations.",
+        title: "Réductions exclusives membres",
+        description: "Profitez de tarifs préférentiels réservés aux membres sur l'ensemble de nos forfaits et installations tout au long de la saison.",
         color: "#E8A87C",
     },
     {
         icon: CalendarCheck,
         title: "Réservation prioritaire",
-        description: "Accédez en avant-première aux créneaux les plus demandés en haute saison. Fini les complets !",
+        description: "Accédez en avant-première aux créneaux les plus demandés. En haute saison, ne laissez plus les meilleures places vous échapper.",
         color: "#43B0A8",
     },
     {
         icon: Crown,
         title: "Invitations VIP",
-        description: "Recevez des invitations exclusives à nos soirées privées, DJ Sets et événements réservés aux membres.",
+        description: "Soirées privées, DJ Sets, événements exclusifs… En tant que membre, vous êtes toujours les premiers invités.",
         color: "#D4A853",
     },
     {
         icon: Mail,
-        title: "Offres personnalisées",
-        description: "Des promotions sur mesure envoyées directement dans votre boîte mail. Profitez avant tout le monde.",
+        title: "Offres sur mesure",
+        description: "Recevez des promotions personnalisées directement dans votre boîte mail, avant même qu'elles soient annoncées au grand public.",
         color: "#E8A87C",
     },
     {
         icon: Star,
         title: "Historique de vos séjours",
-        description: "Retrouvez toutes vos réservations passées et à venir en un clic depuis votre espace personnel.",
+        description: "Retrouvez toutes vos réservations passées et à venir depuis votre espace personnel. Simple, clair et toujours accessible.",
         color: "#43B0A8",
     },
     {
         icon: Zap,
-        title: "Accès simplifié & rapide",
-        description: "Réservez en quelques secondes sans re-saisir vos informations à chaque fois.",
+        title: "Réservation express",
+        description: "Vos informations sont mémorisées : réservez en quelques secondes, sans jamais ressaisir vos coordonnées.",
         color: "#D4A853",
     },
 ];

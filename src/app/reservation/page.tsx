@@ -777,10 +777,10 @@ function ReservationContent() {
                                 {/* Text */}
                                 <div style={{ flex: 1, minWidth: "180px" }}>
                                     <p style={{ fontSize: "1rem", fontWeight: 700, color: "#FFFFFF", margin: "0 0 4px" }}>
-                                        🌴 Envie de -10% sur vos prochaines réservations ?
+                                        🌴 Rejoignez la famille Latino Coucou Beach !
                                     </p>
                                     <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", margin: 0, lineHeight: 1.5 }}>
-                                        Créez votre compte gratuitement et profitez d&apos;avantages exclusifs dès maintenant.
+                                        Créez votre compte et profitez de réductions exclusives sur tous nos forfaits, ainsi que d&apos;un accès prioritaire à nos événements.
                                     </p>
                                 </div>
                                 {/* CTA */}

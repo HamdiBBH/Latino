@@ -20,7 +20,6 @@ export function MembershipModal() {
     }, []);
 
     useEffect(() => {
-        // Don't show if already dismissed this session
         try {
             if (sessionStorage.getItem(STORAGE_KEY)) return;
         } catch {
@@ -65,214 +64,219 @@ export function MembershipModal() {
                         style={{
                             position: "fixed",
                             inset: 0,
-                            backgroundColor: "rgba(0, 0, 0, 0.55)",
+                            backgroundColor: "rgba(0, 0, 0, 0.6)",
                             backdropFilter: "blur(4px)",
+                            WebkitBackdropFilter: "blur(4px)",
                             zIndex: 9998,
+                            // Centrage du modal via flexbox — évite le conflit transform CSS + Framer Motion
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "1rem",
                         }}
                         aria-hidden="true"
-                    />
-
-                    {/* Modal */}
-                    <motion.div
-                        key="modal-content"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label="Rejoignez les membres Latino Coucou Beach"
-                        initial={{ opacity: 0, scale: 0.88, y: 30 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.92, y: 20 }}
-                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                        style={{
-                            position: "fixed",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            zIndex: 9999,
-                            width: "min(480px, calc(100vw - 2rem))",
-                            borderRadius: "28px",
-                            overflow: "hidden",
-                            boxShadow: "0 30px 80px rgba(0,0,0,0.4)",
-                        }}
                     >
-                        {/* Background */}
-                        <div
+                        {/* Modal — positionné par flexbox, pas par position absolute */}
+                        <motion.div
+                            key="modal-content"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Rejoignez les membres Latino Coucou Beach"
+                            initial={{ opacity: 0, scale: 0.88, y: 24 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 16 }}
+                            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                            onClick={(e) => e.stopPropagation()} // prevent backdrop click from closing when clicking modal
                             style={{
-                                position: "absolute",
-                                inset: 0,
+                                position: "relative",
+                                zIndex: 9999,
+                                width: "100%",
+                                maxWidth: "460px",
+                                borderRadius: "24px",
+                                overflow: "hidden",
+                                boxShadow: "0 30px 80px rgba(0,0,0,0.5)",
                                 background: "linear-gradient(145deg, #0A1628 0%, #0F2040 60%, #0D1E35 100%)",
                             }}
-                        />
-                        {/* Decorative glow */}
-                        <div
-                            aria-hidden="true"
-                            style={{
-                                position: "absolute",
-                                top: "-60px",
-                                right: "-60px",
-                                width: "250px",
-                                height: "250px",
-                                borderRadius: "50%",
-                                background: "radial-gradient(circle, rgba(232,168,124,0.2) 0%, transparent 70%)",
-                                pointerEvents: "none",
-                            }}
-                        />
-                        <div
-                            aria-hidden="true"
-                            style={{
-                                position: "absolute",
-                                bottom: "-40px",
-                                left: "-40px",
-                                width: "200px",
-                                height: "200px",
-                                borderRadius: "50%",
-                                background: "radial-gradient(circle, rgba(67,176,168,0.15) 0%, transparent 70%)",
-                                pointerEvents: "none",
-                            }}
-                        />
-
-                        {/* Content */}
-                        <div style={{ position: "relative", padding: "2.5rem 2rem 2rem" }}>
-                            {/* Close button */}
-                            <button
-                                onClick={dismiss}
-                                aria-label="Fermer"
+                        >
+                            {/* Decorative glows */}
+                            <div
+                                aria-hidden="true"
                                 style={{
                                     position: "absolute",
-                                    top: "1rem",
-                                    right: "1rem",
-                                    width: "36px",
-                                    height: "36px",
+                                    top: "-60px",
+                                    right: "-60px",
+                                    width: "220px",
+                                    height: "220px",
                                     borderRadius: "50%",
-                                    backgroundColor: "rgba(255,255,255,0.08)",
-                                    border: "1px solid rgba(255,255,255,0.12)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    transition: "background-color 0.2s ease",
+                                    background: "radial-gradient(circle, rgba(232,168,124,0.22) 0%, transparent 70%)",
+                                    pointerEvents: "none",
                                 }}
-                            >
-                                <X style={{ width: 16, height: 16, color: "rgba(255,255,255,0.6)" }} />
-                            </button>
-
-                            {/* Icon badge */}
+                            />
                             <div
+                                aria-hidden="true"
                                 style={{
-                                    width: "64px",
-                                    height: "64px",
-                                    borderRadius: "20px",
-                                    background: "linear-gradient(135deg, #E8A87C, #D4905A)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    marginBottom: "1.5rem",
-                                    boxShadow: "0 8px 24px rgba(232,168,124,0.35)",
+                                    position: "absolute",
+                                    bottom: "-40px",
+                                    left: "-40px",
+                                    width: "180px",
+                                    height: "180px",
+                                    borderRadius: "50%",
+                                    background: "radial-gradient(circle, rgba(67,176,168,0.15) 0%, transparent 70%)",
+                                    pointerEvents: "none",
                                 }}
-                            >
-                                <Gift style={{ width: 30, height: 30, color: "#FFFFFF" }} />
+                            />
+
+                            {/* Content */}
+                            <div style={{ position: "relative", padding: "2rem 1.75rem 1.75rem" }}>
+                                {/* Close button */}
+                                <button
+                                    onClick={dismiss}
+                                    aria-label="Fermer"
+                                    style={{
+                                        position: "absolute",
+                                        top: "1rem",
+                                        right: "1rem",
+                                        width: "34px",
+                                        height: "34px",
+                                        borderRadius: "50%",
+                                        backgroundColor: "rgba(255,255,255,0.08)",
+                                        border: "1px solid rgba(255,255,255,0.12)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    <X style={{ width: 15, height: 15, color: "rgba(255,255,255,0.6)" }} />
+                                </button>
+
+                                {/* Icon */}
+                                <div
+                                    style={{
+                                        width: "56px",
+                                        height: "56px",
+                                        borderRadius: "16px",
+                                        background: "linear-gradient(135deg, #E8A87C, #D4905A)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        marginBottom: "1.25rem",
+                                        boxShadow: "0 8px 24px rgba(232,168,124,0.35)",
+                                    }}
+                                >
+                                    <Gift style={{ width: 26, height: 26, color: "#FFFFFF" }} />
+                                </div>
+
+                                {/* Title */}
+                                <h2
+                                    style={{
+                                        fontSize: "clamp(1.25rem, 5vw, 1.5rem)",
+                                        fontWeight: 700,
+                                        color: "#FFFFFF",
+                                        marginBottom: "0.75rem",
+                                        lineHeight: 1.3,
+                                        paddingRight: "2rem", // avoid overlap with close button
+                                    }}
+                                >
+                                    🌴 Rejoignez la famille{" "}
+                                    <span style={{ color: "#E8A87C" }}>Latino Coucou Beach</span> !
+                                </h2>
+
+                                {/* Description */}
+                                <p
+                                    style={{
+                                        fontSize: "0.95rem",
+                                        color: "rgba(255,255,255,0.65)",
+                                        lineHeight: 1.65,
+                                        marginBottom: "1.5rem",
+                                    }}
+                                >
+                                    Créez votre compte gratuitement et profitez de{" "}
+                                    <strong style={{ color: "#E8A87C" }}>
+                                        réductions exclusives sur tous nos forfaits
+                                    </strong>{" "}
+                                    ainsi que d'un accès prioritaire à nos événements et soirées privées.
+                                </p>
+
+                                {/* Perks */}
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        gap: "0.5rem",
+                                        flexWrap: "wrap",
+                                        marginBottom: "1.5rem",
+                                    }}
+                                >
+                                    {[
+                                        "✅ Réductions exclusives",
+                                        "🎊 Invitations VIP",
+                                        "📅 Résa prioritaire",
+                                    ].map((perk) => (
+                                        <span
+                                            key={perk}
+                                            style={{
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "rgba(255,255,255,0.75)",
+                                                backgroundColor: "rgba(255,255,255,0.07)",
+                                                border: "1px solid rgba(255,255,255,0.1)",
+                                                borderRadius: "100px",
+                                                padding: "5px 12px",
+                                                whiteSpace: "nowrap",
+                                            }}
+                                        >
+                                            {perk}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* CTA Button */}
+                                <Link
+                                    href="/register"
+                                    onClick={dismiss}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: "10px",
+                                        width: "100%",
+                                        padding: "15px 24px",
+                                        fontSize: "0.95rem",
+                                        fontWeight: 700,
+                                        borderRadius: "12px",
+                                        background: "linear-gradient(135deg, #E8A87C, #D4905A)",
+                                        color: "#FFFFFF",
+                                        textDecoration: "none",
+                                        boxShadow: "0 8px 24px rgba(232,168,124,0.35)",
+                                        marginBottom: "0.75rem",
+                                        letterSpacing: "0.2px",
+                                        boxSizing: "border-box",
+                                    }}
+                                >
+                                    Créer mon compte gratuitement
+                                    <ArrowRight style={{ width: 17, height: 17 }} />
+                                </Link>
+
+                                {/* Dismiss */}
+                                <button
+                                    onClick={dismiss}
+                                    style={{
+                                        display: "block",
+                                        width: "100%",
+                                        textAlign: "center",
+                                        fontSize: "0.82rem",
+                                        color: "rgba(255,255,255,0.3)",
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        padding: "0.25rem",
+                                    }}
+                                >
+                                    Non merci, continuer sans compte
+                                </button>
                             </div>
-
-                            {/* Title */}
-                            <h2
-                                style={{
-                                    fontSize: "1.6rem",
-                                    fontWeight: 700,
-                                    color: "#FFFFFF",
-                                    marginBottom: "0.75rem",
-                                    lineHeight: 1.25,
-                                }}
-                            >
-                                🌴 Rejoignez la famille{" "}
-                                <span style={{ color: "#E8A87C" }}>Latino Coucou Beach</span> !
-                            </h2>
-
-                            {/* Subtitle */}
-                            <p
-                                style={{
-                                    fontSize: "1rem",
-                                    color: "rgba(255,255,255,0.65)",
-                                    lineHeight: 1.65,
-                                    marginBottom: "1.75rem",
-                                }}
-                            >
-                                Créez votre compte gratuitement et obtenez{" "}
-                                <strong style={{ color: "#E8A87C" }}>-10% sur votre première réservation</strong>{" "}
-                                + accès prioritaire à tous nos événements exclusifs.
-                            </p>
-
-                            {/* Perks row */}
-                            <div
-                                style={{
-                                    display: "flex",
-                                    gap: "0.75rem",
-                                    flexWrap: "wrap",
-                                    marginBottom: "1.75rem",
-                                }}
-                            >
-                                {["✅ -10% immédiat", "🎊 Invitations VIP", "📅 Résa prioritaire"].map((perk) => (
-                                    <span
-                                        key={perk}
-                                        style={{
-                                            fontSize: "0.82rem",
-                                            fontWeight: 500,
-                                            color: "rgba(255,255,255,0.75)",
-                                            backgroundColor: "rgba(255,255,255,0.07)",
-                                            border: "1px solid rgba(255,255,255,0.1)",
-                                            borderRadius: "100px",
-                                            padding: "6px 14px",
-                                        }}
-                                    >
-                                        {perk}
-                                    </span>
-                                ))}
-                            </div>
-
-                            {/* CTA Button */}
-                            <Link
-                                href="/register"
-                                onClick={dismiss}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: "10px",
-                                    width: "100%",
-                                    padding: "16px 28px",
-                                    fontSize: "1rem",
-                                    fontWeight: 700,
-                                    borderRadius: "14px",
-                                    background: "linear-gradient(135deg, #E8A87C, #D4905A)",
-                                    color: "#FFFFFF",
-                                    textDecoration: "none",
-                                    boxShadow: "0 8px 24px rgba(232,168,124,0.35)",
-                                    transition: "opacity 0.2s ease",
-                                    marginBottom: "0.875rem",
-                                    letterSpacing: "0.3px",
-                                }}
-                            >
-                                Créer mon compte gratuitement
-                                <ArrowRight style={{ width: 18, height: 18 }} />
-                            </Link>
-
-                            {/* Dismiss link */}
-                            <button
-                                onClick={dismiss}
-                                style={{
-                                    display: "block",
-                                    width: "100%",
-                                    textAlign: "center",
-                                    fontSize: "0.85rem",
-                                    color: "rgba(255,255,255,0.35)",
-                                    background: "none",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    padding: "0.25rem",
-                                    transition: "color 0.2s ease",
-                                }}
-                            >
-                                Non merci, continuer sans compte
-                            </button>
-                        </div>
+                        </motion.div>
                     </motion.div>
                 </>
             )}

@@ -275,7 +275,7 @@ export function PackagesSection() {
                         >
                             <span style={{ fontSize: "1.2rem" }}>👤</span>
                             <p style={{ fontSize: "0.9rem", color: "#7A7A7A", margin: 0, lineHeight: 1.4 }}>
-                                <strong style={{ color: "#222222" }}>Membres : -10%</strong> sur tous les forfaits.{" "}
+                                <strong style={{ color: "#222222" }}>Membres : réductions exclusives</strong> sur tous nos forfaits.{" "}
                                 <a
                                     href="/register"
                                     style={{
