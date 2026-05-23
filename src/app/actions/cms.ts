@@ -1188,9 +1188,58 @@ export interface HeroSlide {
     mobile_media?: { id: string; url: string; filename: string; alt_text: string | null } | null;
 }
 
+/** Assure que les slides existantes de site_media (dossier 'hero') sont migrées dans hero_slides si la table est vide */
+async function ensureHeroSlidesSeeded(supabase: any) {
+    const { count, error: countError } = await supabase
+        .from("hero_slides")
+        .select("*", { count: "exact", head: true });
+
+    if (countError) {
+        console.error("Error checking hero slides count:", countError);
+        return;
+    }
+
+    if (count === 0) {
+        const { data: existingMedia, error: mediaError } = await supabase
+            .from("site_media")
+            .select("*")
+            .eq("folder", "hero")
+            .order("created_at", { ascending: true });
+
+        if (mediaError) {
+            console.error("Error fetching legacy hero media:", mediaError);
+            return;
+        }
+
+        if (existingMedia && existingMedia.length > 0) {
+            const inserts = existingMedia.map((m: any, index: number) => ({
+                media_id: m.id,
+                mobile_media_id: null,
+                display_order: index + 1,
+                is_active: true,
+                alt_text: m.alt_text || null,
+            }));
+
+            const { error: insertError } = await supabase
+                .from("hero_slides")
+                .insert(inserts);
+
+            if (insertError) {
+                console.error("Error inserting seeded hero slides:", insertError);
+            }
+        }
+    }
+}
+
 /** Lecture publique des slides actives (pour le Hero du site) */
 export async function getPublicHeroSlides() {
     const supabase = await createClient();
+    try {
+        await ensureHeroSlidesSeeded(supabase);
+    } catch (e) {
+        console.error("Failed to seed hero slides automatically:", e);
+    }
+    
     const { data, error } = await supabase
         .from("hero_slides")
         .select(`
@@ -1211,6 +1260,12 @@ export async function getPublicHeroSlides() {
 /** Lecture complète pour le CMS (inclut les slides masquées) */
 export async function getHeroSlides() {
     const supabase = await createClient();
+    try {
+        await ensureHeroSlidesSeeded(supabase);
+    } catch (e) {
+        console.error("Failed to seed hero slides automatically:", e);
+    }
+
     const { data, error } = await supabase
         .from("hero_slides")
         .select(`

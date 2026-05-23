@@ -92,6 +92,7 @@ export default function SliderManagerPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+    const [activeTab, setActiveTab] = useState<"desktop" | "mobile">("desktop");
 
     // Media picker modal
     const [showPicker, setShowPicker] = useState(false);
@@ -172,12 +173,6 @@ export default function SliderManagerPage() {
                 setPendingDesktopId(null);
                 setSaving(false);
             }
-            return;
-        }
-
-        // "new-skip-mobile" = skip mobile
-        if (pickerTargetSlide === "new-mobile") {
-            // already handled above, but just in case
             return;
         }
 
@@ -300,37 +295,95 @@ export default function SliderManagerPage() {
                         <div>
                             <h1 style={{ fontSize: "1.875rem", fontWeight: 700, color: "#222" }}>Slider Hero</h1>
                             <p style={{ color: "#7A7A7A", fontSize: "0.875rem" }}>
-                                {slides.length} slide{slides.length !== 1 ? "s" : ""} • Images desktop &amp; mobile séparées
+                                {slides.length} slide{slides.length !== 1 ? "s" : ""} • Gestion séparée Desktop/Mobile
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => openPicker("new", "desktop")}
-                        style={btnPrimary}
-                        disabled={saving}
-                    >
-                        <Plus style={{ width: 18, height: 18 }} />
-                        Nouvelle slide
-                    </button>
+                    {activeTab === "desktop" && (
+                        <button
+                            onClick={() => openPicker("new", "desktop")}
+                            style={btnPrimary}
+                            disabled={saving}
+                        >
+                            <Plus style={{ width: 18, height: 18 }} />
+                            Nouvelle slide
+                        </button>
+                    )}
                 </div>
+            </div>
+
+            {/* Tabs */}
+            <div style={{
+                display: "flex",
+                gap: "8px",
+                borderBottom: "2px solid #E5E7EB",
+                marginBottom: "2rem",
+            }}>
+                <button
+                    onClick={() => setActiveTab("desktop")}
+                    style={{
+                        padding: "12px 24px",
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        backgroundColor: "transparent",
+                        border: "none",
+                        borderBottom: activeTab === "desktop" ? "3px solid #E8A87C" : "3px solid transparent",
+                        marginBottom: "-2px",
+                        color: activeTab === "desktop" ? "#222" : "#6B7280",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        transition: "all 0.2s ease",
+                    }}
+                >
+                    <Monitor style={{ width: 18, height: 18, color: activeTab === "desktop" ? "#E8A87C" : "#6B7280" }} />
+                    Version Desktop (16:9)
+                </button>
+                <button
+                    onClick={() => setActiveTab("mobile")}
+                    style={{
+                        padding: "12px 24px",
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        backgroundColor: "transparent",
+                        border: "none",
+                        borderBottom: activeTab === "mobile" ? "3px solid #8B5CF6" : "3px solid transparent",
+                        marginBottom: "-2px",
+                        color: activeTab === "mobile" ? "#222" : "#6B7280",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        transition: "all 0.2s ease",
+                    }}
+                >
+                    <Smartphone style={{ width: 18, height: 18, color: activeTab === "mobile" ? "#8B5CF6" : "#6B7280" }} />
+                    Version Mobile (9:16)
+                </button>
             </div>
 
             {/* Info Banner */}
             <div style={{
                 padding: "1rem 1.25rem",
-                backgroundColor: "#FFF9F5",
-                border: "1px solid #FDDCBB",
+                backgroundColor: activeTab === "desktop" ? "#FFF9F5" : "#F5F3FF",
+                border: activeTab === "desktop" ? "1px solid #FDDCBB" : "1px solid #DDD6FE",
                 borderRadius: "12px",
                 marginBottom: "1.5rem",
                 display: "flex",
                 gap: "12px",
                 alignItems: "flex-start",
             }}>
-                <AlertCircle style={{ width: 18, height: 18, color: "#E8A87C", flexShrink: 0, marginTop: 2 }} />
-                <div style={{ fontSize: "0.8125rem", color: "#6B5440", lineHeight: 1.6 }}>
-                    <strong>Deux images par slide :</strong> choisissez une image <strong>paysage (desktop)</strong> et une image <strong>portrait/verticale (mobile)</strong>.
-                    Si aucune image mobile n&apos;est définie, l&apos;image desktop sera utilisée sur tous les écrans.
-                </div>
+                <AlertCircle style={{ width: 18, height: 18, color: activeTab === "desktop" ? "#E8A87C" : "#8B5CF6", flexShrink: 0, marginTop: 2 }} />
+                {activeTab === "desktop" ? (
+                    <div style={{ fontSize: "0.8125rem", color: "#6B5440", lineHeight: 1.6 }}>
+                        <strong>Version Desktop (Ratio Paysage 16:9) :</strong> C'est la configuration principale de vos slides. Vous pouvez ajouter, réordonner, masquer ou supprimer des slides ici.
+                    </div>
+                ) : (
+                    <div style={{ fontSize: "0.8125rem", color: "#4C1D95", lineHeight: 1.6 }}>
+                        <strong>Version Mobile (Ratio Portrait 9:16) :</strong> Associez une image verticale spécifique à chaque slide pour un rendu parfait sur mobile. Si aucune image mobile n'est sélectionnée, l'image desktop sera affichée par défaut.
+                    </div>
+                )}
             </div>
 
             {/* Empty State */}
@@ -349,7 +402,7 @@ export default function SliderManagerPage() {
             )}
 
             {/* Slides List */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                 {slides.map((slide, index) => (
                     <SlideCard
                         key={slide.id}
@@ -357,12 +410,20 @@ export default function SliderManagerPage() {
                         index={index}
                         total={slides.length}
                         saving={saving}
+                        activeTab={activeTab}
                         onMoveUp={() => moveSlide(index, "up")}
                         onMoveDown={() => moveSlide(index, "down")}
                         onToggleActive={() => toggleActive(slide)}
                         onDelete={() => deleteSlide(slide.id)}
                         onPickDesktop={() => openPicker(slide.id, "desktop")}
                         onPickMobile={() => openPicker(slide.id, "mobile")}
+                        onRemoveMobile={async () => {
+                            setSaving(true);
+                            await updateHeroSlide(slide.id, { mobile_media_id: null });
+                            showToast("Image mobile supprimée.", "success");
+                            await loadSlides();
+                            setSaving(false);
+                        }}
                     />
                 ))}
             </div>
@@ -398,24 +459,41 @@ interface SlideCardProps {
     index: number;
     total: number;
     saving: boolean;
+    activeTab: "desktop" | "mobile";
     onMoveUp: () => void;
     onMoveDown: () => void;
     onToggleActive: () => void;
     onDelete: () => void;
     onPickDesktop: () => void;
     onPickMobile: () => void;
+    onRemoveMobile: () => void;
 }
 
-function SlideCard({ slide, index, total, saving, onMoveUp, onMoveDown, onToggleActive, onDelete, onPickDesktop, onPickMobile }: SlideCardProps) {
+function SlideCard({
+    slide,
+    index,
+    total,
+    saving,
+    activeTab,
+    onMoveUp,
+    onMoveDown,
+    onToggleActive,
+    onDelete,
+    onPickDesktop,
+    onPickMobile,
+    onRemoveMobile,
+}: SlideCardProps) {
     const desktopUrl = slide.site_media?.url;
     const mobileUrl = slide.mobile_media?.url;
+    const isDesktopTab = activeTab === "desktop";
 
     return (
         <div style={{
             ...cardStyle,
             border: `1px solid ${slide.is_active ? "#E5E7EB" : "#FECACA"}`,
-            opacity: slide.is_active ? 1 : 0.7,
+            opacity: slide.is_active ? 1 : 0.75,
             transition: "all 0.2s ease",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}>
             {/* Top bar */}
             <div style={{
@@ -426,26 +504,28 @@ function SlideCard({ slide, index, total, saving, onMoveUp, onMoveDown, onToggle
                 alignItems: "center",
                 gap: "12px",
             }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <button
-                        onClick={onMoveUp}
-                        disabled={index === 0 || saving}
-                        style={{ background: "none", border: "none", cursor: index === 0 ? "default" : "pointer", color: index === 0 ? "#D1D5DB" : "#6B7280", padding: 0 }}
-                    >
-                        <ChevronUp style={{ width: 16, height: 16 }} />
-                    </button>
-                    <button
-                        onClick={onMoveDown}
-                        disabled={index === total - 1 || saving}
-                        style={{ background: "none", border: "none", cursor: index === total - 1 ? "default" : "pointer", color: index === total - 1 ? "#D1D5DB" : "#6B7280", padding: 0 }}
-                    >
-                        <ChevronDown style={{ width: 16, height: 16 }} />
-                    </button>
-                </div>
+                {isDesktopTab && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        <button
+                            onClick={onMoveUp}
+                            disabled={index === 0 || saving}
+                            style={{ background: "none", border: "none", cursor: index === 0 ? "default" : "pointer", color: index === 0 ? "#D1D5DB" : "#6B7280", padding: 0 }}
+                        >
+                            <ChevronUp style={{ width: 16, height: 16 }} />
+                        </button>
+                        <button
+                            onClick={onMoveDown}
+                            disabled={index === total - 1 || saving}
+                            style={{ background: "none", border: "none", cursor: index === total - 1 ? "default" : "pointer", color: index === total - 1 ? "#D1D5DB" : "#6B7280", padding: 0 }}
+                        >
+                            <ChevronDown style={{ width: 16, height: 16 }} />
+                        </button>
+                    </div>
+                )}
 
                 <div style={{
                     width: 28, height: 28, borderRadius: "50%",
-                    backgroundColor: "#E8A87C",
+                    backgroundColor: isDesktopTab ? "#E8A87C" : "#8B5CF6",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontWeight: 700, fontSize: "0.75rem", color: "#FFF",
                     flexShrink: 0,
@@ -458,134 +538,201 @@ function SlideCard({ slide, index, total, saving, onMoveUp, onMoveDown, onToggle
                     {!slide.is_active && <span style={{ marginLeft: 8, fontSize: "0.75rem", padding: "2px 8px", backgroundColor: "#FEE2E2", color: "#DC2626", borderRadius: "4px", fontWeight: 500 }}>Masquée</span>}
                 </span>
 
-                <div style={{ display: "flex", gap: 6 }}>
-                    <button
-                        onClick={onToggleActive}
-                        style={btnGhost}
-                        title={slide.is_active ? "Masquer la slide" : "Afficher la slide"}
-                    >
-                        {slide.is_active
-                            ? <Eye style={{ width: 15, height: 15, color: "#10B981" }} />
-                            : <EyeOff style={{ width: 15, height: 15, color: "#EF4444" }} />}
-                        {slide.is_active ? "Visible" : "Masquée"}
-                    </button>
-                    <button
-                        onClick={onDelete}
-                        style={{ ...btnGhost, color: "#EF4444", borderColor: "#FECACA" }}
-                        title="Supprimer"
-                    >
-                        <Trash2 style={{ width: 15, height: 15 }} />
-                    </button>
-                </div>
+                {isDesktopTab ? (
+                    <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                            onClick={onToggleActive}
+                            style={btnGhost}
+                            title={slide.is_active ? "Masquer la slide" : "Afficher la slide"}
+                        >
+                            {slide.is_active
+                                ? <Eye style={{ width: 15, height: 15, color: "#10B981" }} />
+                                : <EyeOff style={{ width: 15, height: 15, color: "#EF4444" }} />}
+                            {slide.is_active ? "Visible" : "Masquée"}
+                        </button>
+                        <button
+                            onClick={onDelete}
+                            style={{ ...btnGhost, color: "#EF4444", borderColor: "#FECACA" }}
+                            title="Supprimer"
+                        >
+                            <Trash2 style={{ width: 15, height: 15 }} />
+                        </button>
+                    </div>
+                ) : (
+                    <span style={{ fontSize: "0.75rem", padding: "3px 8px", backgroundColor: slide.is_active ? "#D1FAE5" : "#FEE2E2", color: slide.is_active ? "#065F46" : "#991B1B", borderRadius: "6px", fontWeight: 600 }}>
+                        {slide.is_active ? "Visible en ligne" : "Masquée"}
+                    </span>
+                )}
             </div>
 
-            {/* Image panels */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-
-                {/* Desktop Image */}
-                <div style={{ padding: "1.25rem", borderRight: "1px solid #F3F4F6" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.75rem" }}>
-                        <Monitor style={{ width: 16, height: 16, color: "#6B7280" }} />
-                        <span style={{ fontWeight: 600, fontSize: "0.8125rem", color: "#374151" }}>Desktop</span>
-                        <span style={{ fontSize: "0.6875rem", color: "#9CA3AF" }}>Paysage 16:9</span>
-                    </div>
-
-                    {desktopUrl ? (
-                        <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", marginBottom: "0.75rem", cursor: "pointer" }} onClick={onPickDesktop}>
-                            <img src={desktopUrl} alt={slide.alt_text || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            <div style={{
-                                position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                transition: "background-color 0.2s ease",
-                            }}
-                                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.35)")}
-                                onMouseLeave={e => (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0)")}
-                            >
-                                <Image style={{ width: 24, height: 24, color: "#FFF", opacity: 0 }} />
+            {/* Content area: changes based on activeTab */}
+            {isDesktopTab ? (
+                /* ─── DESKTOP VIEW ─── */
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.8fr", gap: "1.5rem", padding: "1.25rem" }}>
+                    {/* Left details */}
+                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                        <div>
+                            <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.875rem", fontWeight: 600, color: "#374151" }}>Configuration Desktop</h4>
+                            <p style={{ margin: 0, fontSize: "0.75rem", color: "#6B7280", lineHeight: 1.4 }}>
+                                Cette image s'affichera sur les écrans d'ordinateurs et de tablettes au ratio paysage (16:9). C'est l'image par défaut du slider.
+                            </p>
+                        </div>
+                        
+                        {/* Alt text */}
+                        <div style={{ marginTop: "1rem" }}>
+                            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#4B5563", marginBottom: "4px" }}>Texte alternatif (SEO) :</label>
+                            <div style={{ padding: "8px 12px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: "6px", fontSize: "0.75rem", color: "#374151" }}>
+                                {slide.alt_text || <em>Aucun texte alternatif défini.</em>}
                             </div>
                         </div>
-                    ) : (
-                        <div style={{
-                            aspectRatio: "16/9",
-                            backgroundColor: "#F9FAFB",
-                            border: "2px dashed #D1D5DB",
-                            borderRadius: "10px",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "8px",
-                            color: "#9CA3AF",
-                            marginBottom: "0.75rem",
-                        }}>
-                            <Monitor style={{ width: 28, height: 28 }} />
-                            <span style={{ fontSize: "0.75rem" }}>Aucune image</span>
-                        </div>
-                    )}
-
-                    <button onClick={onPickDesktop} style={{
-                        ...btnGhost,
-                        width: "100%",
-                        justifyContent: "center",
-                        borderColor: "#E8A87C",
-                        color: "#E8A87C",
-                        fontWeight: 600,
-                    }}>
-                        <Image style={{ width: 14, height: 14 }} />
-                        {desktopUrl ? "Changer l'image" : "Choisir une image"}
-                    </button>
-                </div>
-
-                {/* Mobile Image */}
-                <div style={{ padding: "1.25rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.75rem" }}>
-                        <Smartphone style={{ width: 16, height: 16, color: "#6B7280" }} />
-                        <span style={{ fontWeight: 600, fontSize: "0.8125rem", color: "#374151" }}>Mobile</span>
-                        <span style={{ fontSize: "0.6875rem", color: "#9CA3AF" }}>Portrait 9:16</span>
                     </div>
 
-                    {mobileUrl ? (
-                        <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "9/16", maxHeight: 180, marginBottom: "0.75rem", cursor: "pointer" }} onClick={onPickMobile}>
-                            <img src={mobileUrl} alt={slide.alt_text || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        </div>
-                    ) : (
-                        <div style={{
-                            aspectRatio: "9/16",
-                            maxHeight: 180,
-                            backgroundColor: "#F9FAFB",
-                            border: "2px dashed #D1D5DB",
-                            borderRadius: "10px",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
+                    {/* Right Image */}
+                    <div>
+                        {desktopUrl ? (
+                            <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9", marginBottom: "0.75rem", cursor: "pointer", border: "1px solid #E5E7EB" }} onClick={onPickDesktop}>
+                                <img src={desktopUrl} alt={slide.alt_text || ""} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                <div style={{
+                                    position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0)",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    transition: "background-color 0.2s ease",
+                                }}
+                                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.35)")}
+                                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0)")}
+                                >
+                                    <Image style={{ width: 24, height: 24, color: "#FFF", opacity: 0 }} />
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{
+                                aspectRatio: "16/9",
+                                backgroundColor: "#F9FAFB",
+                                border: "2px dashed #D1D5DB",
+                                borderRadius: "10px",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "8px",
+                                color: "#9CA3AF",
+                                marginBottom: "0.75rem",
+                            }}>
+                                <Monitor style={{ width: 28, height: 28 }} />
+                                <span style={{ fontSize: "0.75rem" }}>Aucune image sélectionnée</span>
+                            </div>
+                        )}
+
+                        <button onClick={onPickDesktop} style={{
+                            ...btnGhost,
+                            width: "100%",
                             justifyContent: "center",
-                            gap: "8px",
-                            color: "#9CA3AF",
-                            marginBottom: "0.75rem",
+                            borderColor: "#E8A87C",
+                            color: "#E8A87C",
+                            fontWeight: 600,
+                            backgroundColor: "#FFF9F5",
                         }}>
-                            <Smartphone style={{ width: 22, height: 22 }} />
-                            <span style={{ fontSize: "0.75rem", textAlign: "center", lineHeight: 1.3 }}>Utilise l&apos;image<br />desktop</span>
-                        </div>
-                    )}
-
-                    <button onClick={onPickMobile} style={{
-                        ...btnGhost,
-                        width: "100%",
-                        justifyContent: "center",
-                        borderColor: "#8B5CF6",
-                        color: "#8B5CF6",
-                        fontWeight: 600,
-                    }}>
-                        <Smartphone style={{ width: 14, height: 14 }} />
-                        {mobileUrl ? "Changer l'image" : "Image mobile dédiée"}
-                    </button>
+                            <Image style={{ width: 14, height: 14 }} />
+                            {desktopUrl ? "Changer l'image Desktop" : "Choisir une image Desktop"}
+                        </button>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                /* ─── MOBILE VIEW ─── */
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", padding: "1.25rem" }}>
+                    
+                    {/* Left: Desktop Reference */}
+                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", borderRight: "1px solid #F3F4F6", paddingRight: "1.5rem" }}>
+                        <div>
+                            <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.875rem", fontWeight: 600, color: "#374151" }}>Image Desktop de Référence</h4>
+                            <p style={{ margin: "0 0 1rem 0", fontSize: "0.75rem", color: "#6B7280", lineHeight: 1.4 }}>
+                                Visualisez l'image desktop associée. C'est l'image qui sera remplacée sur mobile (portrait).
+                            </p>
+                        </div>
+                        {desktopUrl && (
+                            <div style={{ borderRadius: "8px", overflow: "hidden", aspectRatio: "16/9", border: "1px solid #E5E7EB", opacity: 0.8 }}>
+                                <img src={desktopUrl} alt="Référence" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            </div>
+                        )}
+                        <div style={{ fontSize: "0.7rem", color: "#9CA3AF", marginTop: "8px" }}>
+                            Ratio de référence : Paysage 16:9
+                        </div>
+                    </div>
 
-            {/* Alt text */}
-            <div style={{ padding: "0.75rem 1.25rem", borderTop: "1px solid #F3F4F6", fontSize: "0.75rem", color: "#9CA3AF" }}>
-                <strong style={{ color: "#6B7280" }}>Alt text :</strong> {slide.alt_text || <em>non défini</em>}
-            </div>
+                    {/* Right: Mobile Image Management */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontWeight: 600, fontSize: "0.8125rem", color: "#374151" }}>Image Mobile Dédiée</span>
+                            <span style={{ fontSize: "0.6875rem", color: "#9CA3AF" }}>Portrait 9:16</span>
+                        </div>
+
+                        {mobileUrl ? (
+                            <>
+                                <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "9/16", height: 160, alignSelf: "center", border: "1px solid #E5E7EB", cursor: "pointer" }} onClick={onPickMobile}>
+                                    <img src={mobileUrl} alt={slide.alt_text || ""} style={{ height: "100%", width: "auto", maxHeight: 160, display: "block", objectFit: "cover" }} />
+                                </div>
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                    <button onClick={onPickMobile} style={{
+                                        ...btnGhost,
+                                        flex: 1,
+                                        justifyContent: "center",
+                                        borderColor: "#8B5CF6",
+                                        color: "#8B5CF6",
+                                        fontWeight: 600,
+                                        backgroundColor: "#F5F3FF",
+                                    }}>
+                                        <Smartphone style={{ width: 14, height: 14 }} />
+                                        Remplacer
+                                    </button>
+                                    <button onClick={onRemoveMobile} style={{
+                                        ...btnGhost,
+                                        borderColor: "#FECACA",
+                                        color: "#EF4444",
+                                    }} title="Supprimer l'image mobile">
+                                        <Trash2 style={{ width: 14, height: 14 }} />
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div style={{
+                                    aspectRatio: "9/16",
+                                    height: 120,
+                                    alignSelf: "center",
+                                    backgroundColor: "#FFFBEB",
+                                    border: "2px dashed #FCD34D",
+                                    borderRadius: "10px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "6px",
+                                    color: "#D97706",
+                                    padding: "0.5rem",
+                                    width: "100%",
+                                }}>
+                                    <Smartphone style={{ width: 18, height: 18 }} />
+                                    <span style={{ fontSize: "0.7rem", textAlign: "center", fontWeight: 500, lineHeight: 1.3 }}>
+                                        Mode repli actif<br />
+                                        <span style={{ fontSize: "0.65rem", fontWeight: 400, color: "#B45309" }}>Utilise l'image desktop</span>
+                                    </span>
+                                </div>
+                                <button onClick={onPickMobile} style={{
+                                    ...btnGhost,
+                                    width: "100%",
+                                    justifyContent: "center",
+                                    borderColor: "#8B5CF6",
+                                    color: "#8B5CF6",
+                                    fontWeight: 600,
+                                    backgroundColor: "#F5F3FF",
+                                }}>
+                                    <Smartphone style={{ width: 14, height: 14 }} />
+                                    Définir l'image mobile
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -629,7 +776,7 @@ function MediaPickerModal({ mode, mediaFiles, loading, selectedId, onSelect, onC
                 {/* Tip */}
                 <div style={{ padding: "0.75rem 1.5rem", backgroundColor: isDesktop ? "#FFF9F5" : "#F5F3FF", borderBottom: "1px solid #E5E7EB", fontSize: "0.8125rem", color: isDesktop ? "#78450F" : "#4C1D95" }}>
                     {isDesktop
-                        ? "💡 Privilégiez une image en format <strong>paysage (ratio 16:9 ou 4:3)</strong> pour une belle rendu sur desktop et tablette."
+                        ? "💡 Privilégiez une image en format <strong>paysage (ratio 16:9 ou 4:3)</strong> pour un rendu optimal sur desktop et tablette."
                         : "💡 Choisissez une image en format <strong>portrait (ratio 9:16)</strong> pour occuper tout l'écran mobile. Si vous n'en avez pas, ignorez cette étape."}
                 </div>
 
