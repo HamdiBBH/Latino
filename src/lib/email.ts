@@ -451,8 +451,8 @@ export async function sendReservationModificationEmail(data: ReservationEmailDat
     }
 }
 
-// Send newsletter welcome email with discount code
-export async function sendNewsletterWelcomeEmail(email: string, discountCode: string) {
+// Send newsletter welcome email
+export async function sendNewsletterWelcomeEmail(email: string) {
     const transporter = getTransporter();
 
     const content = `
@@ -462,15 +462,6 @@ export async function sendNewsletterWelcomeEmail(email: string, discountCode: st
         <p style="color: #7A7A7A; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
             Merci de vous être inscrit(e) à notre newsletter ! Vous ferez désormais partie des premiers informés de nos événements exclusifs, de nos offres spéciales et des actualités de notre beach club.
         </p>
-        
-        <div style="background-color: #F9F5F0; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center; border: 2px dashed #E8A87C;">
-            <h3 style="color: #E8A87C; margin: 0 0 10px; font-size: 18px;">Votre cadeau de bienvenue 🎁</h3>
-            <p style="color: #222222; font-size: 15px; margin: 0 0 15px;">Profitez de <strong>-10%</strong> sur votre prochaine réservation (Valable une seule fois).</p>
-            <div style="background-color: #FFFFFF; padding: 15px 20px; display: inline-block; border-radius: 8px; font-size: 24px; font-weight: 800; letter-spacing: 2px; color: #222222; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                ${discountCode}
-            </div>
-            <p style="color: #7A7A7A; font-size: 13px; margin: 15px 0 0;">Présentez ce code lors de votre arrivée au beach club.</p>
-        </div>
 
         <p style="color: #7A7A7A; font-size: 14px; line-height: 1.6; margin-bottom: 0;">
             Au plaisir de vous accueillir très vite sur le sable fin de Ghar El Melh.<br>
@@ -482,7 +473,7 @@ export async function sendNewsletterWelcomeEmail(email: string, discountCode: st
         await transporter.sendMail({
             from: `"${RESTAURANT_INFO.name}" <${process.env.SMTP_USER}>`,
             to: email,
-            subject: "Bienvenue ! Voici votre code promo de -10% 🎉",
+            subject: "Bienvenue à la newsletter du Latino Coucou Beach ! 🎉",
             html: getBaseTemplate(content),
         });
         return { success: true };
