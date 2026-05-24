@@ -115,9 +115,9 @@ function LoginForm() {
                             const supabase = createClient();
                             const { error } = await supabase.auth.signInWithOAuth({
                                 provider: 'google',
-                                options: {
-                                    redirectTo: `${window.location.origin}/auth/callback`,
-                                },
+                                    options: {
+                                        redirectTo: `${typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || "https://latinocoucoubeach.com")}/auth/callback`,
+                                    },
                             });
                             if (error) throw error;
                         } catch (err) {

@@ -176,7 +176,7 @@ export async function notifyManagerNewReservation(
 ) {
     const phone = managerPhone || process.env.WHATSAPP_MANAGER_PHONE || RESTAURANT_INFO.phone;
     
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://latinocoucoubeach.vercel.app";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://latinocoucoubeach.com";
     const manageLink = data.reservationId 
         ? `${appUrl}/dashboard/reservations?id=${data.reservationId}`
         : `${appUrl}/dashboard/reservations`;

@@ -168,8 +168,9 @@ export function Navbar() {
                         ) : authUser ? (
                             /* ── CONNECTED: name chip + logout ── */
                             <>
-                                {/* User name chip */}
-                                <div
+                                {/* User name chip (clicks to dashboard) */}
+                                <Link
+                                    href="/dashboard"
                                     style={{
                                         display: "inline-flex",
                                         alignItems: "center",
@@ -182,6 +183,25 @@ export function Navbar() {
                                         border: isScrolled
                                             ? "1px solid rgba(34,34,34,0.12)"
                                             : "1px solid rgba(255,255,255,0.25)",
+                                        textDecoration: "none",
+                                        cursor: "pointer",
+                                        transition: "all 0.2s ease",
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.currentTarget.style.backgroundColor = isScrolled
+                                            ? "rgba(34,34,34,0.12)"
+                                            : "rgba(255,255,255,0.25)";
+                                        e.currentTarget.style.borderColor = isScrolled
+                                            ? "rgba(34,34,34,0.25)"
+                                            : "rgba(255,255,255,0.45)";
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.currentTarget.style.backgroundColor = isScrolled
+                                            ? "rgba(34,34,34,0.06)"
+                                            : "rgba(255,255,255,0.15)";
+                                        e.currentTarget.style.borderColor = isScrolled
+                                            ? "rgba(34,34,34,0.12)"
+                                            : "rgba(255,255,255,0.25)";
                                     }}
                                 >
                                     {/* Avatar */}
@@ -215,7 +235,7 @@ export function Navbar() {
                                     >
                                         {authUser.name}
                                     </span>
-                                </div>
+                                </Link>
 
                                 {/* Logout */}
                                 <button
@@ -374,7 +394,9 @@ export function Navbar() {
                                 {authUser ? (
                                     /* Logged in on mobile */
                                     <>
-                                        <div
+                                        <Link
+                                            href="/dashboard"
+                                            onClick={() => setIsMobileMenuOpen(false)}
                                             style={{
                                                 display: "flex",
                                                 alignItems: "center",
@@ -382,6 +404,15 @@ export function Navbar() {
                                                 padding: "12px 16px",
                                                 backgroundColor: "#F9F5F0",
                                                 borderRadius: "12px",
+                                                textDecoration: "none",
+                                                cursor: "pointer",
+                                                transition: "background-color 0.2s",
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.currentTarget.style.backgroundColor = "#F3EAE0";
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.currentTarget.style.backgroundColor = "#F9F5F0";
                                             }}
                                         >
                                             <div
@@ -409,7 +440,7 @@ export function Navbar() {
                                                     {authUser.email}
                                                 </p>
                                             </div>
-                                        </div>
+                                        </Link>
                                         <button
                                             onClick={handleLogout}
                                             style={{

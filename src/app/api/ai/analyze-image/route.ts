@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
             baseURL: "https://openrouter.ai/api/v1",
             apiKey: apiKey,
             defaultHeaders: {
-                "HTTP-Referer": "https://latino-coucou-beach.vercel.app", // Optional: Your site URL
+                "HTTP-Referer": "https://latinocoucoubeach.com", // Optional: Your site URL
                 "X-Title": "Latino Coucou Beach", // Optional: Your site name
             }
         });

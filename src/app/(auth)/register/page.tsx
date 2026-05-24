@@ -57,14 +57,14 @@ export default function RegisterPage() {
             setIsLoading(false);
             return;
         }
-
         try {
             const supabase = createClient();
-
-            const { error } = await supabase.auth.signUp({
+            const appUrl = (typeof window !== "undefined" ? window.location.origin : null) || process.env.NEXT_PUBLIC_APP_URL || "https://latinocoucoubeach.com";
+            const { data, error } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
                 options: {
+                    emailRedirectTo: `${appUrl}/auth/callback`,
                     data: {
                         full_name: formData.fullName,
                         phone: formData.phone,
@@ -77,7 +77,12 @@ export default function RegisterPage() {
                 return;
             }
 
-            setSuccess(true);
+            if (data?.session) {
+                router.push("/dashboard");
+                router.refresh();
+            } else {
+                setSuccess(true);
+            }
         } catch {
             setError("Une erreur est survenue. Veuillez réessayer.");
         } finally {
@@ -212,13 +217,13 @@ export default function RegisterPage() {
                         type="button"
                         onClick={async () => {
                             try {
-                                const supabase = createClient();
-                                const { error } = await supabase.auth.signInWithOAuth({
-                                    provider: 'google',
-                                    options: {
-                                        redirectTo: `${window.location.origin}/auth/callback`,
-                                    },
-                                });
+                                 const supabase = createClient();
+                                 const { error } = await supabase.auth.signInWithOAuth({
+                                     provider: 'google',
+                                     options: {
+                                         redirectTo: `${typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || "https://latinocoucoubeach.com")}/auth/callback`,
+                                     },
+                                 });
                                 if (error) throw error;
                             } catch (err) {
                                 setError("Erreur lors de la connexion avec Google.");
