@@ -230,18 +230,18 @@ export function Footer() {
                         © {currentYear} Latino Coucou Beach. Tous droits réservés.
                     </p>
                     <div style={{ display: "flex", gap: "1.5rem", fontSize: "0.9rem" }}>
-                        <a
-                            href="#"
+                        <Link
+                            href="/terms"
                             style={{ color: "rgba(255, 255, 255, 0.4)", textDecoration: "none" }}
                         >
-                            Mentions légales
-                        </a>
-                        <a
-                            href="#"
+                            Mentions légales & CGU
+                        </Link>
+                        <Link
+                            href="/privacy"
                             style={{ color: "rgba(255, 255, 255, 0.4)", textDecoration: "none" }}
                         >
                             Politique de confidentialité
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>
