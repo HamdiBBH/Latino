@@ -77,7 +77,7 @@ const packageNameToZoneType = (packageName: string): Zone["type"] => {
 
 // Zone layout definition (fixed positions in the beach club)
 const ZONE_LAYOUT = {
-    cabane_normale: Array.from({ length: 10 }, (_, i) => ({
+    cabane_normale: Array.from({ length: 12 }, (_, i) => ({
         id: `C${i + 1}`,
         type: "cabane_normale" as const,
         label: `Cabane ${i + 1}`,
@@ -997,7 +997,7 @@ export default function FloorPlanPage() {
                     <div style={{ marginLeft: "80px", marginRight: "80px", display: "flex", flexDirection: "column", gap: "2rem" }}>
                         {/* Row 1: Cabanes Normales */}
                         <div>
-                            <p style={{ fontSize: "0.625rem", color: "#6B7280", marginBottom: "0.5rem" }}>CABANES NORMALES (10)</p>
+                            <p style={{ fontSize: "0.625rem", color: "#6B7280", marginBottom: "0.5rem" }}>CABANES NORMALES (12)</p>
                             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
                                 {stats.cabanes.map(zone => renderZone(zone, "rect"))}
                             </div>

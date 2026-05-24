@@ -113,9 +113,134 @@ export default async function AdminDashboard() {
             </div>
         );
     }
-
     // ===== MANAGER DASHBOARD =====
     if (userRole === "MANAGER") {
+        // Fetch dynamic statistics for Manager
+        let curTodayCount = 0;
+        let reservationTrend = "+0%";
+        let totalVisitorsLast7Days = 0;
+        let visitorsTrend = "+0%";
+        let currentClients = 0;
+        let clientsTrend = "+0%";
+
+        try {
+            const todayStr = new Date().toISOString().split("T")[0];
+            
+            // 1. Reservations count for today (excluding cancelled and declined)
+            const { count: todayCount, error: todayError } = await supabase
+                .from("reservations")
+                .select("*", { count: "exact", head: true })
+                .eq("reservation_date", todayStr)
+                .in("status", ["pending", "confirmed"]);
+
+            if (todayError) {
+                console.error("Error fetching today reservations count:", todayError);
+            } else {
+                curTodayCount = todayCount || 0;
+            }
+
+            // Yesterday reservations count for trend calculation
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split("T")[0];
+            const { count: yesterdayCount, error: yesterdayError } = await supabase
+                .from("reservations")
+                .select("*", { count: "exact", head: true })
+                .eq("reservation_date", yesterdayStr)
+                .in("status", ["pending", "confirmed"]);
+
+            if (!yesterdayError) {
+                const curYesterdayCount = yesterdayCount || 0;
+                if (curYesterdayCount > 0) {
+                    const diff = ((curTodayCount - curYesterdayCount) / curYesterdayCount) * 100;
+                    reservationTrend = (diff >= 0 ? "+" : "") + diff.toFixed(0) + "%";
+                } else if (curTodayCount > 0) {
+                    reservationTrend = "+100%";
+                }
+            }
+
+            // 2. Visitors count for the last 7 days (sum of guest_count for active reservations)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
+            
+            const { data: recentReservations, error: recentError } = await supabase
+                .from("reservations")
+                .select("guest_count")
+                .gte("reservation_date", sevenDaysAgoStr)
+                .lte("reservation_date", todayStr)
+                .in("status", ["pending", "confirmed"]);
+                
+            if (recentError) {
+                console.error("Error fetching recent reservations:", recentError);
+            } else {
+                totalVisitorsLast7Days = (recentReservations || []).reduce((sum, r) => sum + (r.guest_count || 0), 0);
+            }
+
+            // Previous 7 days visitors count for trend calculation
+            const fourteenDaysAgo = new Date();
+            fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+            const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split("T")[0];
+            const prevSevenDaysAgo = new Date();
+            prevSevenDaysAgo.setDate(prevSevenDaysAgo.getDate() - 8);
+            const prevSevenDaysAgoStr = prevSevenDaysAgo.toISOString().split("T")[0];
+            
+            const { data: prevReservations, error: prevError } = await supabase
+                .from("reservations")
+                .select("guest_count")
+                .gte("reservation_date", fourteenDaysAgoStr)
+                .lte("reservation_date", prevSevenDaysAgoStr)
+                .in("status", ["pending", "confirmed"]);
+                
+            if (!prevError) {
+                const prevTotalVisitors = (prevReservations || []).reduce((sum, r) => sum + (r.guest_count || 0), 0);
+                if (prevTotalVisitors > 0) {
+                    const diff = ((totalVisitorsLast7Days - prevTotalVisitors) / prevTotalVisitors) * 100;
+                    visitorsTrend = (diff >= 0 ? "+" : "") + diff.toFixed(0) + "%";
+                } else if (totalVisitorsLast7Days > 0) {
+                    visitorsTrend = "+100%";
+                }
+            }
+
+            // 3. Registered clients count
+            const { count: clientsCount, error: clientsError } = await supabase
+                .from("profiles")
+                .select("*", { count: "exact", head: true })
+                .eq("role", "CLIENT");
+
+            if (clientsError) {
+                console.error("Error fetching clients count:", clientsError);
+            } else {
+                currentClients = clientsCount || 0;
+            }
+
+            // Trend of registered clients (relative to 7 days ago)
+            const { count: newClientsLast7Days, error: newClientsError } = await supabase
+                .from("profiles")
+                .select("*", { count: "exact", head: true })
+                .eq("role", "CLIENT")
+                .gte("created_at", sevenDaysAgo.toISOString());
+                
+            if (!newClientsError) {
+                const newClients = newClientsLast7Days || 0;
+                const previousClients = currentClients - newClients;
+                if (previousClients > 0) {
+                    const diff = (newClients / previousClients) * 100;
+                    clientsTrend = "+" + diff.toFixed(0) + "%";
+                } else if (newClients > 0) {
+                    clientsTrend = "+100%";
+                }
+            }
+        } catch (err) {
+            console.error("Exception fetching manager dashboard stats:", err);
+        }
+
+        const managerStats = [
+            { label: "Réservations aujourd'hui", value: curTodayCount.toString(), icon: CalendarDays, trend: reservationTrend },
+            { label: "Visiteurs (7j)", value: totalVisitorsLast7Days.toLocaleString(), icon: TrendingUp, trend: visitorsTrend },
+            { label: "Clients inscrits", value: currentClients.toLocaleString(), icon: Users, trend: clientsTrend },
+        ];
+
         return (
             <div>
                 <div style={{ marginBottom: "2rem" }}>
@@ -132,8 +257,10 @@ export default async function AdminDashboard() {
 
                 {/* Stats */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
-                    {operationalStats.slice(0, 2).map((stat) => {
+                    {managerStats.map((stat) => {
                         const Icon = stat.icon;
+                        const isNegativeTrend = stat.trend.startsWith("-");
+                        const trendColor = isNegativeTrend ? "#EF4444" : "#22C55E";
                         return (
                             <div key={stat.label} style={{
                                 backgroundColor: "#FFF", padding: "1.5rem", borderRadius: "16px",
@@ -143,9 +270,9 @@ export default async function AdminDashboard() {
                                     <div style={{ width: 48, height: 48, backgroundColor: "rgba(232,168,124,0.1)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
                                         <Icon style={{ width: 24, height: 24, color: "#E8A87C" }} />
                                     </div>
-                                    <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#22C55E" }}>{stat.trend}</span>
+                                    <span style={{ fontSize: "0.875rem", fontWeight: 500, color: trendColor }}>{stat.trend}</span>
                                 </div>
-                                <p style={{ fontSize: "1.875rem", fontWeight: 700, color: "#222" }}>{stat.value}</p>
+                                <p style={{ fontSize: "1.875rem", fontWeight: 700, color: "#22" }}>{stat.value}</p>
                                 <p style={{ fontSize: "0.875rem", color: "#7A7A7A" }}>{stat.label}</p>
                             </div>
                         );

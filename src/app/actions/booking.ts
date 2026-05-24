@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, cleanupRateLimitBuckets } from "@/lib/rate-limit";
 import { getReservationConfig } from "@/app/actions/settings";
 import { sendManagerNotificationEmail, sendReservationRequestEmail } from "@/lib/email";
+import { notifyManagerNewReservation } from "@/lib/whatsapp";
 import {
   calculateReservationPrice,
   getReservationGuestCount,
@@ -181,6 +182,24 @@ export async function submitReservationRequest(payload: ReservationPayload) {
     emailResults.forEach((result) => {
       if (result.status === "rejected") console.error("Reservation email error:", result.reason);
     });
+
+    // Envoyer la notification WhatsApp au manager
+    try {
+      const whatsappResult = await notifyManagerNewReservation({
+        guestName: reservation.guest_name,
+        guestPhone: reservation.guest_phone,
+        date: reservation.reservation_date,
+        packageName: packageRow.title,
+        guestCount: reservation.guest_count,
+        estimatedPrice: reservation.estimated_price,
+        reservationId: reservation.id,
+      });
+      if (!whatsappResult.success) {
+        console.warn("WhatsApp manager notification failed:", whatsappResult.error);
+      }
+    } catch (whatsappErr) {
+      console.error("Error sending WhatsApp notification:", whatsappErr);
+    }
 
     revalidatePath("/dashboard/reservations");
 

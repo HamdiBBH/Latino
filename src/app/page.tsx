@@ -43,14 +43,25 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType<any>> = {
 export const revalidate = 3600; // Revalidate every hour (ISR)
 
 export default async function HomePage() {
-  const sections = await getSections();
-  const galleryImagesRaw = await getPublicGalleryImages();
-  const reelsData = await getPublicReels();
-  const aboutMedia = await getMedia("about");
-  const heroSlides = await getPublicHeroSlides();
-  const experienceMedia = await getMedia("experience");
-  const heroContent = await getContentBySection("hero");
-  const packagesData = await getPackages();
+  const [
+    sections,
+    galleryImagesRaw,
+    reelsData,
+    aboutMedia,
+    heroSlides,
+    experienceMedia,
+    heroContent,
+    packagesData,
+  ] = await Promise.all([
+    getSections(),
+    getPublicGalleryImages(),
+    getPublicReels(),
+    getMedia("about"),
+    getPublicHeroSlides(),
+    getMedia("experience"),
+    getContentBySection("hero"),
+    getPackages(),
+  ]);
 
   // Extract hero text content from CMS
   const heroText = {

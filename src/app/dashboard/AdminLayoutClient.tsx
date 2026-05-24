@@ -79,6 +79,12 @@ const navItems: NavItem[] = [
     },
     // MANAGER: Operations
     {
+        href: "/dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        roles: ["MANAGER"],
+    },
+    {
         href: "/dashboard/floorplan",
         label: "Plan de Salle",
         icon: LayoutDashboard,
@@ -102,19 +108,19 @@ const navItems: NavItem[] = [
         href: "/dashboard/loyalty",
         label: "Fidélité",
         icon: Trophy,
-        roles: ["CLIENT", "ADMIN", "MANAGER", "DEV"],
+        roles: ["CLIENT", "ADMIN", "DEV"],
     },
     {
         href: "/dashboard/memories",
         label: "Souvenirs",
         icon: Image,
-        roles: ["CLIENT", "ADMIN", "MANAGER", "DEV"],
+        roles: ["CLIENT", "ADMIN", "DEV"],
     },
     {
         href: "/dashboard/profile",
         label: "Mon Profil",
         icon: Users,
-        roles: ["CLIENT", "ADMIN", "MANAGER", "DEV"],
+        roles: ["CLIENT", "ADMIN", "DEV"],
     },
     {
         href: "/dashboard/concierge",

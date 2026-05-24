@@ -24,6 +24,7 @@ import {
     CheckCircle2,
     Gift,
     UserPlus,
+    X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -72,6 +73,16 @@ function ReservationContent() {
     const [submitting, setSubmitting] = useState(false);
     const [packages, setPackages] = useState<Package[]>([]);
     const [config, setConfig] = useState<ReservationConfig | null>(null);
+    const [showExitModal, setShowExitModal] = useState(false);
+
+    const handleExitClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (step === 1) {
+            router.push("/");
+        } else {
+            setShowExitModal(true);
+        }
+    };
 
     // Form state
     const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
@@ -257,10 +268,29 @@ function ReservationContent() {
                 gap: "1rem",
             }}>
                 <div style={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
-                    <Link href="/" style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
-                        <ArrowLeft style={{ width: 20, height: 20, color: "#7A7A7A" }} />
-                        <span style={{ color: "#7A7A7A", fontSize: "0.9rem" }}>Retour</span>
-                    </Link>
+                    <button
+                        onClick={handleExitClick}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            backgroundColor: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "6px 12px",
+                            borderRadius: "8px",
+                            transition: "background-color 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#F3F4F6";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                        }}
+                    >
+                        <X style={{ width: 20, height: 20, color: "#7A7A7A" }} />
+                        <span style={{ color: "#7A7A7A", fontSize: "0.9rem", fontWeight: 500 }}>Quitter</span>
+                    </button>
                 </div>
                 <div style={{ display: "flex", justifyContent: "center" }}>
                     <Logo variant="dark" />
@@ -875,6 +905,90 @@ function ReservationContent() {
                 </div>
                 </div>
             </main>
+
+            {showExitModal && (
+                <div style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(0, 0, 0, 0.4)",
+                    backdropFilter: "blur(4px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1000,
+                }}>
+                    <div style={{
+                        backgroundColor: "#FFFFFF",
+                        padding: "2rem",
+                        borderRadius: "16px",
+                        maxWidth: "400px",
+                        width: "90%",
+                        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                        textAlign: "center",
+                    }}>
+                        <h3 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#111827", marginBottom: "0.75rem" }}>
+                            Quitter la réservation ?
+                        </h3>
+                        <p style={{ color: "#6B7280", fontSize: "0.95rem", lineHeight: "1.5", marginBottom: "1.5rem" }}>
+                            Si vous quittez maintenant, vos choix (dates, personnes, forfait) ne seront pas enregistrés.
+                        </p>
+                        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+                            <button
+                                onClick={() => setShowExitModal(false)}
+                                style={{
+                                    flex: 1,
+                                    padding: "0.75rem 1rem",
+                                    backgroundColor: "#F3F4F6",
+                                    color: "#374151",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    fontWeight: 500,
+                                    cursor: "pointer",
+                                    fontSize: "0.9rem",
+                                    transition: "background-color 0.2s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#E5E7EB";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#F3F4F6";
+                                }}
+                            >
+                                Continuer
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowExitModal(false);
+                                    router.push("/");
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: "0.75rem 1rem",
+                                    backgroundColor: "#EF4444",
+                                    color: "#FFFFFF",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    fontSize: "0.9rem",
+                                    transition: "background-color 0.2s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#DC2626";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#EF4444";
+                                }}
+                            >
+                                Quitter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

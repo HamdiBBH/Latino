@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createPublicClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { generateDishImage } from "./ai";
 import { CMS_ROLES, forbidden, requireRole } from "@/lib/authz";
@@ -79,7 +79,7 @@ export async function generateAndSaveMenuImage(dishName: string) {
 // ============================================
 
 export async function getSections() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
         .from("site_sections")
         .select("*")
@@ -139,7 +139,7 @@ export async function toggleSectionActive(id: string, isActive: boolean) {
 // ============================================
 
 export async function getContentBySection(sectionName: string) {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     const { data: section } = await supabase
         .from("site_sections")
@@ -205,7 +205,7 @@ export async function createContent(sectionId: string, fieldName: string, fieldT
 // ============================================
 
 export async function getMedia(folder?: string) {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     let query = supabase.from("site_media").select("*").order("created_at", { ascending: false });
 
@@ -397,7 +397,7 @@ export async function getGalleryImages(albumId: string) {
 }
 
 export async function getPublicGalleryImages() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     // Fetch all gallery images with their media and album data
     const { data, error } = await supabase
@@ -812,7 +812,7 @@ export async function getReels() {
 }
 
 export async function getPublicReels() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
         .from("instagram_reels")
         .select("*")
@@ -962,7 +962,7 @@ export async function deleteService(id: string) {
 // ============================================
 
 export async function getPackages() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
         .from("packages")
         .select("*")
@@ -1233,7 +1233,7 @@ async function ensureHeroSlidesSeeded(supabase: any) {
 
 /** Lecture publique des slides actives (pour le Hero du site) */
 export async function getPublicHeroSlides() {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     try {
         await ensureHeroSlidesSeeded(supabase);
     } catch (e) {

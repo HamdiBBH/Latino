@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import { RESTAURANT_INFO } from "@/lib/config";
 import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
+import { PWAInstallPrompt } from "@/components/ui/PWAInstallPrompt";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -131,6 +132,7 @@ export default function RootLayout({
       </head>
       <body className="font-primary antialiased" suppressHydrationWarning>
         {children}
+        <PWAInstallPrompt />
         <MobileBottomNav />
       </body>
     </html>

@@ -48,6 +48,7 @@ interface ReservationData {
     packageName: string;
     guestCount: number;
     estimatedPrice: number;
+    reservationId?: string;
 }
 
 /**
@@ -170,9 +171,16 @@ C'est demain ! 🎉
  * Send new reservation notification to manager
  */
 export async function notifyManagerNewReservation(
-    managerPhone: string,
-    data: ReservationData
+    data: ReservationData,
+    managerPhone?: string
 ) {
+    const phone = managerPhone || process.env.WHATSAPP_MANAGER_PHONE || RESTAURANT_INFO.phone;
+    
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://latinocoucoubeach.vercel.app";
+    const manageLink = data.reservationId 
+        ? `${appUrl}/dashboard/reservations?id=${data.reservationId}`
+        : `${appUrl}/dashboard/reservations`;
+
     const message = `📬 *Nouvelle réservation !*
 
 👤 *Client* : ${data.guestName}
@@ -181,9 +189,10 @@ export async function notifyManagerNewReservation(
 👥 *Personnes* : ${data.guestCount}
 💰 *Montant* : ${data.estimatedPrice} DT
 
-Action requise dans le dashboard.`;
+🔗 *Gérer la réservation :*
+${manageLink}`;
 
-    return sendWhatsAppMessage(managerPhone, message);
+    return sendWhatsAppMessage(phone, message);
 }
 
 /**
