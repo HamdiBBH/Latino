@@ -20,6 +20,8 @@ import {
     ExternalLink,
     TrendingUp,
     Trophy,
+    Bell,
+    ChevronDown,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import Logo from "@/components/Logo";
@@ -138,6 +140,20 @@ interface UserInfo {
     avatarUrl?: string;
 }
 
+const mockNotifications = [
+    { id: 1, text: "Nouvelle réservation reçue", time: "Il y a 5 min", unread: true },
+    { id: 2, text: "Le menu a été mis à jour par l'admin", time: "Il y a 2h", unread: false },
+    { id: 3, text: "Nouveau message de contact", time: "Hier", unread: false },
+];
+
+const roleBadgeColors: Record<string, { bg: string; text: string; border: string }> = {
+    DEV: { bg: "#E0E7FF", text: "#3730A3", border: "#C7D2FE" },
+    CLIENT: { bg: "#F3F4F6", text: "#374151", border: "#E5E7EB" },
+    RESTAURANT: { bg: "#FEF3C7", text: "#92400E", border: "#FDE68A" },
+    MANAGER: { bg: "#DCFCE7", text: "#166534", border: "#A7F3D0" },
+    ADMIN: { bg: "#FEE2E2", text: "#B91C1C", border: "#FCA5A5" },
+};
+
 export function AdminLayoutClient({
     children,
     user,
@@ -147,10 +163,259 @@ export function AdminLayoutClient({
 }) {
     const pathname = usePathname();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
     const filteredNavItems = navItems.filter((item) =>
         item.roles.includes(user.role)
     );
+
+    const renderProfileDropdown = () => {
+        return (
+            <div style={{ position: "relative" }}>
+                <button
+                    onClick={() => {
+                        setIsProfileOpen(!isProfileOpen);
+                        setIsNotificationsOpen(false);
+                    }}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "36px",
+                            height: "36px",
+                            backgroundColor: "#E8A87C",
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 600,
+                            color: "#FFFFFF",
+                            fontSize: "0.875rem",
+                        }}
+                    >
+                        {user.fullName.charAt(0).toUpperCase()}
+                    </div>
+                    <ChevronDown style={{ width: 14, height: 14, color: "#4B5563" }} className="desktop-only-chevron" />
+                </button>
+
+                {isProfileOpen && (
+                    <>
+                        <div 
+                            onClick={() => setIsProfileOpen(false)}
+                            style={{ position: "fixed", inset: 0, zIndex: 99, cursor: "default" }}
+                        />
+                        <div
+                            style={{
+                                position: "absolute",
+                                right: 0,
+                                top: "45px",
+                                width: "220px",
+                                backgroundColor: "#FFFFFF",
+                                borderRadius: "12px",
+                                border: "1px solid #E5E7EB",
+                                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+                                zIndex: 100,
+                                padding: "8px",
+                                display: "flex",
+                                flexDirection: "column",
+                            }}
+                        >
+                            <div style={{ padding: "8px 12px" }}>
+                                <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {user.fullName}
+                                </p>
+                                <p style={{ fontSize: "0.75rem", color: "#6B7280", margin: "2px 0 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {user.email}
+                                </p>
+                            </div>
+                            
+                            <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "6px 0" }} />
+                            
+                            <Link
+                                href="/dashboard/profile"
+                                onClick={() => setIsProfileOpen(false)}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    padding: "8px 12px",
+                                    borderRadius: "6px",
+                                    textDecoration: "none",
+                                    color: "#374151",
+                                    fontSize: "0.875rem",
+                                    fontWeight: 500,
+                                    transition: "background-color 0.2s",
+                                }}
+                                className="hover-bg-gray"
+                            >
+                                <Users style={{ width: 16, height: 16, color: "#9CA3AF" }} />
+                                <span>Mon Profil</span>
+                            </Link>
+
+                            {user.role === "ADMIN" && (
+                                <Link
+                                    href="/dashboard/config"
+                                    onClick={() => setIsProfileOpen(false)}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        padding: "8px 12px",
+                                        borderRadius: "6px",
+                                        textDecoration: "none",
+                                        color: "#374151",
+                                        fontSize: "0.875rem",
+                                        fontWeight: 500,
+                                        transition: "background-color 0.2s",
+                                    }}
+                                    className="hover-bg-gray"
+                                >
+                                    <Settings style={{ width: 16, height: 16, color: "#9CA3AF" }} />
+                                    <span>Configuration</span>
+                                </Link>
+                            )}
+
+                            <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "6px 0" }} />
+
+                            <button
+                                onClick={() => {
+                                    setIsProfileOpen(false);
+                                    handleSignOut();
+                                }}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: "none",
+                                    textAlign: "left",
+                                    color: "#EF4444",
+                                    fontSize: "0.875rem",
+                                    fontWeight: 500,
+                                    cursor: "pointer",
+                                    transition: "background-color 0.2s",
+                                }}
+                                className="hover-bg-red-light"
+                            >
+                                <LogOut style={{ width: 16, height: 16 }} />
+                                <span>Déconnexion</span>
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+        );
+    };
+
+    const renderNotificationsDropdown = () => {
+        const hasUnread = mockNotifications.some(n => n.unread);
+        return (
+            <div style={{ position: "relative" }}>
+                <button
+                    onClick={() => {
+                        setIsNotificationsOpen(!isNotificationsOpen);
+                        setIsProfileOpen(false);
+                    }}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "50%",
+                        border: "none",
+                        background: "#F3F4F6",
+                        cursor: "pointer",
+                        position: "relative",
+                        color: "#4B5563",
+                    }}
+                >
+                    <Bell style={{ width: 18, height: 18 }} />
+                    {hasUnread && (
+                        <span
+                            style={{
+                                position: "absolute",
+                                top: "8px",
+                                right: "8px",
+                                width: "8px",
+                                height: "8px",
+                                backgroundColor: "#EF4444",
+                                borderRadius: "50%",
+                                border: "2px solid #FFFFFF",
+                            }}
+                        />
+                    )}
+                </button>
+
+                {isNotificationsOpen && (
+                    <>
+                        <div 
+                            onClick={() => setIsNotificationsOpen(false)}
+                            style={{ position: "fixed", inset: 0, zIndex: 99, cursor: "default" }}
+                        />
+                        <div
+                            style={{
+                                position: "absolute",
+                                right: 0,
+                                top: "45px",
+                                width: "280px",
+                                backgroundColor: "#FFFFFF",
+                                borderRadius: "12px",
+                                border: "1px solid #E5E7EB",
+                                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
+                                zIndex: 100,
+                                padding: "8px",
+                                display: "flex",
+                                flexDirection: "column",
+                            }}
+                        >
+                            <div style={{ padding: "6px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>Notifications</span>
+                                <span style={{ fontSize: "0.75rem", color: "#E8A87C", fontWeight: 500, cursor: "pointer" }}>Tout marquer lu</span>
+                            </div>
+                            
+                            <div style={{ height: "1px", backgroundColor: "#F3F4F6", margin: "6px 0" }} />
+                            
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px", maxHeight: "240px", overflowY: "auto" }}>
+                                {mockNotifications.map((notif) => (
+                                    <div
+                                        key={notif.id}
+                                        style={{
+                                            padding: "8px",
+                                            borderRadius: "8px",
+                                            backgroundColor: notif.unread ? "#F9FAFB" : "transparent",
+                                            cursor: "pointer",
+                                            transition: "background-color 0.2s",
+                                        }}
+                                        className="hover-bg-gray"
+                                    >
+                                        <p style={{ fontSize: "0.75rem", color: "#374151", margin: 0, fontWeight: notif.unread ? 600 : 400 }}>
+                                            {notif.text}
+                                        </p>
+                                        <span style={{ fontSize: "0.625rem", color: "#9CA3AF", marginTop: "4px", display: "block" }}>
+                                            {notif.time}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+        );
+    };
 
     const handleSignOut = async () => {
         await signOut();
@@ -191,7 +456,7 @@ export function AdminLayoutClient({
                 <div style={{ display: "flex", justifyContent: "center", flex: 1 }}>
                     <Logo variant="dark" />
                 </div>
-                <div style={{ width: 40 }} />
+                {renderProfileDropdown()}
             </header>
 
             {/* Mobile Sidebar Overlay */}
@@ -256,43 +521,6 @@ export function AdminLayoutClient({
                     </button>
                 </div>
 
-                {/* User Role Badge */}
-                <div
-                    style={{
-                        padding: "1rem",
-                        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                    }}
-                >
-                    <div
-                        style={{
-                            padding: "0.75rem 1rem",
-                            backgroundColor: "rgba(232, 168, 124, 0.2)",
-                            borderRadius: "8px",
-                            textAlign: "center",
-                        }}
-                    >
-                        <span
-                            style={{
-                                fontSize: "0.75rem",
-                                color: "rgba(255, 255, 255, 0.6)",
-                                display: "block",
-                                marginBottom: "4px",
-                            }}
-                        >
-                            Connecté en tant que
-                        </span>
-                        <span
-                            style={{
-                                fontSize: "1rem",
-                                fontWeight: 600,
-                                color: "#E8A87C",
-                            }}
-                        >
-                            {user.role}
-                        </span>
-                    </div>
-                </div>
-
                 {/* Navigation */}
                 <nav style={{ padding: "1rem", flex: 1, overflowY: "auto" }}>
                     {filteredNavItems.map((item) => {
@@ -325,98 +553,6 @@ export function AdminLayoutClient({
                         );
                     })}
                 </nav>
-
-                {/* Footer */}
-                <div
-                    style={{
-                        padding: "1rem",
-                        borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-                        flexShrink: 0,
-                        backgroundColor: "#111827",
-                    }}
-                >
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            marginBottom: "1rem",
-                            padding: "0 1rem",
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: "40px",
-                                height: "40px",
-                                backgroundColor: "#E8A87C",
-                                borderRadius: "50%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontWeight: 600,
-                            }}
-                        >
-                            {user.fullName.charAt(0).toUpperCase()}
-                        </div>
-                        <div style={{ overflow: "hidden" }}>
-                            <p
-                                style={{
-                                    fontWeight: 500,
-                                    fontSize: "0.875rem",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                }}
-                            >
-                                {user.fullName}
-                            </p>
-                            <p style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.5)" }}>
-                                {user.email}
-                            </p>
-                        </div>
-                    </div>
-                    <Link
-                        href="/"
-                        target="_blank"
-                        style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "12px 16px",
-                            borderRadius: "8px",
-                            border: "none",
-                            backgroundColor: "rgba(232, 168, 124, 0.15)",
-                            color: "#E8A87C",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                            textDecoration: "none",
-                            marginBottom: "8px",
-                        }}
-                    >
-                        <ExternalLink style={{ width: 20, height: 20 }} />
-                        <span style={{ fontWeight: 500 }}>Voir le site</span>
-                    </Link>
-                    <button
-                        onClick={handleSignOut}
-                        style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "12px 16px",
-                            borderRadius: "8px",
-                            border: "none",
-                            backgroundColor: "transparent",
-                            color: "rgba(255, 255, 255, 0.7)",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                        }}
-                    >
-                        <LogOut style={{ width: 20, height: 20 }} />
-                        <span style={{ fontWeight: 500 }}>Déconnexion</span>
-                    </button>
-                </div>
             </aside>
 
             {/* Main Content */}
@@ -424,17 +560,98 @@ export function AdminLayoutClient({
                 style={{
                     marginLeft: "256px",
                     minHeight: "100vh",
+                    display: "flex",
+                    flexDirection: "column",
                 }}
                 className="main-content"
             >
-                <div style={{ padding: "1.5rem" }}>{children}</div>
+                {/* Desktop Sticky Header */}
+                <header
+                    style={{
+                        position: "sticky",
+                        top: 0,
+                        height: "64px",
+                        backgroundColor: "rgba(255, 255, 255, 0.85)",
+                        backdropFilter: "blur(8px)",
+                        borderBottom: "1px solid #E5E7EB",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "0 1.5rem",
+                        zIndex: 30,
+                    }}
+                    className="desktop-header"
+                >
+                    <div style={{ fontSize: "0.875rem", fontWeight: 500, color: "#374151" }}>
+                        Bonjour, <span style={{ fontWeight: 700, color: "#111827" }}>{user.fullName}</span> 👋
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                        <Link
+                            href="/"
+                            target="_blank"
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                padding: "6px 12px",
+                                border: "1px solid #E5E7EB",
+                                borderRadius: "8px",
+                                backgroundColor: "#FFFFFF",
+                                color: "#374151",
+                                textDecoration: "none",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                            }}
+                        >
+                            <ExternalLink style={{ width: 14, height: 14 }} />
+                            <span>Voir le site</span>
+                        </Link>
+
+                        {renderNotificationsDropdown()}
+
+                        {/* Role Badge */}
+                        <span
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                padding: "4px 10px",
+                                backgroundColor: roleBadgeColors[user.role]?.bg || "#F3F4F6",
+                                color: roleBadgeColors[user.role]?.text || "#374151",
+                                border: `1px solid ${roleBadgeColors[user.role]?.border || "#E5E7EB"}`,
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                borderRadius: "100px",
+                            }}
+                        >
+                            {user.role}
+                        </span>
+
+                        <div style={{ height: "20px", width: "1px", backgroundColor: "#E5E7EB" }} />
+
+                        {renderProfileDropdown()}
+                    </div>
+                </header>
+
+                <div style={{ padding: "1.5rem", flex: 1 }}>{children}</div>
             </main>
 
             {/* CSS for responsive behavior */}
             <style jsx global>{`
+        .hover-bg-gray:hover {
+          background-color: #F3F4F6 !important;
+        }
+        .hover-bg-red-light:hover {
+          background-color: #FEE2E2 !important;
+          color: #B91C1C !important;
+        }
         @media (max-width: 1024px) {
           .mobile-header {
             display: flex !important;
+          }
+          .desktop-header {
+            display: none !important;
           }
           .sidebar {
             transform: ${isSidebarOpen ? "translateX(0)" : "translateX(-100%)"} !important;
@@ -446,6 +663,9 @@ export function AdminLayoutClient({
           .mobile-close {
             display: block !important;
           }
+          .desktop-only-chevron {
+            display: none !important;
+          }
         }
         @media (min-width: 1025px) {
           .sidebar {
@@ -456,6 +676,9 @@ export function AdminLayoutClient({
           }
           .mobile-overlay {
             display: none !important;
+          }
+          .desktop-header {
+            display: flex !important;
           }
         }
       `}</style>
