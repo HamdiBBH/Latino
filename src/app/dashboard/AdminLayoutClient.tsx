@@ -108,19 +108,19 @@ const navItems: NavItem[] = [
         href: "/dashboard/loyalty",
         label: "Fidélité",
         icon: Trophy,
-        roles: ["CLIENT", "ADMIN", "DEV"],
+        roles: ["CLIENT", "DEV"],
     },
     {
         href: "/dashboard/memories",
         label: "Souvenirs",
         icon: Image,
-        roles: ["CLIENT", "ADMIN", "DEV"],
+        roles: ["CLIENT", "DEV"],
     },
     {
         href: "/dashboard/profile",
         label: "Mon Profil",
         icon: Users,
-        roles: ["CLIENT", "ADMIN", "DEV"],
+        roles: ["CLIENT", "DEV"],
     },
     {
         href: "/dashboard/concierge",
