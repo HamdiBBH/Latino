@@ -66,12 +66,6 @@ const navItems: NavItem[] = [
         roles: ["ADMIN"],
     },
     {
-        href: "/dashboard/users",
-        label: "Utilisateurs",
-        icon: Users,
-        roles: ["ADMIN"],
-    },
-    {
         href: "/dashboard/config",
         label: "Configuration",
         icon: Settings,
