@@ -113,6 +113,47 @@ async function sendWhatsAppMessage(
     }
 }
 
+/**
+ * Send a WhatsApp message via CallMeBot (Free alternative)
+ */
+async function sendCallMeBotMessage(
+    to: string,
+    message: string
+): Promise<{ success: boolean; error?: string }> {
+    const apiKey = process.env.CALLMEBOT_API_KEY;
+    if (!apiKey) {
+        return { success: false, error: "CallMeBot API key not configured" };
+    }
+
+    try {
+        // Ensure phone number starts with '+' for CallMeBot
+        let formattedPhone = to.trim();
+        if (!formattedPhone.startsWith("+")) {
+            // Remove non-digits
+            const digits = formattedPhone.replace(/\D/g, "");
+            // Add Tunisia country code (+216) by default if not present
+            formattedPhone = "+" + (digits.startsWith("216") ? digits : "216" + digits);
+        }
+
+        const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(formattedPhone)}&text=${encodeURIComponent(message)}&apikey=${encodeURIComponent(apiKey)}`;
+        
+        const response = await fetch(url);
+        const text = await response.text();
+
+        if (!response.ok || text.includes("Error") || text.includes("invalid")) {
+            console.error("CallMeBot API error response:", text);
+            return { success: false, error: text || "CallMeBot API error" };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("CallMeBot send error:", error);
+        return { success: false, error: String(error) };
+    }
+}
+
+
+
 // ============================================
 // RESERVATION NOTIFICATIONS
 // ============================================
@@ -174,9 +215,7 @@ export async function notifyManagerNewReservation(
     data: ReservationData,
     managerPhone?: string
 ) {
-    const phone = managerPhone || process.env.WHATSAPP_MANAGER_PHONE || RESTAURANT_INFO.phone;
-    
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://latinocoucoubeach.com";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://latinocoucoubeach.vercel.app";
     const manageLink = data.reservationId 
         ? `${appUrl}/dashboard/reservations?id=${data.reservationId}`
         : `${appUrl}/dashboard/reservations`;
@@ -192,7 +231,39 @@ export async function notifyManagerNewReservation(
 🔗 *Gérer la réservation :*
 ${manageLink}`;
 
-    return sendWhatsAppMessage(phone, message);
+    // 1. Envoi via Meta Cloud API si configuré
+    const metaConfigured = process.env.WHATSAPP_PHONE_ID && 
+                           process.env.WHATSAPP_PHONE_ID !== "xxx" && 
+                           process.env.WHATSAPP_ACCESS_TOKEN && 
+                           process.env.WHATSAPP_ACCESS_TOKEN !== "xxx";
+
+    let metaResult: { success: boolean; error?: string; messageId?: string } = { success: false, error: "Meta API non configurée" };
+    if (metaConfigured) {
+        const phone = managerPhone || process.env.WHATSAPP_MANAGER_PHONE || RESTAURANT_INFO.phone;
+        metaResult = await sendWhatsAppMessage(phone, message);
+    }
+
+    // 2. Envoi via CallMeBot si configuré
+    const callmebotConfigured = !!process.env.CALLMEBOT_API_KEY;
+    let callmebotResult: { success: boolean; error?: string } = { success: false, error: "CallMeBot non configuré" };
+    if (callmebotConfigured) {
+        const phone = process.env.CALLMEBOT_PHONE || managerPhone || process.env.WHATSAPP_MANAGER_PHONE || RESTAURANT_INFO.phone;
+        callmebotResult = await sendCallMeBotMessage(phone, message);
+    }
+
+    // Si au moins une notification a fonctionné, on considère l'action réussie
+    if (metaResult.success || callmebotResult.success) {
+        return { 
+            success: true, 
+            meta: metaResult, 
+            callmebot: callmebotResult 
+        };
+    }
+
+    return { 
+        success: false, 
+        error: `Échec de l'envoi de la notification. Meta: ${metaResult.error}, CallMeBot: ${callmebotResult.error}` 
+    };
 }
 
 /**

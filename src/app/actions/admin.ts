@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { CMS_ROLES, STAFF_ROLES, forbidden, requireRole } from "@/lib/authz";
+import { CMS_ROLES, STAFF_ROLES, ADMIN_ROLES, AppRole, forbidden, requireRole } from "@/lib/authz";
 
 /**
  * Update site content (DEV role only)
@@ -135,5 +135,29 @@ export async function getSiteContent() {
     } catch (error) {
         console.error("Error fetching site content:", error);
         return { success: false, data: [] };
+    }
+}
+
+/**
+ * Update a user's role (ADMIN role only)
+ */
+export async function updateUserRole(userId: string, role: AppRole) {
+    try {
+        const auth = await requireRole(ADMIN_ROLES);
+        if (!auth.authorized) return forbidden(auth.error);
+        const { supabase } = auth;
+
+        const { error } = await supabase
+            .from("profiles")
+            .update({ role, updated_at: new Date().toISOString() })
+            .eq("id", userId);
+
+        if (error) throw error;
+
+        revalidatePath("/dashboard/users");
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating user role:", error);
+        return { success: false, error: "Erreur lors de la modification du rôle." };
     }
 }
