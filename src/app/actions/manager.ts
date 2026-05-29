@@ -268,6 +268,100 @@ export async function markRemindersAsSent(reservationIds: string[]) {
     return { success: true, count: reservationIds.length };
 }
 
+export async function sendTomorrowReminders(reservationIds: string[]) {
+    if (!reservationIds || reservationIds.length === 0) {
+        return { success: true, count: 0 };
+    }
+
+    const supabase = await createClient();
+
+    // 1. Fetch reservations with details
+    const { data: reservations, error: fetchErr } = await supabase
+        .from("reservations")
+        .select("id, guest_name, guest_email, guest_phone, guest_count, adults_count, children_4_12_count, reservation_date, package_id, estimated_price, special_request")
+        .in("id", reservationIds);
+
+    if (fetchErr || !reservations) {
+        console.error("Error fetching reservations for reminders:", fetchErr);
+        return { success: false, error: fetchErr?.message || "Erreur lors de la récupération des détails de réservation." };
+    }
+
+    // 2. Fetch beach installations to map package name
+    const packageIds = [...new Set(reservations.map(r => r.package_id).filter(Boolean))];
+    const installationMap = new Map<string, string>();
+
+    if (packageIds.length > 0) {
+        const { data: installations } = await supabase
+            .from("beach_installations")
+            .select("id, title")
+            .in("id", packageIds);
+
+        if (installations) {
+            installations.forEach(inst => {
+                installationMap.set(inst.id, inst.title);
+            });
+        }
+    }
+
+    const { sendReminderEmail } = await import("@/lib/email");
+    let sentCount = 0;
+    const errors: string[] = [];
+
+    // 3. Send email to each guest
+    for (const r of reservations) {
+        let adults = r.adults_count;
+        let children = r.children_4_12_count || 0;
+
+        if (!adults) {
+            adults = r.guest_count;
+            if (r.special_request) {
+                const adultsMatch = r.special_request.match(/Adultes:\s*(\d+)/);
+                if (adultsMatch) adults = parseInt(adultsMatch[1], 10);
+
+                const childrenMatch = r.special_request.match(/Enfants 4-12:\s*(\d+)/);
+                if (childrenMatch) children = parseInt(childrenMatch[1], 10);
+            }
+        }
+
+        const packageName = r.package_id ? (installationMap.get(r.package_id) || "Forfait") : "Forfait";
+
+        try {
+            const emailResult = await sendReminderEmail({
+                guestName: r.guest_name,
+                guestEmail: r.guest_email,
+                date: r.reservation_date,
+                packageName: packageName,
+                adults: adults,
+                children: children,
+                totalPrice: Number(r.estimated_price) || 0,
+                reservationId: r.id,
+            });
+
+            if (emailResult.success) {
+                sentCount++;
+            } else {
+                errors.push(`Échec pour ${r.guest_name} (${r.guest_email}): ${emailResult.error}`);
+            }
+        } catch (err: any) {
+            errors.push(`Erreur pour ${r.guest_name} (${r.guest_email}): ${err.message || err}`);
+        }
+    }
+
+    if (sentCount > 0) {
+        await markRemindersAsSent(reservations.filter(r => !errors.some(e => e.includes(r.guest_email))).map(r => r.id));
+    }
+
+    if (errors.length > 0) {
+        return {
+            success: false,
+            error: `Certains rappels n'ont pas pu être envoyés :\n${errors.join("\n")}`,
+            sentCount,
+        };
+    }
+
+    return { success: true, count: sentCount };
+}
+
 // ============================================
 // ANALYTICS
 // ============================================

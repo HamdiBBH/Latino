@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { AlertTriangle, Info, AlertCircle, Users, X, Bell, Send, ChevronDown, ChevronUp, Eye, EyeOff, ExternalLink } from "lucide-react";
-import { detectConflicts, dismissConflict, getTomorrowReservations } from "@/app/actions/manager";
+import { detectConflicts, dismissConflict, getTomorrowReservations, sendTomorrowReminders } from "@/app/actions/manager";
 import type { SmartConflict, ConflictSeverity } from "@/app/actions/manager";
 import Link from "next/link";
 
@@ -53,6 +53,8 @@ export function ManagerAlerts() {
     const [remindersSent, setRemindersSent] = useState(false);
     const [showInfoConflicts, setShowInfoConflicts] = useState(false);
     const [dismissingId, setDismissingId] = useState<string | null>(null);
+    const [sendingReminders, setSendingReminders] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
         loadData();
@@ -82,9 +84,30 @@ export function ManagerAlerts() {
         }, 300);
     };
 
+    const openRemindersModal = () => {
+        setRemindersSent(false);
+        setErrorMessage(null);
+        setShowRemindersModal(true);
+    };
+
     const handleSendReminders = async () => {
-        setRemindersSent(true);
-        setTimeout(() => setShowRemindersModal(false), 1500);
+        setSendingReminders(true);
+        setErrorMessage(null);
+        try {
+            const ids = tomorrowReservations.map(r => r.id);
+            const res = await sendTomorrowReminders(ids);
+            if (res.success) {
+                setRemindersSent(true);
+                setTimeout(() => setShowRemindersModal(false), 1500);
+            } else {
+                setErrorMessage(res.error || "Une erreur s'est produite lors de l'envoi des e-mails.");
+            }
+        } catch (err: any) {
+            console.error("Error sending reminders:", err);
+            setErrorMessage("Une erreur inattendue est survenue.");
+        } finally {
+            setSendingReminders(false);
+        }
     };
 
     const formatDate = (dateStr: string) => {
@@ -312,7 +335,7 @@ export function ManagerAlerts() {
                             </p>
                         </div>
                         <button
-                            onClick={() => setShowRemindersModal(true)}
+                            onClick={openRemindersModal}
                             style={{
                                 display: "flex", alignItems: "center", gap: "6px",
                                 padding: "8px 14px", backgroundColor: "#2563EB",
@@ -340,10 +363,28 @@ export function ManagerAlerts() {
                     }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
                             <h3 style={{ fontWeight: 600, color: "#222" }}>Rappels pour demain</h3>
-                            <button onClick={() => setShowRemindersModal(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+                            <button 
+                                onClick={() => !sendingReminders && setShowRemindersModal(false)} 
+                                disabled={sendingReminders}
+                                style={{ background: "none", border: "none", cursor: sendingReminders ? "not-allowed" : "pointer", opacity: sendingReminders ? 0.5 : 1 }}
+                            >
                                 <X style={{ width: 20, height: 20, color: "#7A7A7A" }} />
                             </button>
                         </div>
+
+                        {errorMessage && (
+                            <div style={{
+                                padding: "0.75rem 1rem",
+                                backgroundColor: "#FEE2E2",
+                                color: "#DC2626",
+                                borderRadius: "8px",
+                                fontSize: "0.875rem",
+                                marginBottom: "1rem",
+                                whiteSpace: "pre-line"
+                            }}>
+                                {errorMessage}
+                            </div>
+                        )}
 
                         {remindersSent ? (
                             <div style={{ textAlign: "center", padding: "2rem" }}>
@@ -378,25 +419,36 @@ export function ManagerAlerts() {
                                 <div style={{ display: "flex", gap: "8px" }}>
                                     <button
                                         onClick={() => setShowRemindersModal(false)}
+                                        disabled={sendingReminders}
                                         style={{
                                             flex: 1, padding: "12px", backgroundColor: "#F3F4F6",
-                                            border: "none", borderRadius: "8px", cursor: "pointer",
-                                            fontWeight: 500
+                                            border: "none", borderRadius: "8px", 
+                                            cursor: sendingReminders ? "not-allowed" : "pointer",
+                                            fontWeight: 500, opacity: sendingReminders ? 0.5 : 1
                                         }}
                                     >
                                         Annuler
                                     </button>
                                     <button
                                         onClick={handleSendReminders}
+                                        disabled={sendingReminders}
                                         style={{
-                                            flex: 1, padding: "12px", backgroundColor: "#E8A87C",
+                                            flex: 1, padding: "12px", 
+                                            backgroundColor: sendingReminders ? "#CBD5E1" : "#E8A87C",
                                             color: "#FFF", border: "none", borderRadius: "8px",
-                                            cursor: "pointer", fontWeight: 600, display: "flex",
+                                            cursor: sendingReminders ? "not-allowed" : "pointer", 
+                                            fontWeight: 600, display: "flex",
                                             alignItems: "center", justifyContent: "center", gap: "8px"
                                         }}
                                     >
-                                        <Send style={{ width: 16, height: 16 }} />
-                                        Envoyer ({tomorrowReservations.length})
+                                        {sendingReminders ? (
+                                            <span>Envoi en cours...</span>
+                                        ) : (
+                                            <>
+                                                <Send style={{ width: 16, height: 16 }} />
+                                                Envoyer ({tomorrowReservations.length})
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </>
