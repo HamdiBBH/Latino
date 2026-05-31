@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import { RESTAURANT_INFO } from "@/lib/config";
 import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/ui/PWAInstallPrompt";
+import Script from "next/script";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -131,6 +132,19 @@ export default function RootLayout({
         />
       </head>
       <body className="font-primary antialiased" suppressHydrationWarning>
+        {/* Google Analytics Script */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-5P896YXM5J"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-5P896YXM5J');
+          `}
+        </Script>
         {children}
         <PWAInstallPrompt />
         <MobileBottomNav />

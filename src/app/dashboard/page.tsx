@@ -21,38 +21,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ClientDashboard from "@/components/admin/ClientDashboard";
-
-// Mock analytics data - will be replaced by Google Analytics API later
-const analyticsData = {
-    visitors: { today: 342, trend: "+14.8%", positive: true },
-    pageViews: { today: 1247, trend: "+14.5%", positive: true },
-    avgSessionDuration: { value: "3m 42s", trend: "+8.2%", positive: true },
-    bounceRate: { value: "42.3%", trend: "-5.1%", positive: true },
-};
-
-const topPages = [
-    { path: "/", views: 523, percentage: 42 },
-    { path: "/menu", views: 234, percentage: 19 },
-    { path: "/reservations", views: 189, percentage: 15 },
-    { path: "/gallery", views: 156, percentage: 13 },
-    { path: "/contact", views: 145, percentage: 11 },
-];
-
-const deviceStats = [
-    { type: "Mobile", icon: Smartphone, percentage: 62, color: "#E8A87C" },
-    { type: "Desktop", icon: Monitor, percentage: 31, color: "#43B0A8" },
-    { type: "Tablet", icon: Monitor, percentage: 7, color: "#6366F1" },
-];
-
-const weeklyData = [
-    { day: "Lun", visitors: 245 },
-    { day: "Mar", visitors: 312 },
-    { day: "Mer", visitors: 287 },
-    { day: "Jeu", visitors: 356 },
-    { day: "Ven", visitors: 423 },
-    { day: "Sam", visitors: 512 },
-    { day: "Dim", visitors: 342 },
-];
+import { getGoogleAnalyticsData } from "@/app/actions/analytics";
 
 // Manager/Admin operational stats
 const operationalStats = [
@@ -307,7 +276,17 @@ export default async function AdminDashboard() {
     }
 
     // ===== DEV/ADMIN ANALYTICS DASHBOARD =====
-    const maxVisitors = Math.max(...weeklyData.map((d) => d.visitors));
+    const gaData = await getGoogleAnalyticsData();
+    const maxVisitors = Math.max(...gaData.weeklyData.map((d) => d.visitors), 1);
+
+    const deviceStats = gaData.deviceStats.map(device => {
+        let icon = Monitor;
+        if (device.type === "Mobile") icon = Smartphone;
+        return {
+            ...device,
+            icon
+        };
+    });
 
     return (
         <div>
@@ -331,16 +310,16 @@ export default async function AdminDashboard() {
             }}>
                 <div style={{ width: 12, height: 12, borderRadius: "50%", backgroundColor: "#22C55E", animation: "pulse 2s infinite" }} />
                 <Activity style={{ width: 20, height: 20, color: "#22C55E" }} />
-                <span style={{ fontWeight: 600, color: "#166534" }}>23 visiteurs en temps réel</span>
+                <span style={{ fontWeight: 600, color: "#166534" }}>{gaData.activeRealtime} visiteurs en temps réel</span>
             </div>
 
             {/* KPI Cards */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
                 {[
-                    { ...analyticsData.visitors, label: "Visiteurs aujourd'hui", value: analyticsData.visitors.today, icon: Users, color: "#E8A87C" },
-                    { ...analyticsData.pageViews, label: "Pages vues", value: analyticsData.pageViews.today, icon: Eye, color: "#43B0A8" },
-                    { ...analyticsData.avgSessionDuration, label: "Durée moyenne session", icon: Clock, color: "#6366F1" },
-                    { ...analyticsData.bounceRate, label: "Taux de rebond", icon: MousePointerClick, color: "#F97316" },
+                    { ...gaData.analyticsData.visitors, label: "Visiteurs aujourd'hui", value: gaData.analyticsData.visitors.today, icon: Users, color: "#E8A87C" },
+                    { ...gaData.analyticsData.pageViews, label: "Pages vues", value: gaData.analyticsData.pageViews.today, icon: Eye, color: "#43B0A8" },
+                    { ...gaData.analyticsData.avgSessionDuration, label: "Durée moyenne session", icon: Clock, color: "#6366F1" },
+                    { ...gaData.analyticsData.bounceRate, label: "Taux de rebond", icon: MousePointerClick, color: "#F97316" },
                 ].map((stat) => {
                     const Icon = stat.icon;
                     return (
@@ -353,8 +332,8 @@ export default async function AdminDashboard() {
                                     <Icon style={{ width: 24, height: 24, color: stat.color }} />
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                    {stat.positive ? <ArrowUpRight style={{ width: 16, height: 16, color: "#22C55E" }} /> : <ArrowDownRight style={{ width: 16, height: 16, color: "#22C55E" }} />}
-                                    <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "#22C55E" }}>{stat.trend}</span>
+                                    {stat.positive ? <ArrowUpRight style={{ width: 16, height: 16, color: "#22C55E" }} /> : <ArrowDownRight style={{ width: 16, height: 16, color: "#EF4444" }} />}
+                                    <span style={{ fontSize: "0.875rem", fontWeight: 500, color: stat.positive ? "#22C55E" : "#EF4444" }}>{stat.trend}</span>
                                 </div>
                             </div>
                             <p style={{ fontSize: "2rem", fontWeight: 700, color: "#222" }}>{stat.value}</p>
@@ -379,7 +358,7 @@ export default async function AdminDashboard() {
                         </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: "200px", gap: 8 }}>
-                        {weeklyData.map((day, index) => (
+                        {gaData.weeklyData.map((day, index) => (
                             <div key={day.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                                 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "#222" }}>{day.visitors}</span>
                                 <div style={{ width: "100%", height: `${(day.visitors / maxVisitors) * 160}px`, backgroundColor: index === 6 ? "#E8A87C" : "#F3E8DE", borderRadius: "8px 8px 0 0" }} />
@@ -421,8 +400,8 @@ export default async function AdminDashboard() {
                     <BarChart3 style={{ width: 20, height: 20, color: "#7A7A7A" }} />
                 </div>
                 <div>
-                    {topPages.map((page, index) => (
-                        <div key={page.path} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: index < topPages.length - 1 ? "1px solid #E5E7EB" : "none" }}>
+                    {gaData.topPages.map((page, index) => (
+                        <div key={page.path} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: index < gaData.topPages.length - 1 ? "1px solid #E5E7EB" : "none" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                 <span style={{ width: 28, height: 28, backgroundColor: "#F3F4F6", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 600, color: "#7A7A7A" }}>{index + 1}</span>
                                 <span style={{ fontWeight: 500, color: "#222" }}>{page.path}</span>
@@ -439,13 +418,27 @@ export default async function AdminDashboard() {
             </div>
 
             {/* Info Banner */}
-            <div style={{ marginTop: "2rem", padding: "1.5rem", backgroundColor: "#FEF3C7", borderRadius: "12px", border: "1px solid #FCD34D", display: "flex", alignItems: "center", gap: 12 }}>
-                <Globe style={{ width: 24, height: 24, color: "#92400E" }} />
-                <div>
-                    <p style={{ fontWeight: 600, color: "#92400E" }}>Connexion Google Analytics</p>
-                    <p style={{ fontSize: "0.875rem", color: "#A16207" }}>Ces données sont des exemples. Connectez votre compte Google Analytics pour des statistiques en temps réel.</p>
+            {!gaData.isConfigured ? (
+                <div style={{ marginTop: "2rem", padding: "1.5rem", backgroundColor: "#FEF3C7", borderRadius: "12px", border: "1px solid #FCD34D", display: "flex", alignItems: "center", gap: 12 }}>
+                    <Globe style={{ width: 24, height: 24, color: "#92400E" }} />
+                    <div>
+                        <p style={{ fontWeight: 600, color: "#92400E" }}>Configuration Google Analytics requise</p>
+                        <p style={{ fontSize: "0.875rem", color: "#A16207" }}>
+                            Le tableau de bord utilise actuellement des données simulées. Pour afficher vos statistiques réelles, configurez les variables d&apos;environnement <code>GA_PROPERTY_ID</code>, <code>GA_CLIENT_EMAIL</code>, et <code>GA_PRIVATE_KEY</code>.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div style={{ marginTop: "2rem", padding: "1rem 1.5rem", backgroundColor: "#ECFDF5", borderRadius: "12px", border: "1px solid #A7F3D0", display: "flex", alignItems: "center", gap: 12 }}>
+                    <Globe style={{ width: 24, height: 24, color: "#065F46" }} />
+                    <div>
+                        <p style={{ fontWeight: 600, color: "#065F46", fontSize: "0.875rem" }}>Google Analytics connecté</p>
+                        <p style={{ fontSize: "0.75rem", color: "#047857" }}>
+                            Les statistiques ci-dessus proviennent en temps réel de votre propriété GA4 (G-5P896YXM5J).
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
